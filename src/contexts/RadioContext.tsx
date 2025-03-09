@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { RadioStation, BookingSlot } from '@/models/RadioStation';
 
 interface RadioContextType {
@@ -84,18 +84,29 @@ const initialStations: RadioStation[] = [
 ];
 
 export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [stations, setStations] = useState<RadioStation[]>(() => {
-    // Check if we have stations saved in localStorage
-    const savedStations = localStorage.getItem('waveradio_stations');
-    return savedStations ? JSON.parse(savedStations) : initialStations;
-  });
-  
-  const [bookings, setBookings] = useState<BookingSlot[]>(() => {
-    const savedBookings = localStorage.getItem('waveradio_bookings');
-    return savedBookings ? JSON.parse(savedBookings) : [];
-  });
-  
+  const [stations, setStations] = useState<RadioStation[]>([]);
+  const [bookings, setBookings] = useState<BookingSlot[]>([]);
   const [currentPlayingStation, setCurrentPlayingStation] = useState<string | null>(null);
+
+  // Initialize stations and bookings from localStorage
+  useEffect(() => {
+    // Check if we have stations saved in localStorage
+    const savedStations = localStorage.getItem('latinmixmasters_stations');
+    if (savedStations) {
+      setStations(JSON.parse(savedStations));
+    } else {
+      // Initialize with default stations if not in localStorage
+      setStations(initialStations);
+      localStorage.setItem('latinmixmasters_stations', JSON.stringify(initialStations));
+    }
+    
+    const savedBookings = localStorage.getItem('latinmixmasters_bookings');
+    if (savedBookings) {
+      setBookings(JSON.parse(savedBookings));
+    } else {
+      localStorage.setItem('latinmixmasters_bookings', JSON.stringify([]));
+    }
+  }, []);
 
   const getStationById = (id: string) => {
     return stations.find(station => station.id === id);
@@ -113,7 +124,7 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     
     const updatedBookings = [...bookings, newBooking];
     setBookings(updatedBookings);
-    localStorage.setItem('waveradio_bookings', JSON.stringify(updatedBookings));
+    localStorage.setItem('latinmixmasters_bookings', JSON.stringify(updatedBookings));
     
     return newBooking;
   };
@@ -124,7 +135,7 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     );
     
     setBookings(updatedBookings);
-    localStorage.setItem('waveradio_bookings', JSON.stringify(updatedBookings));
+    localStorage.setItem('latinmixmasters_bookings', JSON.stringify(updatedBookings));
   };
 
   const updateStreamDetails = (stationId: string, streamDetails: { url: string; port: string; password: string; }) => {
@@ -133,7 +144,7 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     );
     
     setStations(updatedStations);
-    localStorage.setItem('waveradio_stations', JSON.stringify(updatedStations));
+    localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
   };
 
   return (

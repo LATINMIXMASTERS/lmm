@@ -47,7 +47,7 @@ const Stations: React.FC = () => {
   }, [searchParams]);
   
   const filterStations = useCallback(() => {
-    let result = stations;
+    let result = [...stations]; // Create a copy of stations
     
     // Filter by genre (unless "All" is selected)
     if (selectedGenre !== 'All') {
@@ -93,6 +93,10 @@ const Stations: React.FC = () => {
     setCurrentlyPlayingId(currentlyPlayingId === stationId ? null : stationId);
     setCurrentPlayingStation(currentlyPlayingId === stationId ? null : stationId);
   };
+
+  // For debugging
+  console.log("Available stations:", stations);
+  console.log("Filtered stations:", filteredStations);
 
   return (
     <MainLayout>
