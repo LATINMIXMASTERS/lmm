@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,13 +30,19 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onSave }) => {
     
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
-      setProfileData(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof typeof prev],
-          [child]: value
-        }
-      }));
+      setProfileData(prev => {
+        const parentObj = typeof prev[parent as keyof typeof prev] === 'object' 
+          ? prev[parent as keyof typeof prev] 
+          : {};
+          
+        return {
+          ...prev,
+          [parent]: {
+            ...(parentObj as object),
+            [child]: value
+          }
+        };
+      });
     } else {
       setProfileData(prev => ({
         ...prev,
