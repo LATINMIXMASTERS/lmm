@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(JSON.parse(storedUser));
     }
 
-    // Load all users from localStorage
+    // Load all users from localStorage or initialize with default users
     const storedUsers = localStorage.getItem('latinmixmasters_users');
     if (storedUsers) {
       setUsers(JSON.parse(storedUsers));
@@ -114,49 +114,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  // Mock login functionality (replace with real auth later)
+  // Fixed login functionality
   const login = async (email: string, password: string) => {
     setIsLoading(true);
+    
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log("Login attempt with:", email, password);
       
-      // Find user in our local storage
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Get users from local storage
       const storedUsers = localStorage.getItem('latinmixmasters_users');
       const allUsers = storedUsers ? JSON.parse(storedUsers) : [];
       
-      const foundUser = allUsers.find((u: User) => u.email.toLowerCase() === email.toLowerCase());
+      console.log("Available users:", allUsers);
+      
+      // Find user with case-insensitive email match
+      const foundUser = allUsers.find((u: User) => 
+        u.email.toLowerCase() === email.toLowerCase()
+      );
+      
+      console.log("Found user:", foundUser);
       
       if (foundUser) {
-        // For test accounts, we'll use the same password for simplicity
-        const isTestAccount = 
-          (foundUser.email === 'testhost@example.com' || 
-           foundUser.email === 'testuser@example.com');
+        // Check password based on account type
+        let validPassword = false;
         
-        // In a real app, we would verify the password securely
-        // For demo purposes:
-        // - admin password is "admin"
-        // - test accounts use "test123"
-        // - others use "password"
-        const validPassword = 
-          foundUser.isAdmin ? password === 'admin' : 
-          isTestAccount ? password === 'test123' :
-          password === 'password';
+        if (foundUser.email.toLowerCase() === 'admin@example.com') {
+          validPassword = password === 'admin';
+        } else if (
+          foundUser.email.toLowerCase() === 'testhost@example.com' || 
+          foundUser.email.toLowerCase() === 'testuser@example.com'
+        ) {
+          validPassword = password === 'test123';
+        } else {
+          // For regular users, we'd normally check against hashed passwords
+          // For demo, we'll accept "password"
+          validPassword = password === 'password';
+        }
+        
+        console.log("Password valid:", validPassword);
         
         if (validPassword) {
-          // Only allow login for approved users or admins
+          if (foundUser.suspended) {
+            toast({
+              title: "Account suspended",
+              description: "Your account has been suspended. Please contact an administrator.",
+              variant: "destructive"
+            });
+            setIsLoading(false);
+            return;
+          }
+          
           if (foundUser.approved || foundUser.isAdmin) {
-            // Check if user is suspended
-            if (foundUser.suspended) {
-              toast({
-                title: "Account suspended",
-                description: "Your account has been suspended. Please contact an administrator.",
-                variant: "destructive"
-              });
-              setIsLoading(false);
-              return;
-            }
-            
             setUser(foundUser);
             localStorage.setItem('latinmixmasters_user', JSON.stringify(foundUser));
             
@@ -165,31 +176,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               description: `Welcome back, ${foundUser.username}!`,
             });
             
-            // Redirect to home page after successful login
+            // Redirect to home page
             if (navigate) {
               navigate('/');
             }
-            
-            setIsLoading(false);
-            return;
           } else {
             toast({
               title: "Account pending approval",
               description: "Your account is waiting for admin approval.",
               variant: "destructive"
             });
-            setIsLoading(false);
-            return;
           }
+        } else {
+          toast({
+            title: "Login failed",
+            description: "Invalid email or password.",
+            variant: "destructive"
+          });
         }
+      } else {
+        toast({
+          title: "Login failed",
+          description: "User not found.",
+          variant: "destructive"
+        });
       }
-      
-      toast({
-        title: "Login failed",
-        description: "Invalid email or password.",
-        variant: "destructive"
-      });
     } catch (error) {
+      console.error("Login error:", error);
       toast({
         title: "Login error",
         description: "Something went wrong. Please try again.",
@@ -200,12 +213,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Register functionality
+  // Fixed register functionality
   const register = async (username: string, email: string, password: string) => {
     setIsLoading(true);
     try {
+      console.log("Register attempt:", { username, email });
+      
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Check if user already exists
       const storedUsers = localStorage.getItem('latinmixmasters_users');
@@ -230,7 +245,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isRadioHost: false,
         approved: false,
         pendingApproval: true,
-        registeredAt: new Date().toISOString()
+        registeredAt: new Date().toISOString(),
+        profileImage: `https://api.dicebear.com/7.x/personas/svg?seed=${username}`
       };
       
       // Add to users list
@@ -243,6 +259,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Your account is pending approval by an admin.",
       });
     } catch (error) {
+      console.error("Registration error:", error);
       toast({
         title: "Registration error",
         description: "Something went wrong. Please try again.",

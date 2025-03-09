@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,10 @@ const Login: React.FC = () => {
       });
       return;
     }
+    
+    // For debugging
+    console.log("Attempting login with:", { email, password });
+    
     await login(email, password);
   };
 
@@ -42,6 +47,10 @@ const Login: React.FC = () => {
       });
       return;
     }
+    
+    // For debugging
+    console.log("Attempting registration with:", { newUsername, newEmail, newPassword });
+    
     await register(newUsername, newEmail, newPassword);
     setIsRegistering(false);
   };
@@ -58,6 +67,9 @@ const Login: React.FC = () => {
       setPassword('test123');
     }
   };
+
+  // For debugging
+  console.log("Current login state:", { email, password, isRegistering });
 
   return (
     <MainLayout>
