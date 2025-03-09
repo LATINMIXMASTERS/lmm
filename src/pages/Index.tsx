@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Radio, Headphones, Music } from 'lucide-react';
@@ -6,14 +5,16 @@ import MainLayout from '@/layout/MainLayout';
 import Hero from '@/components/Hero';
 import StationCard from '@/components/StationCard';
 import { cn } from '@/lib/utils';
+import { useRadio } from '@/contexts/RadioContext';
 
-// Sample featured stations data
+// Sample featured stations data - now with descriptions
 const featuredStations = [
   {
     id: '1',
     name: 'House Electro Beats',
     genre: 'Electronic, House',
     image: 'https://images.unsplash.com/photo-1571330735066-03aaa9429d89?q=80&w=500&auto=format&fit=crop',
+    description: 'The best electronic and house music to keep your energy up all day long.',
     listeners: 4271,
     isLive: true
   },
@@ -22,6 +23,7 @@ const featuredStations = [
     name: 'Smooth Jazz',
     genre: 'Jazz, Blues',
     image: 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?q=80&w=500&auto=format&fit=crop',
+    description: 'Relax and unwind with smooth jazz and blues classics from the greatest artists.',
     listeners: 2183
   },
   {
@@ -29,6 +31,7 @@ const featuredStations = [
     name: 'Classic Rock Anthems',
     genre: 'Rock, 70s, 80s',
     image: 'https://images.unsplash.com/photo-1461784180009-27c1303a64b6?q=80&w=500&auto=format&fit=crop',
+    description: 'Experience the golden era of rock with these timeless anthems from the 70s and 80s.',
     listeners: 3528
   },
   {
@@ -36,6 +39,7 @@ const featuredStations = [
     name: 'Hip-Hop Masters',
     genre: 'Hip-Hop, Rap',
     image: 'https://images.unsplash.com/photo-1546528377-65924449c301?q=80&w=500&auto=format&fit=crop',
+    description: 'The latest and greatest hip-hop and rap tracks from around the world.',
     listeners: 5129,
     isLive: true
   }
@@ -52,12 +56,12 @@ const popularGenres = [
 ];
 
 const Index: React.FC = () => {
-  const [currentlyPlayingId, setCurrentlyPlayingId] = useState<string | null>(null);
   const [animatedSections, setAnimatedSections] = useState<{ [key: string]: boolean }>({
     featured: false,
     genres: false,
     download: false
   });
+  const { currentPlayingStation, setCurrentPlayingStation } = useRadio();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -87,7 +91,7 @@ const Index: React.FC = () => {
   }, [animatedSections]);
 
   const handlePlayToggle = (stationId: string) => {
-    setCurrentlyPlayingId(currentlyPlayingId === stationId ? null : stationId);
+    setCurrentPlayingStation(currentPlayingStation === stationId ? null : stationId);
   };
 
   return (
@@ -119,7 +123,7 @@ const Index: React.FC = () => {
             <StationCard
               key={station.id}
               station={station}
-              isPlaying={currentlyPlayingId === station.id}
+              isPlaying={currentPlayingStation === station.id}
               onPlayToggle={handlePlayToggle}
               className={cn(
                 !animatedSections.featured ? "opacity-0" : "animate-scale-in",
