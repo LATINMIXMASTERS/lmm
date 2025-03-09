@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +11,7 @@ interface User {
   approved?: boolean;
   pendingApproval?: boolean;
   registeredAt?: string;
+  suspended?: boolean;
 }
 
 interface AuthContextType {
@@ -24,6 +24,10 @@ interface AuthContextType {
   logout: () => void;
   approveUser: (userId: string) => void;
   rejectUser: (userId: string) => void;
+  suspendUser: (userId: string) => void;
+  activateUser: (userId: string) => void;
+  editUser: (userId: string, userData: Partial<User>) => void;
+  deleteUser: (userId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -118,6 +122,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (validPassword) {
           // Only allow login for approved users or admins
           if (foundUser.approved || foundUser.isAdmin) {
+            // Check if user is suspended
+            if (foundUser.suspended) {
+              toast({
+                title: "Account suspended",
+                description: "Your account has been suspended. Please contact an administrator.",
+                variant: "destructive"
+              });
+              setIsLoading(false);
+              return;
+            }
+            
             setUser(foundUser);
             localStorage.setItem('latinmixmasters_user', JSON.stringify(foundUser));
             
@@ -249,6 +264,112 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  // New function to suspend a user
+  const suspendUser = (userId: string) => {
+    // Cannot suspend admin
+    const userToSuspend = users.find(u => u.id === userId);
+    if (userToSuspend?.isAdmin) {
+      toast({
+        title: "Operation denied",
+        description: "Administrator accounts cannot be suspended.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updatedUsers = users.map(u => 
+      u.id === userId ? { ...u, suspended: true } : u
+    );
+    
+    setUsers(updatedUsers);
+    localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+    
+    // If the suspended user is currently logged in, log them out
+    if (user?.id === userId) {
+      logout();
+    }
+    
+    toast({
+      title: "User suspended",
+      description: "User has been suspended."
+    });
+  };
+
+  // New function to activate a suspended user
+  const activateUser = (userId: string) => {
+    const updatedUsers = users.map(u => 
+      u.id === userId ? { ...u, suspended: false } : u
+    );
+    
+    setUsers(updatedUsers);
+    localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+    
+    toast({
+      title: "User activated",
+      description: "User has been activated."
+    });
+  };
+
+  // New function to edit a user
+  const editUser = (userId: string, userData: Partial<User>) => {
+    // Cannot remove admin status from the main admin account
+    if (userId === '1' && userData.isAdmin === false) {
+      toast({
+        title: "Operation denied",
+        description: "Cannot remove admin status from the main administrator account.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updatedUsers = users.map(u => 
+      u.id === userId ? { ...u, ...userData } : u
+    );
+    
+    setUsers(updatedUsers);
+    localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+    
+    // If the edited user is currently logged in, update their session
+    if (user?.id === userId) {
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      localStorage.setItem('latinmixmasters_user', JSON.stringify(updatedUser));
+    }
+    
+    toast({
+      title: "User updated",
+      description: "User information has been updated."
+    });
+  };
+
+  // New function to delete a user
+  const deleteUser = (userId: string) => {
+    // Cannot delete the main admin account
+    if (userId === '1') {
+      toast({
+        title: "Operation denied",
+        description: "Cannot delete the main administrator account.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updatedUsers = users.filter(u => u.id !== userId);
+    
+    setUsers(updatedUsers);
+    localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+    
+    // If the deleted user is currently logged in, log them out
+    if (user?.id === userId) {
+      logout();
+    }
+    
+    toast({
+      title: "User deleted",
+      description: "User has been removed from the system."
+    });
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -259,7 +380,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       register, 
       logout,
       approveUser,
-      rejectUser
+      rejectUser,
+      suspendUser,
+      activateUser,
+      editUser,
+      deleteUser
     }}>
       {children}
     </AuthContext.Provider>

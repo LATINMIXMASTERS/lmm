@@ -21,13 +21,31 @@ import {
   Users,
   UserCheck,
   UserX,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Trash,
+  UserPen,
+  Ban,
+  User,
+  ShieldOff,
+  Search
 } from "lucide-react";
 import { format, formatDistance } from "date-fns";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import UserEditDialog from "@/components/UserEditDialog";
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, users, approveUser, rejectUser } = useAuth();
+  const { 
+    user, 
+    isAuthenticated, 
+    users, 
+    approveUser, 
+    rejectUser, 
+    suspendUser, 
+    activateUser, 
+    editUser, 
+    deleteUser 
+  } = useAuth();
   const { stations, bookings, updateStreamDetails, approveBooking } = useRadio();
   const { toast } = useToast();
   
@@ -36,6 +54,11 @@ const AdminDashboard: React.FC = () => {
     port: string;
     password: string;
   }>>({});
+  
+  const [userSearch, setUserSearch] = useState("");
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(null);
   
   useEffect(() => {
     // Redirect if not an admin
@@ -108,10 +131,44 @@ const AdminDashboard: React.FC = () => {
   const handleRejectUser = (userId: string) => {
     rejectUser(userId);
   };
+
+  const handleOpenEditDialog = (userData: any) => {
+    setEditingUser(userData);
+    setShowEditDialog(true);
+  };
+
+  const handleSaveUserEdit = (userId: string, userData: any) => {
+    editUser(userId, userData);
+    setShowEditDialog(false);
+  };
+
+  const handleToggleSuspend = (userData: any) => {
+    if (userData.suspended) {
+      activateUser(userData.id);
+    } else {
+      suspendUser(userData.id);
+    }
+  };
+
+  const handleConfirmDelete = (userId: string) => {
+    setShowConfirmDelete(null);
+    deleteUser(userId);
+  };
   
   const pendingBookings = bookings.filter(booking => !booking.approved);
   const pendingUsers = users.filter(u => u.pendingApproval);
-  const approvedUsers = users.filter(u => u.approved && !u.isAdmin);
+  
+  // Filter users for the All Users tab
+  const filteredUsers = users
+    .filter(u => !u.pendingApproval)
+    .filter(u => {
+      if (!userSearch) return true;
+      const search = userSearch.toLowerCase();
+      return (
+        u.username.toLowerCase().includes(search) || 
+        u.email.toLowerCase().includes(search)
+      );
+    });
   
   return (
     <MainLayout>
@@ -121,7 +178,7 @@ const AdminDashboard: React.FC = () => {
           <h1 className="text-2xl font-bold">LATINMIXMASTERS Admin Dashboard</h1>
         </div>
         
-        <Tabs defaultValue="stations" className="w-full">
+        <Tabs defaultValue="users" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="stations" className="flex items-center">
               <Radio className="w-4 h-4 mr-2" />
@@ -273,38 +330,152 @@ const AdminDashboard: React.FC = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Approved Radio Hosts</CardTitle>
+                <CardTitle>All Users</CardTitle>
                 <CardDescription>
-                  All users with radio hosting privileges
+                  Manage all users in the system
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {approvedUsers.length > 0 ? (
+                <div className="flex mb-4">
+                  <div className="relative flex-grow">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                    <Input
+                      placeholder="Search by username or email..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+
+                {filteredUsers.length > 0 ? (
                   <div className="space-y-3">
-                    {approvedUsers.map((approvedUser) => (
-                      <div key={approvedUser.id} className="border border-green-200 bg-green-50 rounded-md p-3">
+                    {filteredUsers.map((userData) => (
+                      <div key={userData.id} className={`border rounded-md p-3 ${
+                        userData.suspended ? 'border-red-200 bg-red-50' :
+                        userData.isAdmin ? 'border-blue-200 bg-blue-50' :
+                        userData.isRadioHost ? 'border-green-200 bg-green-50' :
+                        'border-gray-200 bg-gray-50'
+                      }`}>
                         <div className="flex justify-between items-start">
                           <div>
-                            <h3 className="font-medium">{approvedUser.username}</h3>
+                            <div className="flex items-center gap-1">
+                              <h3 className="font-medium">{userData.username}</h3>
+                              {userData.isAdmin && (
+                                <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded">
+                                  Admin
+                                </span>
+                              )}
+                              {userData.isRadioHost && !userData.isAdmin && (
+                                <span className="bg-green-100 text-green-800 text-xs px-1.5 py-0.5 rounded">
+                                  Host
+                                </span>
+                              )}
+                              {userData.suspended && (
+                                <span className="bg-red-100 text-red-800 text-xs px-1.5 py-0.5 rounded">
+                                  Suspended
+                                </span>
+                              )}
+                            </div>
                             <p className="text-sm text-gray-600">
-                              Email: {approvedUser.email}
+                              {userData.email}
                             </p>
-                            <p className="text-sm text-gray-500 mt-1">
-                              Approved radio host
-                            </p>
+                            {userData.registeredAt && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Member since {format(new Date(userData.registeredAt), "MMM d, yyyy")}
+                              </p>
+                            )}
                           </div>
-                          <CheckCircle className="w-5 h-5 text-green-500" />
+                          
+                          <div className="flex space-x-2">
+                            {showConfirmDelete === userData.id ? (
+                              <>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => setShowConfirmDelete(null)}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="destructive"
+                                  onClick={() => handleConfirmDelete(userData.id)}
+                                >
+                                  Confirm
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                {!userData.isAdmin && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className={userData.suspended ? 
+                                      "border-green-200 text-green-700 hover:bg-green-50" : 
+                                      "border-red-200 text-red-700 hover:bg-red-50"
+                                    }
+                                    onClick={() => handleToggleSuspend(userData)}
+                                  >
+                                    {userData.suspended ? (
+                                      <>
+                                        <CheckCircle className="w-4 h-4 mr-1" />
+                                        Activate
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Ban className="w-4 h-4 mr-1" />
+                                        Suspend
+                                      </>
+                                    )}
+                                  </Button>
+                                )}
+                                
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleOpenEditDialog(userData)}
+                                >
+                                  <UserPen className="w-4 h-4 mr-1" />
+                                  Edit
+                                </Button>
+                                
+                                {userData.id !== '1' && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="border-red-200 text-red-700 hover:bg-red-50"
+                                    onClick={() => setShowConfirmDelete(userData.id)}
+                                  >
+                                    <Trash className="w-4 h-4 mr-1" />
+                                    Delete
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">
-                    <p>No approved radio hosts yet.</p>
+                    <User className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p>No users found matching your search.</p>
                   </div>
                 )}
               </CardContent>
             </Card>
+
+            {/* User Edit Dialog */}
+            {editingUser && (
+              <UserEditDialog
+                user={editingUser}
+                isOpen={showEditDialog}
+                onClose={() => setShowEditDialog(false)}
+                onSave={handleSaveUserEdit}
+              />
+            )}
           </TabsContent>
           
           <TabsContent value="bookings">
