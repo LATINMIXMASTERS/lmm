@@ -1,82 +1,33 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, Filter } from 'lucide-react';
+import { Music, Filter, Upload, PlusCircle } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTrack } from '@/contexts/TrackContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
-interface Track {
-  id: string;
-  title: string;
-  artist: string;
-  genre: string;
-  coverImage: string;
-  audioFile: string;
-  likes: number;
-  uploadedBy: string;
-  uploadDate: string;
-}
-
-// Sample tracks data (this would come from your backend in a real app)
-const sampleTracks: Track[] = [
-  {
-    id: '1',
-    title: 'Latin Summer Mix 2023',
-    artist: 'DJ Carlos',
-    genre: 'Reggaeton',
-    coverImage: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=500&auto=format&fit=crop',
-    audioFile: '/sample-audio.mp3',
-    likes: 423,
-    uploadedBy: 'dj_carlos',
-    uploadDate: '2023-06-15'
-  },
-  {
-    id: '2',
-    title: 'Bachata Nights',
-    artist: 'DJ Maria',
-    genre: 'Bachata',
-    coverImage: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=500&auto=format&fit=crop',
-    audioFile: '/sample-audio2.mp3',
-    likes: 289,
-    uploadedBy: 'dj_maria',
-    uploadDate: '2023-07-22'
-  },
-  {
-    id: '3',
-    title: 'Salsa Revolution',
-    artist: 'DJ Rodriguez',
-    genre: 'Salsa',
-    coverImage: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=500&auto=format&fit=crop',
-    audioFile: '/sample-audio3.mp3',
-    likes: 156,
-    uploadedBy: 'dj_rodriguez',
-    uploadDate: '2023-08-11'
-  }
-];
-
-// Available genres (in a real app, these would come from your backend)
-const genres = ['All', 'Reggaeton', 'Bachata', 'Salsa', 'Merengue', 'Latin Pop', 'Latin Trap'];
-
 const Mixes: React.FC = () => {
-  const [tracks, setTracks] = useState<Track[]>(sampleTracks);
-  const [selectedGenre, setSelectedGenre] = useState('All');
-  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
   const { isAuthenticated, user } = useAuth();
+  const { tracks, genres } = useTrack();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const [selectedGenre, setSelectedGenre] = useState('All');
+  const [filteredTracks, setFilteredTracks] = useState(tracks);
+  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
   
   // Filter tracks by genre
   useEffect(() => {
     if (selectedGenre === 'All') {
-      setTracks(sampleTracks);
+      setFilteredTracks(tracks);
     } else {
-      setTracks(sampleTracks.filter(track => track.genre === selectedGenre));
+      setFilteredTracks(tracks.filter(track => track.genre === selectedGenre));
     }
-  }, [selectedGenre]);
+  }, [selectedGenre, tracks]);
 
   const handleUpload = () => {
     if (!isAuthenticated) {
@@ -98,11 +49,32 @@ const Mixes: React.FC = () => {
       return;
     }
 
-    // Navigate to upload page (to be implemented)
-    toast({
-      title: "Upload functionality",
-      description: "Upload feature will be implemented soon",
-    });
+    // Navigate to upload page
+    navigate('/upload-track');
+  };
+
+  const handleManageGenres = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login to manage genres",
+        variant: "destructive"
+      });
+      navigate('/login');
+      return;
+    }
+
+    if (user && !user.isRadioHost && !user.isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "Only approved radio hosts and admins can manage genres",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Navigate to genres page
+    navigate('/manage-genres');
   };
 
   const handlePlayTrack = (trackId: string) => {
@@ -118,35 +90,58 @@ const Mixes: React.FC = () => {
             <p className="text-gray-600 mb-4">Discover tracks uploaded by our DJ crew</p>
           </div>
           
-          {isAuthenticated && user?.isRadioHost && (
-            <Button 
-              onClick={handleUpload}
-              className="bg-blue hover:bg-blue-dark text-white flex items-center gap-2"
-            >
-              <Music className="w-4 h-4" />
-              Upload Mix
-            </Button>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {isAuthenticated && (user?.isRadioHost || user?.isAdmin) && (
+              <>
+                <Button 
+                  onClick={handleManageGenres}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  Manage Genres
+                </Button>
+                
+                <Button 
+                  onClick={handleUpload}
+                  className="bg-blue hover:bg-blue-dark text-white flex items-center gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload Mix
+                </Button>
+              </>
+            )}
+          </div>
         </div>
         
         {/* Genre filters */}
         <div className="flex flex-wrap gap-2 mb-8">
+          <Button 
+            key="All" 
+            variant={selectedGenre === 'All' ? "default" : "outline"}
+            onClick={() => setSelectedGenre('All')}
+            className="flex items-center gap-1"
+          >
+            {selectedGenre === 'All' && <Filter className="w-3 h-3" />}
+            All Genres
+          </Button>
+          
           {genres.map(genre => (
             <Button 
-              key={genre} 
-              variant={selectedGenre === genre ? "default" : "outline"}
-              onClick={() => setSelectedGenre(genre)}
+              key={genre.id} 
+              variant={selectedGenre === genre.name ? "default" : "outline"}
+              onClick={() => setSelectedGenre(genre.name)}
               className="flex items-center gap-1"
             >
-              {selectedGenre === genre && <Filter className="w-3 h-3" />}
-              {genre}
+              {selectedGenre === genre.name && <Filter className="w-3 h-3" />}
+              {genre.name}
             </Button>
           ))}
         </div>
         
         {/* Tracks grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tracks.map(track => (
+          {filteredTracks.map(track => (
             <Card key={track.id} className="overflow-hidden hover:shadow-md transition-shadow duration-300">
               <div className="relative aspect-video bg-gray-100 overflow-hidden">
                 <img 
@@ -185,7 +180,7 @@ const Mixes: React.FC = () => {
                 
                 <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
                   <div className="text-sm text-gray-500">
-                    Uploaded by <span className="font-medium">{track.uploadedBy}</span>
+                    {new Date(track.uploadDate).toLocaleDateString()}
                   </div>
                   <div className="flex items-center gap-2">
                     <button className="text-gray-400 hover:text-red-500 transition-colors duration-300">
@@ -201,11 +196,15 @@ const Mixes: React.FC = () => {
           ))}
         </div>
         
-        {tracks.length === 0 && (
+        {filteredTracks.length === 0 && (
           <div className="text-center py-16">
             <Music className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-1">No tracks found</h3>
-            <p className="text-gray-500">No tracks available for this genre yet</p>
+            <p className="text-gray-500">
+              {selectedGenre === 'All' 
+                ? "No tracks have been uploaded yet" 
+                : `No tracks available for ${selectedGenre} yet`}
+            </p>
           </div>
         )}
       </div>

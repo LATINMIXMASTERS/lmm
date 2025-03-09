@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { RadioProvider } from "./contexts/RadioContext";
+import { TrackProvider } from "./contexts/TrackContext";
 import Index from "./pages/Index";
 import Stations from "./pages/Stations";
 import AboutPage from "./pages/About";
@@ -16,6 +17,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import StationDetails from "./pages/StationDetails";
 import NotFound from "./pages/NotFound";
 import Mixes from "./pages/Mixes";
+import UploadTrack from "./pages/UploadTrack";
+import ManageGenres from "./pages/ManageGenres";
 
 const queryClient = new QueryClient();
 
@@ -24,23 +27,27 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <RadioProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/stations" element={<Stations />} />
-              <Route path="/stations/:id" element={<StationDetails />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/go-live" element={<GoLive />} />
-              <Route path="/book-show/:stationId" element={<BookShow />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/mixes" element={<Mixes />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+          <TrackProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/stations" element={<Stations />} />
+                <Route path="/stations/:id" element={<StationDetails />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/go-live" element={<GoLive />} />
+                <Route path="/book-show/:stationId" element={<BookShow />} />
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/mixes" element={<Mixes />} />
+                <Route path="/upload-track" element={<UploadTrack />} />
+                <Route path="/manage-genres" element={<ManageGenres />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TrackProvider>
         </RadioProvider>
       </AuthProvider>
     </TooltipProvider>
