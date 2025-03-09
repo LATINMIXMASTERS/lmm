@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,7 +50,6 @@ const StationDetails: React.FC = () => {
     setStation(stationData);
     setIsPlaying(currentPlayingStation === id);
     
-    // Get approved bookings
     const bookings = getBookingsForStation(id).filter(booking => booking.approved);
     setStationBookings(bookings);
   }, [id, navigate, toast, getStationById, getBookingsForStation, currentPlayingStation]);
@@ -81,7 +79,6 @@ const StationDetails: React.FC = () => {
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   };
   
-  // New function to get user's upcoming approved bookings
   const getUserBookings = () => {
     if (!user) return [];
     return stationBookings.filter(booking => 
@@ -268,9 +265,9 @@ const StationDetails: React.FC = () => {
                           
                           {station.streamDetails && (
                             <div className="mt-2 pt-2 border-t border-gray-100">
-                              <p className="text-xs font-medium text-blue-800 mb-1">Broadcast Details:</p>
+                              <p className="text-xs font-medium text-blue-800 mb-1">Shoutcast Broadcast Details:</p>
                               <div className="text-xs text-gray-600 space-y-1">
-                                <p>URL: {station.streamDetails.url}</p>
+                                <p>Shoutcast URL: {station.streamDetails.url}</p>
                                 <p>Port: {station.streamDetails.port}</p>
                                 <p>Password: {station.streamDetails.password}</p>
                               </div>

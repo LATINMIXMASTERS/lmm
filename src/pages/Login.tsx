@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -44,14 +43,16 @@ const Login: React.FC = () => {
       return;
     }
     await register(newUsername, newEmail, newPassword);
-    // Switch back to login view after registration
     setIsRegistering(false);
   };
 
-  const handleTestLogin = (type: 'host' | 'user') => {
+  const handleTestLogin = (type: 'host' | 'user' | 'admin') => {
     if (type === 'host') {
       setEmail('testhost@example.com');
       setPassword('test123');
+    } else if (type === 'admin') {
+      setEmail('admin@example.com');
+      setPassword('admin');
     } else {
       setEmail('testuser@example.com');
       setPassword('test123');
@@ -91,6 +92,13 @@ const Login: React.FC = () => {
                   <AlertDescription>
                     You can use our test accounts to explore the platform:
                     <div className="grid gap-2 mt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleTestLogin('admin')}
+                      >
+                        Use Admin Account
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm"
