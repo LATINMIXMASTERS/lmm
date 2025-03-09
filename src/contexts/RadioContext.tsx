@@ -148,7 +148,7 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
   };
   
-  // New function to just update the stream URL
+  // Updated function to just update the stream URL
   const updateStreamUrl = (stationId: string, streamUrl: string) => {
     const updatedStations = stations.map(station => {
       if (station.id === stationId) {

@@ -91,14 +91,6 @@ const Navbar: React.FC = () => {
         <div className="hidden md:flex items-center space-x-4">
           {isAuthenticated ? (
             <div className="flex items-center space-x-4">
-              {user?.isRadioHost && (
-                <Link
-                  to="/go-live"
-                  className="py-2 px-4 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors duration-300"
-                >
-                  Go Live
-                </Link>
-              )}
               <div className="flex items-center space-x-2 group cursor-pointer">
                 <div className="w-8 h-8 bg-blue/10 rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-blue" />
@@ -193,24 +185,13 @@ const Navbar: React.FC = () => {
           
           {/* Mobile auth links */}
           {isAuthenticated ? (
-            <>
-              {user?.isRadioHost && (
-                <Link
-                  to="/go-live"
-                  className="flex items-center space-x-3 py-3 px-4 bg-red-500 text-white rounded-lg transition-colors duration-300"
-                >
-                  <Radio className="w-4 h-4" />
-                  <span className="text-lg">Go Live</span>
-                </Link>
-              )}
-              <button
-                onClick={logout}
-                className="flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors duration-300 text-white hover:bg-white/5"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="text-lg">Sign out</span>
-              </button>
-            </>
+            <button
+              onClick={logout}
+              className="flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors duration-300 text-white hover:bg-white/5"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-lg">Sign out</span>
+            </button>
           ) : (
             <Link
               to="/login"

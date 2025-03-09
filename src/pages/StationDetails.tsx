@@ -81,6 +81,15 @@ const StationDetails: React.FC = () => {
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   };
   
+  // New function to get user's upcoming approved bookings
+  const getUserBookings = () => {
+    if (!user) return [];
+    return stationBookings.filter(booking => 
+      booking.hostId === user.id && 
+      isAfter(new Date(booking.startTime), new Date())
+    );
+  };
+  
   if (!station) {
     return (
       <MainLayout>
@@ -93,6 +102,7 @@ const StationDetails: React.FC = () => {
   
   const currentShow = getCurrentShow();
   const upcoming = upcomingShows();
+  const userBookings = getUserBookings();
   
   return (
     <MainLayout>
@@ -243,25 +253,42 @@ const StationDetails: React.FC = () => {
             {user?.isRadioHost ? (
               <div className="bg-blue-50 rounded-lg border border-blue-100 p-5">
                 <h2 className="text-lg font-semibold mb-3 text-blue-800">Radio Host Options</h2>
-                <p className="text-blue-700 text-sm mb-4">As a verified radio host, you can book shows and go live on this station.</p>
+                <p className="text-blue-700 text-sm mb-4">As a verified radio host, you can book shows on this station.</p>
                 
-                <div className="space-y-3">
-                  <Button 
-                    onClick={() => navigate(`/book-show/${station.id}`)}
-                    className="w-full bg-white text-blue border-blue hover:bg-blue/10"
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Book a Show
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => navigate('/go-live')}
-                    className="w-full bg-blue hover:bg-blue-dark"
-                  >
-                    <Radio className="w-4 h-4 mr-2" />
-                    Go Live Now
-                  </Button>
-                </div>
+                {userBookings.length > 0 ? (
+                  <div className="mb-4">
+                    <h3 className="font-medium text-blue-800 mb-2">Your Upcoming Shows</h3>
+                    <div className="space-y-3">
+                      {userBookings.map(booking => (
+                        <div key={booking.id} className="bg-white p-3 rounded-md border border-blue-100">
+                          <h4 className="font-medium">{booking.title}</h4>
+                          <p className="text-sm text-gray-600">
+                            {format(new Date(booking.startTime), "MMM d, yyyy - h:mm a")} to {format(new Date(booking.endTime), "h:mm a")}
+                          </p>
+                          
+                          {station.streamDetails && (
+                            <div className="mt-2 pt-2 border-t border-gray-100">
+                              <p className="text-xs font-medium text-blue-800 mb-1">Broadcast Details:</p>
+                              <div className="text-xs text-gray-600 space-y-1">
+                                <p>URL: {station.streamDetails.url}</p>
+                                <p>Port: {station.streamDetails.port}</p>
+                                <p>Password: {station.streamDetails.password}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                
+                <Button 
+                  onClick={() => navigate(`/book-show/${station.id}`)}
+                  className="w-full bg-blue hover:bg-blue-dark"
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Book a Show
+                </Button>
               </div>
             ) : isAuthenticated ? (
               <div className="bg-gray-50 rounded-lg border border-gray-100 p-5 text-center">

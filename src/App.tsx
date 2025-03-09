@@ -11,7 +11,6 @@ import Index from "./pages/Index";
 import Stations from "./pages/Stations";
 import AboutPage from "./pages/About";
 import Login from "./pages/Login";
-import GoLive from "./pages/GoLive";
 import BookShow from "./pages/BookShow";
 import AdminDashboard from "./pages/AdminDashboard";
 import StationDetails from "./pages/StationDetails";
@@ -38,7 +37,6 @@ const App = () => (
                 <Route path="/stations/:id" element={<StationDetails />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/go-live" element={<GoLive />} />
                 <Route path="/book-show/:stationId" element={<BookShow />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/mixes" element={<Mixes />} />
