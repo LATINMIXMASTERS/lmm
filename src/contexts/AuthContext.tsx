@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +13,15 @@ export interface User {
   pendingApproval?: boolean;
   registeredAt?: string;
   suspended?: boolean;
+  profileImage?: string;
+  biography?: string;
+  socialLinks?: {
+    facebook?: string;
+    twitter?: string;
+    instagram?: string;
+    soundcloud?: string;
+    youtube?: string;
+  };
 }
 
 interface AuthContextType {
@@ -30,6 +38,7 @@ interface AuthContextType {
   activateUser: (userId: string) => void;
   editUser: (userId: string, userData: Partial<User>) => void;
   deleteUser: (userId: string) => void;
+  updateProfile: (userData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,7 +48,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
-  const navigate = useNavigate();
+  
+  // Safely access navigate only if we're in a router context
+  let navigate: ReturnType<typeof useNavigate> | null = null;
+  try {
+    navigate = useNavigate();
+  } catch (error) {
+    console.warn("Navigation not available: Component might be rendered outside Router context");
+  }
 
   useEffect(() => {
     // Check if user is stored in localStorage
@@ -62,7 +78,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isAdmin: true,
           isRadioHost: true,
           approved: true,
-          registeredAt: new Date().toISOString()
+          registeredAt: new Date().toISOString(),
+          profileImage: 'https://api.dicebear.com/7.x/personas/svg?seed=admin',
+          biography: 'Admin of Latin Mix Masters'
         },
         {
           id: '2',
@@ -72,7 +90,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isRadioHost: true,
           approved: true,
           pendingApproval: false,
-          registeredAt: new Date().toISOString()
+          registeredAt: new Date().toISOString(),
+          profileImage: 'https://api.dicebear.com/7.x/personas/svg?seed=testhost',
+          biography: 'Test radio host account'
         },
         {
           id: '3',
@@ -82,7 +102,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isRadioHost: false,
           approved: true,
           pendingApproval: false,
-          registeredAt: new Date().toISOString()
+          registeredAt: new Date().toISOString(),
+          profileImage: 'https://api.dicebear.com/7.x/personas/svg?seed=testuser',
+          biography: 'Test user account'
         }
       ];
       setUsers(initialUsers);
@@ -144,7 +166,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
             
             // Redirect to home page after successful login
-            navigate('/');
+            if (navigate) {
+              navigate('/');
+            }
             
             setIsLoading(false);
             return;
@@ -237,7 +261,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       description: "You have been successfully logged out.",
     });
     // Redirect to home page after logout
-    navigate('/');
+    if (navigate) {
+      navigate('/');
+    }
   };
 
   const approveUser = (userId: string) => {
@@ -266,7 +292,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // New function to suspend a user
+  // Function to suspend a user
   const suspendUser = (userId: string) => {
     // Cannot suspend admin
     const userToSuspend = users.find(u => u.id === userId);
@@ -297,7 +323,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // New function to activate a suspended user
+  // Function to activate a suspended user
   const activateUser = (userId: string) => {
     const updatedUsers = users.map(u => 
       u.id === userId ? { ...u, suspended: false } : u
@@ -312,7 +338,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // New function to edit a user
+  // Function to edit a user
   const editUser = (userId: string, userData: Partial<User>) => {
     // Cannot remove admin status from the main admin account
     if (userId === '1' && userData.isAdmin === false) {
@@ -344,7 +370,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // New function to delete a user
+  // Function to delete a user
   const deleteUser = (userId: string) => {
     // Cannot delete the main admin account
     if (userId === '1') {
@@ -372,6 +398,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  // New function for users to update their own profile
+  const updateProfile = (userData: Partial<User>) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to update your profile.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Update the user's profile
+    const updatedUser = { ...user, ...userData };
+    setUser(updatedUser);
+    
+    // Update the user in the users list
+    const updatedUsers = users.map(u => 
+      u.id === user.id ? updatedUser : u
+    );
+    
+    setUsers(updatedUsers);
+    
+    // Update localStorage
+    localStorage.setItem('latinmixmasters_user', JSON.stringify(updatedUser));
+    localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+    
+    toast({
+      title: "Profile Updated",
+      description: "Your profile has been successfully updated."
+    });
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -386,7 +444,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       suspendUser,
       activateUser,
       editUser,
-      deleteUser
+      deleteUser,
+      updateProfile
     }}>
       {children}
     </AuthContext.Provider>
