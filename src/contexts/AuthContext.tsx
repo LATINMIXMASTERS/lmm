@@ -1,8 +1,10 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
-interface User {
+// Export the User interface so it can be imported elsewhere
+export interface User {
   id: string;
   username: string;
   email: string;
