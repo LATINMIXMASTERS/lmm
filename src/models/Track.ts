@@ -3,6 +3,7 @@ export interface Track {
   id: string;
   title: string;
   artist: string;
+  artistId: string; // Added to store the actual user ID
   genre: string;
   coverImage: string;
   audioFile: string;

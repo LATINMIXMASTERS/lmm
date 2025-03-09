@@ -16,13 +16,13 @@ import { useToast } from '@/hooks/use-toast';
 const MAX_FILE_SIZE = 262144000;
 
 const UploadTrack: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, users } = useAuth();
   const { genres, addTrack } = useTrack();
   const navigate = useNavigate();
   const { toast } = useToast();
   
   const [title, setTitle] = useState('');
-  const [artist, setArtist] = useState('');
+  const [selectedArtistId, setSelectedArtistId] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('');
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -31,6 +31,9 @@ const UploadTrack: React.FC = () => {
   
   const coverInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  
+  // Get list of approved hosts
+  const hostUsers = users.filter(u => u.isRadioHost && u.approved);
   
   // Check authentication
   React.useEffect(() => {
@@ -53,6 +56,11 @@ const UploadTrack: React.FC = () => {
       });
       navigate('/');
       return;
+    }
+    
+    // Set current user as default artist
+    if (user) {
+      setSelectedArtistId(user.id);
     }
   }, [isAuthenticated, user, navigate, toast]);
   
@@ -96,7 +104,7 @@ const UploadTrack: React.FC = () => {
     
     if (!user) return;
     
-    if (!title || !artist || !selectedGenre || !coverImage || !audioFile) {
+    if (!title || !selectedArtistId || !selectedGenre || !coverImage || !audioFile) {
       toast({
         title: "Missing information",
         description: "Please fill in all fields and upload required files",
@@ -108,6 +116,12 @@ const UploadTrack: React.FC = () => {
     setIsUploading(true);
     
     try {
+      // Find the selected artist name
+      const selectedArtist = users.find(u => u.id === selectedArtistId);
+      if (!selectedArtist) {
+        throw new Error("Selected DJ not found");
+      }
+      
       // In a real app, we would upload files to a server here
       // For this demo, we'll create URLs
       const coverUrl = coverPreview; // Using the data URL as our "hosted" URL
@@ -119,7 +133,8 @@ const UploadTrack: React.FC = () => {
       // Add track to our context
       addTrack({
         title,
-        artist,
+        artist: selectedArtist.username,
+        artistId: selectedArtistId,
         genre: selectedGenre,
         coverImage: coverUrl,
         audioFile: audioUrl,
@@ -168,16 +183,24 @@ const UploadTrack: React.FC = () => {
                   />
                 </div>
                 
-                {/* Artist name */}
+                {/* Artist selection dropdown */}
                 <div className="space-y-2">
                   <Label htmlFor="artist">DJ Name</Label>
-                  <Input
-                    id="artist"
-                    value={artist}
-                    onChange={(e) => setArtist(e.target.value)}
-                    placeholder="Your DJ name"
-                    required
-                  />
+                  <Select
+                    value={selectedArtistId}
+                    onValueChange={setSelectedArtistId}
+                  >
+                    <SelectTrigger id="artist">
+                      <SelectValue placeholder="Select a DJ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hostUsers.map((hostUser) => (
+                        <SelectItem key={hostUser.id} value={hostUser.id}>
+                          {hostUser.username}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 {/* Genre selection */}
@@ -301,7 +324,7 @@ const UploadTrack: React.FC = () => {
                 <Button 
                   type="submit" 
                   className="w-full"
-                  disabled={isUploading || !title || !artist || !selectedGenre || !coverImage || !audioFile}
+                  disabled={isUploading || !title || !selectedArtistId || !selectedGenre || !coverImage || !audioFile}
                 >
                   {isUploading ? (
                     <>Uploading...</>
