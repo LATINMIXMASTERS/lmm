@@ -1,6 +1,7 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface User {
   id: string;
@@ -32,6 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check if user is stored in localStorage
@@ -45,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (storedUsers) {
       setUsers(JSON.parse(storedUsers));
     } else {
-      // Initialize with admin user if no users exist
+      // Initialize with admin user and test accounts if no users exist
       const initialUsers = [
         {
           id: '1',
@@ -54,6 +56,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isAdmin: true,
           isRadioHost: true,
           approved: true,
+          registeredAt: new Date().toISOString()
+        },
+        {
+          id: '2',
+          username: 'testhost',
+          email: 'testhost@example.com',
+          isAdmin: false,
+          isRadioHost: true,
+          approved: true,
+          pendingApproval: false,
+          registeredAt: new Date().toISOString()
+        },
+        {
+          id: '3',
+          username: 'testuser',
+          email: 'testuser@example.com',
+          isAdmin: false,
+          isRadioHost: false,
+          approved: true,
+          pendingApproval: false,
           registeredAt: new Date().toISOString()
         }
       ];
@@ -78,9 +100,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const foundUser = allUsers.find((u: User) => u.email.toLowerCase() === email.toLowerCase());
       
       if (foundUser) {
+        // For test accounts, we'll use the same password for simplicity
+        const isTestAccount = 
+          (foundUser.email === 'testhost@example.com' || 
+           foundUser.email === 'testuser@example.com');
+        
         // In a real app, we would verify the password securely
-        // For demo purposes, admin password is "admin", others use "password"
-        const validPassword = foundUser.isAdmin ? password === 'admin' : password === 'password';
+        // For demo purposes:
+        // - admin password is "admin"
+        // - test accounts use "test123"
+        // - others use "password"
+        const validPassword = 
+          foundUser.isAdmin ? password === 'admin' : 
+          isTestAccount ? password === 'test123' :
+          password === 'password';
         
         if (validPassword) {
           // Only allow login for approved users or admins
@@ -92,6 +125,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               title: "Login successful",
               description: `Welcome back, ${foundUser.username}!`,
             });
+            
+            // Redirect to home page after successful login
+            navigate('/');
+            
             setIsLoading(false);
             return;
           } else {
@@ -182,6 +219,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       title: "Logged out",
       description: "You have been successfully logged out.",
     });
+    // Redirect to home page after logout
+    navigate('/');
   };
 
   const approveUser = (userId: string) => {

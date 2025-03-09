@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+
+import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/layout/MainLayout";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -15,33 +17,46 @@ const Login: React.FC = () => {
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
-  const navigate = useNavigate();
-  const { login, register, isAuthenticated, user } = useAuth();
+  const { login, register, isLoading } = useAuth();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Attempting login with:", email);
-    await login(email, password);
-    
-    // This will run after login completes (success or failure)
-    if (isAuthenticated) {
-      navigate("/");
+    if (!email || !password) {
+      toast({
+        title: "Missing information",
+        description: "Please enter both email and password",
+        variant: "destructive"
+      });
+      return;
     }
+    await login(email, password);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Attempting registration with:", newUsername, newEmail);
+    if (!newUsername || !newEmail || !newPassword) {
+      toast({
+        title: "Missing information",
+        description: "Please fill all the required fields",
+        variant: "destructive"
+      });
+      return;
+    }
     await register(newUsername, newEmail, newPassword);
+    // Switch back to login view after registration
+    setIsRegistering(false);
   };
 
-  // If already logged in, we can log user data for debugging
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      console.log("Current user data:", user);
+  const handleTestLogin = (type: 'host' | 'user') => {
+    if (type === 'host') {
+      setEmail('testhost@example.com');
+      setPassword('test123');
+    } else {
+      setEmail('testuser@example.com');
+      setPassword('test123');
     }
-  }, [isAuthenticated, user]);
+  };
 
   return (
     <MainLayout>
@@ -55,7 +70,7 @@ const Login: React.FC = () => {
               <p className="max-w-[600px] text-gray-dark">
                 {isRegistering
                   ? "Create a new account to start booking radio shows."
-                  : "Login to your account to manage your radio shows."}
+                  : "Login to your account to manage your radio shows and interact with tracks."}
               </p>
             </div>
           </div>
@@ -69,6 +84,32 @@ const Login: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
+              {!isRegistering && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Test Accounts Available</AlertTitle>
+                  <AlertDescription>
+                    You can use our test accounts to explore the platform:
+                    <div className="grid gap-2 mt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleTestLogin('host')}
+                      >
+                        Use Test Host Account
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleTestLogin('user')}
+                      >
+                        Use Test User Account
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <form onSubmit={isRegistering ? handleRegister : handleLogin}>
                 <div className="grid gap-2">
                   {isRegistering && (
@@ -129,11 +170,12 @@ const Login: React.FC = () => {
                       </div>
                     </>
                   )}
-                  <Button type="submit">
-                    {isRegistering ? "Create Account" : "Login"}
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? "Processing..." : isRegistering ? "Create Account" : "Login"}
                   </Button>
                 </div>
               </form>
+              
               <div className="text-sm text-gray-500">
                 {isRegistering ? (
                   <>
@@ -158,6 +200,14 @@ const Login: React.FC = () => {
                 )}
               </div>
             </CardContent>
+            
+            {!isRegistering && (
+              <CardFooter className="flex flex-col text-sm text-muted-foreground">
+                <div>Admin login: admin@example.com / admin</div>
+                <div>Test Host login: testhost@example.com / test123</div>
+                <div>Test User login: testuser@example.com / test123</div>
+              </CardFooter>
+            )}
           </Card>
         </div>
       </div>
