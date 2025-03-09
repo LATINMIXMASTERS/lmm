@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Play, Pause, Radio, Heart } from 'lucide-react';
+import { Play, Pause, Radio, Heart, User, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StationCardProps {

@@ -1,13 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Radio, Music, Info, Home } from 'lucide-react';
+import { Menu, X, Radio, Music, Info, Home, User, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const navLinks = [
     { name: 'Home', path: '/', icon: <Home className="w-4 h-4" /> },
@@ -68,6 +70,49 @@ const Navbar: React.FC = () => {
           ))}
         </nav>
 
+        {/* User Menu (Desktop) */}
+        <div className="hidden md:flex items-center space-x-4">
+          {isAuthenticated ? (
+            <div className="flex items-center space-x-4">
+              <Link
+                to="/go-live"
+                className="py-2 px-4 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors duration-300"
+              >
+                Go Live
+              </Link>
+              <div className="flex items-center space-x-2 group cursor-pointer">
+                <div className="w-8 h-8 bg-blue/10 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-blue" />
+                </div>
+                <div className="relative group">
+                  <div className="flex items-center space-x-1">
+                    <span className="text-sm font-medium">{user?.username}</span>
+                  </div>
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                    <div className="py-1">
+                      <button
+                        onClick={logout}
+                        className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-lightest"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Sign out</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              className="flex items-center space-x-1.5 py-2 px-4 border border-gray-light rounded-lg text-sm font-medium hover:bg-gray-lightest transition-colors duration-300"
+            >
+              <User className="w-4 h-4" />
+              <span>Sign in</span>
+            </Link>
+          )}
+        </div>
+
         {/* Mobile Menu Toggle */}
         <button
           className="md:hidden text-gray-dark hover:text-blue transition-colors duration-300"
@@ -101,6 +146,34 @@ const Navbar: React.FC = () => {
               <span className="text-lg">{link.name}</span>
             </Link>
           ))}
+          
+          {/* Mobile auth links */}
+          {isAuthenticated ? (
+            <>
+              <Link
+                to="/go-live"
+                className="flex items-center space-x-3 py-3 px-4 bg-red-500 text-white rounded-lg transition-colors duration-300"
+              >
+                <Radio className="w-4 h-4" />
+                <span className="text-lg">Go Live</span>
+              </Link>
+              <button
+                onClick={logout}
+                className="flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors duration-300 text-white hover:bg-white/5"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-lg">Sign out</span>
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/login"
+              className="flex items-center space-x-3 py-3 px-4 border border-white/20 text-white rounded-lg hover:bg-white/5 transition-colors duration-300"
+            >
+              <User className="w-4 h-4" />
+              <span className="text-lg">Sign in</span>
+            </Link>
+          )}
         </nav>
       </div>
     </header>
