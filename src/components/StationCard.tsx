@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Play, Pause, Radio, Heart, User, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +12,7 @@ interface StationCardProps {
     image: string;
     listeners?: number;
     isLive?: boolean;
+    currentDJ?: string;
   };
   isPlaying: boolean;
   onPlayToggle: (id: string) => void;
@@ -32,10 +34,17 @@ const StationCard: React.FC<StationCardProps> = ({
     setIsLoading(false);
   };
 
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onPlayToggle(station.id);
+  };
+
   return (
-    <div 
+    <Link
+      to={`/stations/${station.id}`}
       className={cn(
-        'group rounded-lg overflow-hidden bg-white border border-gray-lightest transition-all duration-300',
+        'group rounded-lg overflow-hidden bg-white border border-gray-lightest transition-all duration-300 block',
         'hover:shadow-md hover:border-gray-light hover:translate-y-[-4px]',
         className
       )}
@@ -70,7 +79,7 @@ const StationCard: React.FC<StationCardProps> = ({
             'absolute inset-0 flex items-center justify-center transition-all duration-300',
             isHovered || isPlaying ? 'opacity-100' : 'opacity-0'
           )}
-          onClick={() => onPlayToggle(station.id)}
+          onClick={handlePlayClick}
           aria-label={isPlaying ? 'Pause station' : 'Play station'}
         >
           <div 
@@ -102,10 +111,22 @@ const StationCard: React.FC<StationCardProps> = ({
           <button 
             className="w-8 h-8 rounded-full bg-white/80 hover:bg-white backdrop-blur-sm flex items-center justify-center text-gray-dark hover:text-blue transition-colors duration-300"
             aria-label="Add to favorites"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
           >
             <Heart className="w-4 h-4" />
           </button>
         </div>
+        
+        {/* Current DJ */}
+        {station.currentDJ && (
+          <div className="absolute bottom-3 left-3 right-3 bg-black/50 backdrop-blur-sm px-2 py-1 rounded flex items-center text-white text-xs">
+            <User className="w-3 h-3 mr-1" />
+            <span className="truncate">{station.currentDJ}</span>
+          </div>
+        )}
       </div>
       
       <div className="p-4">
@@ -120,7 +141,7 @@ const StationCard: React.FC<StationCardProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 

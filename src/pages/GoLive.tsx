@@ -1,42 +1,34 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, Radio, Volume2, Settings, Video, Headphones, Tv, Check, X } from 'lucide-react';
+import { Mic, Radio, Volume2, Settings, Headphones, Check, X, Calendar, Info } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRadio } from '@/contexts/RadioContext';
 import { useToast } from '@/hooks/use-toast';
 import MainLayout from '@/layout/MainLayout';
 import { cn } from '@/lib/utils';
-
-interface StreamSettings {
-  stationName: string;
-  genre: string;
-  description: string;
-  isPublic: boolean;
-}
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { format, isAfter, isBefore } from 'date-fns';
 
 const GoLive: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
+  const { stations, bookings } = useRadio();
   const { toast } = useToast();
   const navigate = useNavigate();
+
   const [isAnimated, setIsAnimated] = useState(false);
   const [isLive, setIsLive] = useState(false);
-  const [showSettings, setShowSettings] = useState(true);
-  const [streamSettings, setStreamSettings] = useState<StreamSettings>({
-    stationName: user?.username ? `${user.username}'s Station` : 'My Radio Station',
-    genre: 'Electronic',
-    description: 'Broadcasting live music and good vibes!',
-    isPublic: true
-  });
+  const [selectedStation, setSelectedStation] = useState<string | null>(null);
   const [deviceStatus, setDeviceStatus] = useState({
     audio: 'pending',
-    video: 'disabled',
     connected: false
   });
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   
-  // Redirect if not authenticated
+  // Redirect if not authenticated or not a radio host
   useEffect(() => {
     if (!isAuthenticated) {
       toast({
@@ -45,6 +37,17 @@ const GoLive: React.FC = () => {
         variant: "destructive"
       });
       navigate('/login');
+      return;
+    }
+
+    if (!user?.isRadioHost) {
+      toast({
+        title: "Permission denied",
+        description: "Only verified radio hosts can go live",
+        variant: "destructive"
+      });
+      navigate('/');
+      return;
     }
 
     const timer = setTimeout(() => {
@@ -61,9 +64,87 @@ const GoLive: React.FC = () => {
         mediaRecorderRef.current.stop();
       }
     };
-  }, [isAuthenticated, navigate, toast]);
+  }, [isAuthenticated, user, navigate, toast]);
+
+  // Find eligible stations for this host
+  const getEligibleStations = () => {
+    if (!user) return [];
+    
+    // Admin can go live on any station
+    if (user.isAdmin) return stations;
+    
+    const now = new Date();
+    
+    // Find stations where this host has a current or upcoming (within 15 mins) booking
+    return stations.filter(station => {
+      const hostBookings = bookings.filter(booking => 
+        booking.approved && 
+        booking.hostId === user.id && 
+        booking.stationId === station.id
+      );
+      
+      // Check if there's a current booking for this host
+      const currentBooking = hostBookings.find(booking => {
+        const startTime = new Date(booking.startTime);
+        const endTime = new Date(booking.endTime);
+        
+        // Current time is between start and end
+        if (isAfter(now, startTime) && isBefore(now, endTime)) {
+          return true;
+        }
+        
+        // Or starts within the next 15 minutes
+        const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60000);
+        if (isAfter(startTime, now) && isBefore(startTime, fifteenMinutesFromNow)) {
+          return true;
+        }
+        
+        return false;
+      });
+      
+      return !!currentBooking;
+    });
+  };
+
+  const eligibleStations = getEligibleStations();
+  
+  const getCurrentBooking = () => {
+    if (!user || !selectedStation) return null;
+    
+    const now = new Date();
+    const stationBookings = bookings.filter(booking => 
+      booking.approved && 
+      booking.hostId === user.id && 
+      booking.stationId === selectedStation
+    );
+    
+    return stationBookings.find(booking => {
+      const startTime = new Date(booking.startTime);
+      const endTime = new Date(booking.endTime);
+      return isAfter(now, startTime) && isBefore(now, endTime);
+    });
+  };
+  
+  // Get stream details for the selected station
+  const getStreamDetails = () => {
+    if (!selectedStation || !user?.isRadioHost) return null;
+    
+    const station = stations.find(s => s.id === selectedStation);
+    if (!station?.streamDetails) return null;
+    
+    return station.streamDetails;
+  };
 
   const requestAudioAccess = async () => {
+    if (!selectedStation) {
+      toast({
+        title: "Select a station",
+        description: "Please select a radio station before connecting your microphone.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
       setDeviceStatus({...deviceStatus, audio: 'pending'});
       
@@ -113,6 +194,15 @@ const GoLive: React.FC = () => {
   };
 
   const handleStartStream = () => {
+    if (!selectedStation) {
+      toast({
+        title: "Select a station",
+        description: "Please select a radio station before going live.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (!deviceStatus.connected) {
       toast({
         title: "Cannot start streaming",
@@ -122,14 +212,23 @@ const GoLive: React.FC = () => {
       return;
     }
     
+    const streamDetails = getStreamDetails();
+    if (!streamDetails) {
+      toast({
+        title: "Stream configuration missing",
+        description: "This station doesn't have proper stream settings configured.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.start(1000); // Collect data each second
       setIsLive(true);
-      setShowSettings(false);
       
       toast({
         title: "You're live!",
-        description: `Broadcasting ${streamSettings.stationName}`
+        description: `Broadcasting on ${stations.find(s => s.id === selectedStation)?.name}`
       });
     }
   };
@@ -139,23 +238,16 @@ const GoLive: React.FC = () => {
       mediaRecorderRef.current.stop();
       setIsLive(false);
       
-      // In a real app, we would notify the server that the stream has ended
-      
       toast({
         title: "Stream ended",
         description: "Your broadcast has ended successfully."
       });
     }
   };
-  
-  const handleSettingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement;
-    setStreamSettings({
-      ...streamSettings,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    });
-  };
 
+  const currentBooking = getCurrentBooking();
+  const streamDetails = getStreamDetails();
+  
   return (
     <MainLayout>
       <div className="max-w-5xl mx-auto mt-8 mb-16 px-4">
@@ -187,198 +279,241 @@ const GoLive: React.FC = () => {
           style={{ animationDelay: "0.2s" }}
         >
           {isLive ? 
-            `Broadcasting to listeners worldwide as "${streamSettings.stationName}"` : 
-            'Set up your radio station and start streaming to listeners around the world.'
+            `Broadcasting to listeners worldwide on ${stations.find(s => s.id === selectedStation)?.name}` : 
+            'Connect your microphone and start streaming to listeners around the world.'
           }
         </p>
         
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* Stream preview/controls */}
-          <div 
+        {eligibleStations.length === 0 ? (
+          <Card 
             className={cn(
-              "md:col-span-2 bg-white border border-gray-lightest rounded-xl shadow-sm overflow-hidden",
+              "border-yellow-200 bg-yellow-50", 
               !isAnimated ? "opacity-0" : "animate-fade-in"
             )}
             style={{ animationDelay: "0.3s" }}
           >
-            <div className="p-4 md:p-6">
-              {/* Stream status */}
-              <div className={cn("relative aspect-video bg-gray-900 rounded-lg mb-6", isLive ? "border-2 border-red-500" : "")}>
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                  {isLive ? (
-                    <>
-                      <div className="flex items-center justify-center mb-4">
-                        <span className="animate-ping absolute h-4 w-4 rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative rounded-full h-3 w-3 bg-red-500"></span>
-                      </div>
-                      <h3 className="text-2xl font-bold mb-2">{streamSettings.stationName}</h3>
-                      <p className="text-gray-300 mb-1">{streamSettings.genre}</p>
-                      <p className="text-gray-400 text-sm">Broadcasting live</p>
-                    </>
-                  ) : (
-                    <>
-                      <Radio className="w-10 h-10 mb-4 text-gray-400" />
-                      <h3 className="text-xl font-bold mb-2">Not Broadcasting</h3>
-                      <p className="text-gray-400 text-sm">Connect your devices to get started</p>
-                    </>
-                  )}
-                </div>
-                
-                {/* Live badge */}
-                {isLive && (
-                  <div className="absolute top-3 left-3 px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded flex items-center">
-                    <span className="w-2 h-2 bg-white rounded-full mr-1.5 animate-pulse"></span>
-                    LIVE
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Calendar className="w-5 h-5 mr-2 text-yellow-600" />
+                No Scheduled Shows
+              </CardTitle>
+              <CardDescription className="text-yellow-700">
+                You don't have any approved shows scheduled right now.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-700">
+                To go live, you need to have a scheduled show that's either currently happening or starts within the next 15 minutes.
+              </p>
+              <Button 
+                onClick={() => navigate('/stations')}
+                className="bg-blue hover:bg-blue-dark"
+              >
+                Book a Show
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Stream controls */}
+            <div 
+              className={cn(
+                "md:col-span-2 bg-white border border-gray-lightest rounded-xl shadow-sm overflow-hidden",
+                !isAnimated ? "opacity-0" : "animate-fade-in"
+              )}
+              style={{ animationDelay: "0.3s" }}
+            >
+              <div className="p-4 md:p-6">
+                {/* Station selector */}
+                {!isLive && (
+                  <div className="mb-6">
+                    <h2 className="text-lg font-medium mb-3">Select Station to Broadcast</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {eligibleStations.map(station => (
+                        <div 
+                          key={station.id}
+                          onClick={() => setSelectedStation(station.id)}
+                          className={cn(
+                            "border rounded-md p-3 cursor-pointer transition-all",
+                            selectedStation === station.id 
+                              ? "border-blue bg-blue-50 shadow-sm" 
+                              : "border-gray-100 hover:border-gray-200"
+                          )}
+                        >
+                          <div className="flex items-center">
+                            <div 
+                              className="w-10 h-10 rounded-md bg-cover bg-center mr-3 flex-shrink-0" 
+                              style={{ backgroundImage: `url(${station.image})` }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-medium truncate">{station.name}</h3>
+                              <p className="text-xs text-gray-500 truncate">{station.genre}</p>
+                            </div>
+                            {selectedStation === station.id && (
+                              <Check className="w-5 h-5 text-blue ml-2" />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-              </div>
-              
-              {/* Controls */}
-              <div className="flex flex-wrap gap-4 items-center justify-between">
-                <div className="flex flex-wrap gap-2">
-                  <button 
-                    className={cn(
-                      "py-2 px-4 rounded-lg flex items-center space-x-2 text-sm font-medium",
-                      deviceStatus.audio === 'connected'
-                        ? "bg-green-500 text-white hover:bg-green-600"
-                        : deviceStatus.audio === 'error'
-                          ? "bg-red-500 text-white hover:bg-red-600"
-                          : "bg-blue text-white hover:bg-blue-dark"
-                    )}
-                    onClick={requestAudioAccess}
-                    disabled={deviceStatus.audio === 'connected'}
-                  >
-                    <Mic className="w-4 h-4" />
-                    <span>
-                      {deviceStatus.audio === 'connected' 
-                        ? 'Mic Connected' 
-                        : deviceStatus.audio === 'error'
-                          ? 'Mic Error'
-                          : 'Connect Mic'}
-                    </span>
-                  </button>
-                  
-                  <button 
-                    className="py-2 px-4 bg-gray-light text-gray-dark rounded-lg flex items-center space-x-2 text-sm font-medium hover:bg-gray-200 transition-colors"
-                    onClick={() => setShowSettings(!showSettings)}
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span>Settings</span>
-                  </button>
-                </div>
                 
-                <div>
-                  {isLive ? (
-                    <button 
-                      className="py-2 px-6 bg-red-500 text-white rounded-lg flex items-center space-x-2 font-medium hover:bg-red-600 transition-colors"
-                      onClick={handleStopStream}
-                    >
-                      <X className="w-4 h-4" />
-                      <span>End Stream</span>
-                    </button>
-                  ) : (
-                    <button 
-                      className="py-2 px-6 bg-red-500 text-white rounded-lg flex items-center space-x-2 font-medium hover:bg-red-600 transition-colors"
-                      onClick={handleStartStream}
-                      disabled={!deviceStatus.connected}
-                    >
-                      <Radio className="w-4 h-4" />
-                      <span>Go Live</span>
-                    </button>
+                {/* Stream preview */}
+                <div className={cn("relative aspect-video bg-gray-900 rounded-lg mb-6", isLive ? "border-2 border-red-500" : "")}>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                    {isLive ? (
+                      <>
+                        <div className="flex items-center justify-center mb-4">
+                          <span className="animate-ping absolute h-4 w-4 rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative rounded-full h-3 w-3 bg-red-500"></span>
+                        </div>
+                        <h3 className="text-2xl font-bold mb-2">
+                          {stations.find(s => s.id === selectedStation)?.name}
+                        </h3>
+                        <p className="text-gray-300 mb-1">
+                          {currentBooking?.title || "Live Stream"}
+                        </p>
+                        <p className="text-gray-400 text-sm">Broadcasting live</p>
+                      </>
+                    ) : (
+                      <>
+                        <Radio className="w-10 h-10 mb-4 text-gray-400" />
+                        <h3 className="text-xl font-bold mb-2">Not Broadcasting</h3>
+                        <p className="text-gray-400 text-sm">
+                          {selectedStation 
+                            ? "Connect your microphone to get started" 
+                            : "Select a station to begin"}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* Live badge */}
+                  {isLive && (
+                    <div className="absolute top-3 left-3 px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded flex items-center">
+                      <span className="w-2 h-2 bg-white rounded-full mr-1.5 animate-pulse"></span>
+                      LIVE
+                    </div>
                   )}
                 </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Settings panel */}
-          <div 
-            className={cn(
-              "bg-white border border-gray-lightest rounded-xl shadow-sm overflow-hidden transition-all duration-300",
-              !isAnimated ? "opacity-0" : "animate-fade-in",
-              !showSettings && "md:hidden"
-            )}
-            style={{ animationDelay: "0.4s" }}
-          >
-            <div className="p-4 md:p-6">
-              <h3 className="text-lg font-medium mb-4 flex items-center">
-                <Settings className="w-4 h-4 mr-2" />
-                Stream Settings
-              </h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="stationName" className="block text-sm font-medium text-gray-dark mb-1">
-                    Station Name
-                  </label>
-                  <input 
-                    type="text"
-                    id="stationName"
-                    name="stationName"
-                    value={streamSettings.stationName}
-                    onChange={handleSettingChange}
-                    disabled={isLive}
-                    className="w-full px-3 py-2 border border-gray-light rounded-lg focus:ring-2 focus:ring-blue/20 focus:border-blue disabled:bg-gray-lightest disabled:text-gray"
-                  />
-                </div>
                 
-                <div>
-                  <label htmlFor="genre" className="block text-sm font-medium text-gray-dark mb-1">
-                    Genre
-                  </label>
-                  <select
-                    id="genre"
-                    name="genre"
-                    value={streamSettings.genre}
-                    onChange={handleSettingChange}
-                    disabled={isLive}
-                    className="w-full px-3 py-2 border border-gray-light rounded-lg focus:ring-2 focus:ring-blue/20 focus:border-blue disabled:bg-gray-lightest disabled:text-gray"
-                  >
-                    <option value="Electronic">Electronic</option>
-                    <option value="Hip-Hop">Hip-Hop</option>
-                    <option value="Pop">Pop</option>
-                    <option value="Rock">Rock</option>
-                    <option value="Jazz">Jazz</option>
-                    <option value="Classical">Classical</option>
-                    <option value="Reggae">Reggae</option>
-                    <option value="Country">Country</option>
-                    <option value="Metal">Metal</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-dark mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    value={streamSettings.description}
-                    onChange={handleSettingChange}
-                    disabled={isLive}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-light rounded-lg focus:ring-2 focus:ring-blue/20 focus:border-blue disabled:bg-gray-lightest disabled:text-gray"
-                  />
-                </div>
-                
-                <div className="pt-2">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="isPublic"
-                      checked={streamSettings.isPublic}
-                      onChange={handleSettingChange}
-                      disabled={isLive}
-                      className="w-4 h-4 text-blue focus:ring-blue/20 border-gray-light rounded"
-                    />
-                    <span className="ml-2 text-sm text-gray-dark">Public station (visible to all)</span>
-                  </label>
+                {/* Controls */}
+                <div className="flex flex-wrap gap-4 items-center justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    <button 
+                      className={cn(
+                        "py-2 px-4 rounded-lg flex items-center space-x-2 text-sm font-medium",
+                        deviceStatus.audio === 'connected'
+                          ? "bg-green-500 text-white hover:bg-green-600"
+                          : deviceStatus.audio === 'error'
+                            ? "bg-red-500 text-white hover:bg-red-600"
+                            : "bg-blue text-white hover:bg-blue-dark"
+                      )}
+                      onClick={requestAudioAccess}
+                      disabled={deviceStatus.audio === 'connected' || !selectedStation}
+                    >
+                      <Mic className="w-4 h-4" />
+                      <span>
+                        {deviceStatus.audio === 'connected' 
+                          ? 'Mic Connected' 
+                          : deviceStatus.audio === 'error'
+                            ? 'Mic Error'
+                            : 'Connect Mic'}
+                      </span>
+                    </button>
+                  </div>
+                  
+                  <div>
+                    {isLive ? (
+                      <button 
+                        className="py-2 px-6 bg-red-500 text-white rounded-lg flex items-center space-x-2 font-medium hover:bg-red-600 transition-colors"
+                        onClick={handleStopStream}
+                      >
+                        <X className="w-4 h-4" />
+                        <span>End Stream</span>
+                      </button>
+                    ) : (
+                      <button 
+                        className="py-2 px-6 bg-red-500 text-white rounded-lg flex items-center space-x-2 font-medium hover:bg-red-600 transition-colors"
+                        onClick={handleStartStream}
+                        disabled={!deviceStatus.connected || !selectedStation}
+                      >
+                        <Radio className="w-4 h-4" />
+                        <span>Go Live</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
+            
+            {/* Stream info */}
+            <div 
+              className={cn(
+                "bg-white border border-gray-lightest rounded-xl shadow-sm overflow-hidden",
+                !isAnimated ? "opacity-0" : "animate-fade-in"
+              )}
+              style={{ animationDelay: "0.4s" }}
+            >
+              <div className="p-4 md:p-6">
+                <h3 className="text-lg font-medium mb-4 flex items-center">
+                  <Info className="w-4 h-4 mr-2" />
+                  Stream Information
+                </h3>
+                
+                {currentBooking ? (
+                  <div className="mb-6">
+                    <div className="bg-green-50 border border-green-100 rounded-md p-3 mb-4">
+                      <div className="flex items-center mb-1">
+                        <Calendar className="w-4 h-4 text-green-600 mr-1" />
+                        <h4 className="font-medium text-green-800">Current Show</h4>
+                      </div>
+                      <p className="text-lg font-medium">{currentBooking.title}</p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {format(new Date(currentBooking.startTime), "h:mm a")} - {format(new Date(currentBooking.endTime), "h:mm a")}
+                      </p>
+                    </div>
+                  </div>
+                ) : selectedStation ? (
+                  <div className="mb-6">
+                    <div className="bg-yellow-50 border border-yellow-100 rounded-md p-3">
+                      <p className="text-yellow-800 text-sm">
+                        You're starting an unscheduled broadcast. If you have an upcoming show, it will automatically connect to that timeslot.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+                
+                {selectedStation && streamDetails ? (
+                  <>
+                    <h4 className="font-medium mb-2">Stream Connection Details</h4>
+                    <div className="space-y-3 mb-6">
+                      <div className="bg-gray-50 p-3 rounded-md">
+                        <div className="text-sm font-medium text-gray-500">Stream URL</div>
+                        <div>{streamDetails.url}</div>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-md">
+                        <div className="text-sm font-medium text-gray-500">Port</div>
+                        <div>{streamDetails.port}</div>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-md">
+                        <div className="text-sm font-medium text-gray-500">Password</div>
+                        <div>••••••••</div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-blue-50 border border-blue-100 rounded-md p-3">
+                      <p className="text-blue-800 text-sm">
+                        You can use these settings to connect with external broadcasting software like VirtualDJ, OBS, or other Shoutcast-compatible software.
+                      </p>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
         
         {/* Connection info */}
         <div 
@@ -390,52 +525,37 @@ const GoLive: React.FC = () => {
         >
           <h3 className="text-lg font-medium mb-4 flex items-center">
             <Headphones className="w-4 h-4 mr-2" />
-            Device Status
+            Broadcasting Tips
           </h3>
           
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="flex items-center space-x-3 p-3 border border-gray-lightest rounded-lg">
-              <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center",
-                deviceStatus.audio === 'connected' ? "bg-green-500/10 text-green-500" : 
-                deviceStatus.audio === 'error' ? "bg-red-500/10 text-red-500" : 
-                "bg-blue/10 text-blue"
-              )}>
-                <Mic className="w-5 h-5" />
+          <div className="space-y-4">
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 rounded-full bg-blue/10 text-blue flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Check className="w-4 h-4" />
               </div>
               <div>
-                <div className="font-medium">Audio Input</div>
-                <div className="text-sm text-gray">
-                  {deviceStatus.audio === 'connected' ? (
-                    <span className="flex items-center text-green-500">
-                      <Check className="w-3 h-3 mr-1" /> Connected
-                    </span>
-                  ) : deviceStatus.audio === 'error' ? (
-                    <span className="flex items-center text-red-500">
-                      <X className="w-3 h-3 mr-1" /> Error
-                    </span>
-                  ) : (
-                    <span>Not connected</span>
-                  )}
-                </div>
+                <h4 className="font-medium">Quality Audio</h4>
+                <p className="text-sm text-gray-600">Use a good microphone in a quiet environment for the best sound quality.</p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-3 p-3 border border-gray-lightest rounded-lg">
-              <div className="w-10 h-10 rounded-full bg-gray-lightest flex items-center justify-center text-gray">
-                <Volume2 className="w-5 h-5" />
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 rounded-full bg-blue/10 text-blue flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Check className="w-4 h-4" />
               </div>
               <div>
-                <div className="font-medium">Audio Output</div>
-                <div className="text-sm text-gray">
-                  {isLive ? (
-                    <span className="flex items-center text-green-500">
-                      <Check className="w-3 h-3 mr-1" /> Streaming
-                    </span>
-                  ) : (
-                    <span>Ready</span>
-                  )}
-                </div>
+                <h4 className="font-medium">Be Consistent</h4>
+                <p className="text-sm text-gray-600">Stick to your scheduled time slots to build a regular audience.</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 rounded-full bg-blue/10 text-blue flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Check className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="font-medium">Engage Your Audience</h4>
+                <p className="text-sm text-gray-600">Interact with listeners and make announcements between tracks.</p>
               </div>
             </div>
           </div>

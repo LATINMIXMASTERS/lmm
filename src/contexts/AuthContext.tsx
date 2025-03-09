@@ -7,6 +7,7 @@ interface User {
   username: string;
   email: string;
   isAdmin?: boolean;
+  isRadioHost?: boolean;
 }
 
 interface AuthContextType {
@@ -42,15 +43,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // In a real app, we would validate credentials with a backend
-      if (email === 'demo@example.com' && password === 'password') {
-        const mockUser = {
+      if (email === 'admin@example.com' && password === 'admin') {
+        const adminUser = {
           id: '1',
+          username: 'admin',
+          email: 'admin@example.com',
+          isAdmin: true,
+          isRadioHost: true
+        };
+        setUser(adminUser);
+        localStorage.setItem('waveradio_user', JSON.stringify(adminUser));
+        toast({
+          title: "Admin login successful",
+          description: "Welcome back, Admin!",
+        });
+        return;
+      } else if (email === 'host@example.com' && password === 'password') {
+        const hostUser = {
+          id: '2',
+          username: 'radio_host',
+          email: 'host@example.com',
+          isAdmin: false,
+          isRadioHost: true
+        };
+        setUser(hostUser);
+        localStorage.setItem('waveradio_user', JSON.stringify(hostUser));
+        toast({
+          title: "Host login successful",
+          description: "Welcome back, Radio Host!",
+        });
+        return;
+      } else if (email === 'demo@example.com' && password === 'password') {
+        const regularUser = {
+          id: '3',
           username: 'demo_user',
           email: 'demo@example.com',
-          isAdmin: false
+          isAdmin: false,
+          isRadioHost: false
         };
-        setUser(mockUser);
-        localStorage.setItem('waveradio_user', JSON.stringify(mockUser));
+        setUser(regularUser);
+        localStorage.setItem('waveradio_user', JSON.stringify(regularUser));
         toast({
           title: "Login successful",
           description: "Welcome back to WaveRadio!",
@@ -59,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       toast({
         title: "Login failed",
-        description: "Invalid email or password. Try demo@example.com / password",
+        description: "Invalid email or password. Try one of the demo accounts.",
         variant: "destructive"
       });
     } catch (error) {
@@ -85,13 +117,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: Math.random().toString(36).substring(2, 11),
         username,
         email,
-        isAdmin: false
+        isAdmin: false,
+        isRadioHost: false
       };
       setUser(mockUser);
       localStorage.setItem('waveradio_user', JSON.stringify(mockUser));
       toast({
         title: "Registration successful",
-        description: "Welcome to WaveRadio!",
+        description: "Welcome to WaveRadio! Your account is pending approval for radio host status.",
       });
     } catch (error) {
       toast({
