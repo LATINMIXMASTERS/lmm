@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Radio, Music, Info, Home, User, LogOut } from 'lucide-react';
+import { Menu, X, Radio, Music, Info, Home, User, LogOut, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -48,7 +48,7 @@ const Navbar: React.FC = () => {
           <div className="w-10 h-10 bg-blue rounded-full flex items-center justify-center text-white transition-transform duration-400 group-hover:scale-110">
             <Music className="w-5 h-5" />
           </div>
-          <span className="text-xl font-medium">WaveRadio</span>
+          <span className="text-xl font-medium">LATINMIXMASTERS</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -68,18 +68,36 @@ const Navbar: React.FC = () => {
               <span>{link.name}</span>
             </Link>
           ))}
+          
+          {/* Admin Dashboard Link (only for admins) */}
+          {isAuthenticated && user?.isAdmin && (
+            <Link
+              to="/admin"
+              className={cn(
+                'flex items-center space-x-1.5 text-sm font-medium transition-colors duration-300',
+                location.pathname === '/admin' 
+                  ? 'text-blue' 
+                  : 'text-gray-dark hover:text-blue'
+              )}
+            >
+              <Shield className="w-4 h-4" />
+              <span>Admin</span>
+            </Link>
+          )}
         </nav>
 
         {/* User Menu (Desktop) */}
         <div className="hidden md:flex items-center space-x-4">
           {isAuthenticated ? (
             <div className="flex items-center space-x-4">
-              <Link
-                to="/go-live"
-                className="py-2 px-4 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors duration-300"
-              >
-                Go Live
-              </Link>
+              {user?.isRadioHost && (
+                <Link
+                  to="/go-live"
+                  className="py-2 px-4 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors duration-300"
+                >
+                  Go Live
+                </Link>
+              )}
               <div className="flex items-center space-x-2 group cursor-pointer">
                 <div className="w-8 h-8 bg-blue/10 rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-blue" />
@@ -90,6 +108,15 @@ const Navbar: React.FC = () => {
                   </div>
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                     <div className="py-1">
+                      {user?.isAdmin && (
+                        <Link
+                          to="/admin"
+                          className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-lightest"
+                        >
+                          <Shield className="w-4 h-4" />
+                          <span>Admin Dashboard</span>
+                        </Link>
+                      )}
                       <button
                         onClick={logout}
                         className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-lightest"
@@ -147,16 +174,34 @@ const Navbar: React.FC = () => {
             </Link>
           ))}
           
+          {/* Admin Dashboard Link in Mobile Menu (only for admins) */}
+          {isAuthenticated && user?.isAdmin && (
+            <Link
+              to="/admin"
+              className={cn(
+                'flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors duration-300',
+                location.pathname === '/admin' 
+                  ? 'bg-blue/10 text-blue' 
+                  : 'text-white hover:bg-white/5'
+              )}
+            >
+              <Shield className="w-4 h-4" />
+              <span className="text-lg">Admin Dashboard</span>
+            </Link>
+          )}
+          
           {/* Mobile auth links */}
           {isAuthenticated ? (
             <>
-              <Link
-                to="/go-live"
-                className="flex items-center space-x-3 py-3 px-4 bg-red-500 text-white rounded-lg transition-colors duration-300"
-              >
-                <Radio className="w-4 h-4" />
-                <span className="text-lg">Go Live</span>
-              </Link>
+              {user?.isRadioHost && (
+                <Link
+                  to="/go-live"
+                  className="flex items-center space-x-3 py-3 px-4 bg-red-500 text-white rounded-lg transition-colors duration-300"
+                >
+                  <Radio className="w-4 h-4" />
+                  <span className="text-lg">Go Live</span>
+                </Link>
+              )}
               <button
                 onClick={logout}
                 className="flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors duration-300 text-white hover:bg-white/5"
