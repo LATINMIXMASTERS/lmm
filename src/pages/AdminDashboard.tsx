@@ -17,13 +17,17 @@ import {
   CheckCircle, 
   XCircle, 
   Lock, 
-  Shield 
+  Shield,
+  Users,
+  UserCheck,
+  UserX,
+  Calendar as CalendarIcon
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, formatDistance } from "date-fns";
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, users, approveUser, rejectUser } = useAuth();
   const { stations, bookings, updateStreamDetails, approveBooking } = useRadio();
   const { toast } = useToast();
   
@@ -96,15 +100,25 @@ const AdminDashboard: React.FC = () => {
       description: "The show has been scheduled and the host notified."
     });
   };
+
+  const handleApproveUser = (userId: string) => {
+    approveUser(userId);
+  };
+
+  const handleRejectUser = (userId: string) => {
+    rejectUser(userId);
+  };
   
   const pendingBookings = bookings.filter(booking => !booking.approved);
+  const pendingUsers = users.filter(u => u.pendingApproval);
+  const approvedUsers = users.filter(u => u.approved && !u.isAdmin);
   
   return (
     <MainLayout>
       <div className="container mx-auto py-8 px-4">
         <div className="flex items-center mb-6">
           <Shield className="text-blue mr-2" />
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <h1 className="text-2xl font-bold">LATINMIXMASTERS Admin Dashboard</h1>
         </div>
         
         <Tabs defaultValue="stations" className="w-full">
@@ -113,8 +127,17 @@ const AdminDashboard: React.FC = () => {
               <Radio className="w-4 h-4 mr-2" />
               Manage Stations
             </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center">
+              <Users className="w-4 h-4 mr-2" />
+              Manage Users
+              {pendingUsers.length > 0 && (
+                <span className="ml-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {pendingUsers.length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="bookings" className="flex items-center">
-              <Calendar className="w-4 h-4 mr-2" />
+              <CalendarIcon className="w-4 h-4 mr-2" />
               Show Bookings
               {pendingBookings.length > 0 && (
                 <span className="ml-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -191,6 +214,97 @@ const AdminDashboard: React.FC = () => {
                 </Card>
               ))}
             </div>
+          </TabsContent>
+          
+          <TabsContent value="users">
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Pending User Approvals</CardTitle>
+                <CardDescription>
+                  Review and approve user registration requests
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pendingUsers.length > 0 ? (
+                  <div className="space-y-4">
+                    {pendingUsers.map((pendingUser) => (
+                      <div key={pendingUser.id} className="border border-yellow-200 bg-yellow-50 rounded-md p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-medium">{pendingUser.username}</h3>
+                            <p className="text-sm text-gray-600">
+                              Email: {pendingUser.email}
+                            </p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Registered {formatDistance(new Date(pendingUser.registeredAt || Date.now()), new Date(), { addSuffix: true })}
+                            </p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-red-500 border-red-200 hover:bg-red-50"
+                              onClick={() => handleRejectUser(pendingUser.id)}
+                            >
+                              <UserX className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              className="bg-green-500 hover:bg-green-600"
+                              onClick={() => handleApproveUser(pendingUser.id)}
+                            >
+                              <UserCheck className="w-4 h-4 mr-1" />
+                              Approve
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p>No pending user approvals at this time.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Approved Radio Hosts</CardTitle>
+                <CardDescription>
+                  All users with radio hosting privileges
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {approvedUsers.length > 0 ? (
+                  <div className="space-y-3">
+                    {approvedUsers.map((approvedUser) => (
+                      <div key={approvedUser.id} className="border border-green-200 bg-green-50 rounded-md p-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-medium">{approvedUser.username}</h3>
+                            <p className="text-sm text-gray-600">
+                              Email: {approvedUser.email}
+                            </p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Approved radio host
+                            </p>
+                          </div>
+                          <CheckCircle className="w-5 h-5 text-green-500" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No approved radio hosts yet.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
           
           <TabsContent value="bookings">

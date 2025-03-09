@@ -1,118 +1,22 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Filter, Radio, Music, Disc } from 'lucide-react';
+import { Search, Filter, Radio, Music } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import StationCard from '@/components/StationCard';
 import { cn } from '@/lib/utils';
-
-// Sample stations data
-const allStations = [
-  {
-    id: '1',
-    name: 'House Electro Beats',
-    genre: 'Electronic, House',
-    image: 'https://images.unsplash.com/photo-1571330735066-03aaa9429d89?q=80&w=500&auto=format&fit=crop',
-    listeners: 4271,
-    isLive: true
-  },
-  {
-    id: '2',
-    name: 'Smooth Jazz',
-    genre: 'Jazz, Blues',
-    image: 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?q=80&w=500&auto=format&fit=crop',
-    listeners: 2183
-  },
-  {
-    id: '3',
-    name: 'Classic Rock Anthems',
-    genre: 'Rock, 70s, 80s',
-    image: 'https://images.unsplash.com/photo-1461784180009-27c1303a64b6?q=80&w=500&auto=format&fit=crop',
-    listeners: 3528
-  },
-  {
-    id: '4',
-    name: 'Hip-Hop Masters',
-    genre: 'Hip-Hop, Rap',
-    image: 'https://images.unsplash.com/photo-1546528377-65924449c301?q=80&w=500&auto=format&fit=crop',
-    listeners: 5129,
-    isLive: true
-  },
-  {
-    id: '5',
-    name: 'Pop Hits Radio',
-    genre: 'Pop, Top 40',
-    image: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?q=80&w=500&auto=format&fit=crop',
-    listeners: 7543,
-    isLive: true
-  },
-  {
-    id: '6',
-    name: 'Classical Symphony',
-    genre: 'Classical',
-    image: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=500&auto=format&fit=crop',
-    listeners: 1245
-  },
-  {
-    id: '7',
-    name: 'Reggae Vibes',
-    genre: 'Reggae, Dub',
-    image: 'https://images.unsplash.com/photo-1499364615650-ec38552f4f34?q=80&w=500&auto=format&fit=crop',
-    listeners: 2134
-  },
-  {
-    id: '8',
-    name: 'Country Roads',
-    genre: 'Country, Folk',
-    image: 'https://images.unsplash.com/photo-1543928069-2bc4bf3ebf64?q=80&w=500&auto=format&fit=crop',
-    listeners: 3126
-  },
-  {
-    id: '9',
-    name: 'Indie Discoveries',
-    genre: 'Indie, Alternative',
-    image: 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?q=80&w=500&auto=format&fit=crop',
-    listeners: 1876
-  },
-  {
-    id: '10',
-    name: 'Ambient Sounds',
-    genre: 'Ambient, Chillout',
-    image: 'https://images.unsplash.com/photo-1518972559570-7cc1309f3229?q=80&w=500&auto=format&fit=crop',
-    listeners: 923
-  },
-  {
-    id: '11',
-    name: 'Metal Mayhem',
-    genre: 'Metal, Rock',
-    image: 'https://images.unsplash.com/photo-1551886116-64f6d5a7f196?q=80&w=500&auto=format&fit=crop',
-    listeners: 2874
-  },
-  {
-    id: '12',
-    name: 'Soul Sisters',
-    genre: 'Soul, R&B',
-    image: 'https://images.unsplash.com/photo-1604079628040-94301bb21b91?q=80&w=500&auto=format&fit=crop',
-    listeners: 1523,
-    isLive: true
-  },
-];
+import { useRadio } from '@/contexts/RadioContext';
 
 // Sample genres for filter
 const genres = [
   'All',
+  'Latin',
+  'Bachata',
+  'Reggaeton',
+  'Salsa',
   'Electronic',
-  'Jazz',
-  'Rock',
-  'Hip-Hop',
-  'Pop',
-  'Classical',
-  'Reggae',
-  'Country',
-  'Indie',
-  'Ambient',
-  'Metal',
-  'Soul'
+  'Urban',
+  'Mix'
 ];
 
 const Stations: React.FC = () => {
@@ -120,8 +24,9 @@ const Stations: React.FC = () => {
   const [currentlyPlayingId, setCurrentlyPlayingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('All');
-  const [filteredStations, setFilteredStations] = useState(allStations);
+  const [filteredStations, setFilteredStations] = useState<any[]>([]);
   const [isAnimated, setIsAnimated] = useState(false);
+  const { stations, setCurrentPlayingStation } = useRadio();
   
   // Get the initial genre from URL parameters
   useEffect(() => {
@@ -142,7 +47,7 @@ const Stations: React.FC = () => {
   }, [searchParams]);
   
   const filterStations = useCallback(() => {
-    let result = allStations;
+    let result = stations;
     
     // Filter by genre (unless "All" is selected)
     if (selectedGenre !== 'All') {
@@ -161,7 +66,7 @@ const Stations: React.FC = () => {
     }
     
     setFilteredStations(result);
-  }, [selectedGenre, searchQuery]);
+  }, [selectedGenre, searchQuery, stations]);
   
   // Update filters when search or genre changes
   useEffect(() => {
@@ -186,6 +91,7 @@ const Stations: React.FC = () => {
   
   const handlePlayToggle = (stationId: string) => {
     setCurrentlyPlayingId(currentlyPlayingId === stationId ? null : stationId);
+    setCurrentPlayingStation(currentlyPlayingId === stationId ? null : stationId);
   };
 
   return (
@@ -207,7 +113,7 @@ const Stations: React.FC = () => {
           )}
           style={{ animationDelay: "0.1s" }}
         >
-          Radio Stations
+          LATINMIXMASTERS Radio Stations
         </h1>
         <p 
           className={cn(
@@ -216,7 +122,7 @@ const Stations: React.FC = () => {
           )}
           style={{ animationDelay: "0.2s" }}
         >
-          Discover and stream radio stations from around the world with crystal-clear audio quality.
+          Discover and stream Latin radio stations from around the world with crystal-clear audio quality.
         </p>
       </div>
 
@@ -302,20 +208,6 @@ const Stations: React.FC = () => {
           </div>
           <h3 className="text-xl font-medium mb-2">No stations found</h3>
           <p className="text-gray-dark">Try adjusting your search or filters to find stations.</p>
-        </div>
-      )}
-      
-      {filteredStations.length > 0 && (
-        <div 
-          className={cn(
-            "text-center mb-16",
-            !isAnimated ? "opacity-0" : "animate-fade-in"
-          )}
-          style={{ animationDelay: "0.8s" }}
-        >
-          <button className="px-6 py-3 border border-gray-light rounded-lg text-gray-dark hover:bg-gray-lightest transition-all duration-300">
-            Load more stations
-          </button>
         </div>
       )}
     </MainLayout>
