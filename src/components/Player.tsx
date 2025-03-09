@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Volume2, VolumeX, Radio, Heart } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Radio, Heart, Share2, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface PlayerProps {
   className?: string;
@@ -19,6 +20,15 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [prevVolume, setPrevVolume] = useState(80);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [likes, setLikes] = useState(127);
+  const [isLiked, setIsLiked] = useState(false);
+  const [comments, setComments] = useState([
+    { id: '1', user: 'DJ Carlos', text: 'Great mix!', time: '2 hours ago' },
+    { id: '2', user: 'Maria123', text: 'Love the beats on this one', time: '1 day ago' },
+    { id: '3', user: 'musiclover', text: 'Can\'t stop listening to this!', time: '3 days ago' }
+  ]);
+  const [newComment, setNewComment] = useState('');
 
   useEffect(() => {
     audioRef.current = new Audio('https://streams.90s90s.de/danceradio/mp3-192/streams.90s90s.de/');
@@ -66,123 +76,263 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     setIsMuted(newVolume === 0);
   };
 
+  const handleLike = () => {
+    if (isLiked) {
+      setLikes(likes - 1);
+    } else {
+      setLikes(likes + 1);
+    }
+    setIsLiked(!isLiked);
+  };
+
+  const handleShare = () => {
+    alert('Share functionality will be implemented soon!');
+  };
+
+  const handleAddComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newComment.trim()) {
+      const newCommentObj = {
+        id: Date.now().toString(),
+        user: 'You',
+        text: newComment,
+        time: 'Just now'
+      };
+      setComments([newCommentObj, ...comments]);
+      setNewComment('');
+    }
+  };
+
+  // Generate random waveform bars
+  const waveformBars = Array.from({ length: 40 }, (_, i) => {
+    const height = Math.random() * 100;
+    return (
+      <div 
+        key={i}
+        className={cn(
+          "w-1 bg-blue mx-0.5 rounded-sm",
+          isPlaying && i <= 30 ? "animate-pulse" : ""
+        )}
+        style={{ 
+          height: `${height}%`, 
+          opacity: isPlaying && i > 30 ? 0.3 : 0.7
+        }}
+      ></div>
+    );
+  });
+
   return (
     <div 
       className={cn(
         "fixed bottom-0 left-0 right-0 glass border-t border-gray-lightest shadow-md z-40",
         "transition-all duration-400 ease-in-out",
-        isExpanded ? "h-32 md:h-28" : "h-20",
+        showComments ? "h-96" : (isExpanded ? "h-48" : "h-20"),
         className
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 md:px-8 h-full flex items-center">
-        {/* Station info - always visible */}
-        <div className="flex items-center space-x-3 flex-1 min-w-0">
-          <div 
-            className="w-12 h-12 rounded-md bg-gray-lightest overflow-hidden flex-shrink-0 relative"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            <img 
-              src={stationInfo.coverImage} 
-              alt={stationInfo.name}
-              className="w-full h-full object-cover transition-all duration-400"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity duration-300">
-              <Radio className="w-5 h-5 text-white" />
+      <div className="max-w-7xl mx-auto px-4 md:px-8 h-full">
+        {/* Main player controls */}
+        <div className="flex items-center h-20">
+          {/* Station info - always visible */}
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <div 
+              className="w-12 h-12 rounded-md bg-gray-lightest overflow-hidden flex-shrink-0 relative"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              <img 
+                src={stationInfo.coverImage} 
+                alt={stationInfo.name}
+                className="w-full h-full object-cover transition-all duration-400"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity duration-300">
+                <Radio className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            
+            <div className="min-w-0 flex-1">
+              <h4 className="font-medium text-black truncate">{stationInfo.name}</h4>
+              <p className="text-xs text-gray truncate">{stationInfo.currentTrack}</p>
             </div>
           </div>
           
-          <div className="min-w-0 flex-1">
-            <h4 className="font-medium text-black truncate">{stationInfo.name}</h4>
-            <p className="text-xs text-gray truncate">{stationInfo.currentTrack}</p>
+          {/* Controls - always visible */}
+          <div className="flex items-center space-x-6">
+            {/* Desktop volume controls */}
+            <div className="hidden md:flex items-center space-x-2">
+              <button
+                onClick={toggleMute}
+                className="text-gray hover:text-black transition-colors duration-300"
+                aria-label={isMuted ? "Unmute" : "Mute"}
+              >
+                {isMuted || volume === 0 ? (
+                  <VolumeX className="w-5 h-5" />
+                ) : (
+                  <Volume2 className="w-5 h-5" />
+                )}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={volume}
+                onChange={handleVolumeChange}
+                className="w-24 accent-blue"
+                aria-label="Volume control"
+              />
+            </div>
             
-            {/* Mobile expanded info */}
-            {isExpanded && (
-              <div className="md:hidden mt-2 flex items-center justify-between">
-                <div className="flex items-center">
-                  <button 
-                    className="text-gray hover:text-black transition-colors duration-300"
-                    aria-label="Like station"
-                  >
-                    <Heart className="w-4 h-4" />
-                  </button>
-                </div>
-                
-                <div className="flex items-center space-x-1">
-                  <button
-                    onClick={toggleMute}
-                    className="text-gray hover:text-black transition-colors duration-300"
-                    aria-label={isMuted ? "Unmute" : "Mute"}
-                  >
-                    {isMuted || volume === 0 ? (
-                      <VolumeX className="w-4 h-4" />
-                    ) : (
-                      <Volume2 className="w-4 h-4" />
-                    )}
-                  </button>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={volume}
-                    onChange={handleVolumeChange}
-                    className="w-20 accent-blue"
-                    aria-label="Volume control"
-                  />
-                </div>
-              </div>
-            )}
+            {/* Play/Pause button */}
+            <button
+              onClick={togglePlayPause}
+              className="w-12 h-12 rounded-full bg-blue text-white flex items-center justify-center hover:bg-blue-dark transition-colors duration-300 shadow-sm"
+              aria-label={isPlaying ? "Pause" : "Play"}
+            >
+              {isPlaying ? (
+                <Pause className="w-5 h-5" />
+              ) : (
+                <Play className="w-5 h-5 ml-0.5" />
+              )}
+            </button>
+            
+            {/* Action buttons */}
+            <div className="hidden md:flex items-center space-x-4">
+              <button 
+                onClick={handleLike}
+                className={cn(
+                  "transition-colors duration-300",
+                  isLiked ? "text-red-500" : "text-gray hover:text-red-500"
+                )}
+                aria-label="Like track"
+              >
+                <Heart className="w-5 h-5" fill={isLiked ? "currentColor" : "none"} />
+              </button>
+              
+              <button
+                onClick={() => setShowComments(!showComments)}
+                className={cn(
+                  "transition-colors duration-300",
+                  showComments ? "text-blue" : "text-gray hover:text-blue"
+                )}
+                aria-label="Show comments"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </button>
+              
+              <button
+                onClick={handleShare}
+                className="text-gray hover:text-blue transition-colors duration-300"
+                aria-label="Share track"
+              >
+                <Share2 className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
         
-        {/* Controls - always visible */}
-        <div className="flex items-center space-x-6">
-          {/* Desktop volume controls */}
-          <div className="hidden md:flex items-center space-x-2">
-            <button
-              onClick={toggleMute}
-              className="text-gray hover:text-black transition-colors duration-300"
-              aria-label={isMuted ? "Unmute" : "Mute"}
-            >
-              {isMuted || volume === 0 ? (
-                <VolumeX className="w-5 h-5" />
-              ) : (
-                <Volume2 className="w-5 h-5" />
-              )}
-            </button>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={volume}
-              onChange={handleVolumeChange}
-              className="w-24 accent-blue"
-              aria-label="Volume control"
-            />
+        {/* Expanded waveform section */}
+        {isExpanded && (
+          <div className="px-4 py-4">
+            <div className="flex h-16 items-end justify-center gap-0">
+              {waveformBars}
+            </div>
+            
+            {/* Mobile action buttons */}
+            <div className="md:hidden flex justify-between mt-4">
+              <div className="flex items-center space-x-4">
+                <button 
+                  onClick={handleLike}
+                  className={cn(
+                    "transition-colors duration-300",
+                    isLiked ? "text-red-500" : "text-gray hover:text-red-500"
+                  )}
+                  aria-label="Like track"
+                >
+                  <Heart className="w-5 h-5" fill={isLiked ? "currentColor" : "none"} />
+                </button>
+                
+                <button
+                  onClick={() => setShowComments(!showComments)}
+                  className={cn(
+                    "transition-colors duration-300",
+                    showComments ? "text-blue" : "text-gray hover:text-blue"
+                  )}
+                  aria-label="Show comments"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                </button>
+                
+                <button
+                  onClick={handleShare}
+                  className="text-gray hover:text-blue transition-colors duration-300"
+                  aria-label="Share track"
+                >
+                  <Share2 className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={toggleMute}
+                  className="text-gray hover:text-black transition-colors duration-300"
+                  aria-label={isMuted ? "Unmute" : "Mute"}
+                >
+                  {isMuted || volume === 0 ? (
+                    <VolumeX className="w-5 h-5" />
+                  ) : (
+                    <Volume2 className="w-5 h-5" />
+                  )}
+                </button>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={volume}
+                  onChange={handleVolumeChange}
+                  className="w-24 accent-blue"
+                  aria-label="Volume control"
+                />
+              </div>
+            </div>
           </div>
-          
-          {/* Play/Pause button */}
-          <button
-            onClick={togglePlayPause}
-            className="w-12 h-12 rounded-full bg-blue text-white flex items-center justify-center hover:bg-blue-dark transition-colors duration-300 shadow-sm"
-            aria-label={isPlaying ? "Pause" : "Play"}
-          >
-            {isPlaying ? (
-              <Pause className="w-5 h-5" />
-            ) : (
-              <Play className="w-5 h-5 ml-0.5" />
-            )}
-          </button>
-          
-          {/* Desktop like button */}
-          <button 
-            className="hidden md:block text-gray hover:text-black transition-colors duration-300"
-            aria-label="Like station"
-          >
-            <Heart className="w-5 h-5" />
-          </button>
-        </div>
+        )}
+        
+        {/* Comments section */}
+        {showComments && (
+          <div className="px-4 overflow-y-auto h-48 border-t border-gray-100 pt-4">
+            <h3 className="font-medium mb-3">Comments ({comments.length})</h3>
+            
+            {/* Comment form */}
+            <form onSubmit={handleAddComment} className="flex gap-2 mb-4">
+              <input 
+                type="text" 
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm" 
+                placeholder="Add a comment..." 
+              />
+              <Button type="submit" size="sm">Post</Button>
+            </form>
+            
+            {/* Comments list */}
+            <div className="space-y-3">
+              {comments.map(comment => (
+                <div key={comment.id} className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                    {comment.user.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-sm">{comment.user}</span>
+                      <span className="text-xs text-gray-500">{comment.time}</span>
+                    </div>
+                    <p className="text-sm">{comment.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

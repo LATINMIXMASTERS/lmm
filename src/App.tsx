@@ -15,6 +15,7 @@ import BookShow from "./pages/BookShow";
 import AdminDashboard from "./pages/AdminDashboard";
 import StationDetails from "./pages/StationDetails";
 import NotFound from "./pages/NotFound";
+import Mixes from "./pages/Mixes";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/go-live" element={<GoLive />} />
               <Route path="/book-show/:stationId" element={<BookShow />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/mixes" element={<Mixes />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Play, Radio } from 'lucide-react';
+import { Play, Radio, Music } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -43,9 +43,8 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
           )}
           style={{ animationDelay: "0.2s" }}
         >
-          Discover the World of <br className="hidden sm:block" />
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">
-            Digital Radio
+            LATINMIXMASTERS
           </span>
         </h1>
         
@@ -58,7 +57,7 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
           )}
           style={{ animationDelay: "0.4s" }}
         >
-          Stream thousands of radio stations from around the world with crystal-clear audio quality.
+          INTERNATIONAL DJ CREW
         </p>
         
         {/* CTA buttons */}
@@ -78,12 +77,13 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
             Browse Stations
           </Link>
           
-          <button
+          <Link
+            to="/mixes"
             className="px-8 py-4 bg-transparent border-2 border-white/30 backdrop-blur-sm text-white rounded-full font-medium flex items-center gap-2 hover:bg-white/10 transition-colors duration-300"
           >
-            <Play className="w-5 h-5" />
-            Play Featured
-          </button>
+            <Music className="w-5 h-5" />
+            Mixes
+          </Link>
         </div>
         
         {/* Stats container */}
@@ -96,9 +96,9 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
           style={{ animationDelay: "0.8s" }}
         >
           {[
-            { label: "Radio Stations", value: "10,000+" },
-            { label: "Countries", value: "150+" },
-            { label: "Active Listeners", value: "2M+" }
+            { label: "Radio Stations", value: "7+" },
+            { label: "DJs", value: "20+" },
+            { label: "Active Listeners", value: "1M+" }
           ].map((stat, index) => (
             <div key={index} className="backdrop-blur-md bg-white/10 rounded-xl p-6 border border-white/20">
               <div className="text-3xl sm:text-4xl font-bold">{stat.value}</div>

@@ -14,6 +14,7 @@ const Navbar: React.FC = () => {
   const navLinks = [
     { name: 'Home', path: '/', icon: <Home className="w-4 h-4" /> },
     { name: 'Stations', path: '/stations', icon: <Radio className="w-4 h-4" /> },
+    { name: 'Mixes', path: '/mixes', icon: <Music className="w-4 h-4" /> },
     { name: 'About', path: '/about', icon: <Info className="w-4 h-4" /> }
   ];
 
