@@ -6,6 +6,7 @@ import MainLayout from '@/layout/MainLayout';
 import StationCard from '@/components/StationCard';
 import { cn } from '@/lib/utils';
 import { useRadio } from '@/contexts/RadioContext';
+import { useToast } from '@/hooks/use-toast';
 
 // Sample genres for filter
 const genres = [
@@ -21,12 +22,12 @@ const genres = [
 
 const Stations: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [currentlyPlayingId, setCurrentlyPlayingId] = useState<string | null>(null);
+  const { stations, setCurrentPlayingStation, currentPlayingStation } = useRadio();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [filteredStations, setFilteredStations] = useState<any[]>([]);
   const [isAnimated, setIsAnimated] = useState(false);
-  const { stations, setCurrentPlayingStation } = useRadio();
   
   // Get the initial genre from URL parameters
   useEffect(() => {
@@ -90,13 +91,32 @@ const Stations: React.FC = () => {
   };
   
   const handlePlayToggle = (stationId: string) => {
-    setCurrentlyPlayingId(currentlyPlayingId === stationId ? null : stationId);
-    setCurrentPlayingStation(currentlyPlayingId === stationId ? null : stationId);
+    const station = stations.find(s => s.id === stationId);
+    
+    if (currentPlayingStation === stationId) {
+      setCurrentPlayingStation(null);
+      return;
+    }
+    
+    if (station?.streamDetails?.url) {
+      setCurrentPlayingStation(stationId);
+      toast({
+        title: "Now Playing",
+        description: `${station.name} - Shoutcast stream started`
+      });
+    } else {
+      toast({
+        title: "Stream Not Available",
+        description: "This station doesn't have a stream URL configured.",
+        variant: "destructive"
+      });
+    }
   };
 
   // For debugging
   console.log("Available stations:", stations);
   console.log("Filtered stations:", filteredStations);
+  console.log("Currently playing:", currentPlayingStation);
 
   return (
     <MainLayout>
@@ -191,7 +211,7 @@ const Stations: React.FC = () => {
             <StationCard
               key={station.id}
               station={station}
-              isPlaying={currentlyPlayingId === station.id}
+              isPlaying={currentPlayingStation === station.id}
               onPlayToggle={handlePlayToggle}
               className={cn(
                 !isAnimated ? "opacity-0" : "animate-scale-in"

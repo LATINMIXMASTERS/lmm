@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +15,8 @@ import {
   Music, 
   Clock, 
   CheckCircle2,
-  ChevronLeft
+  ChevronLeft,
+  Pause
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isAfter, isBefore } from "date-fns";
@@ -55,10 +57,24 @@ const StationDetails: React.FC = () => {
   }, [id, navigate, toast, getStationById, getBookingsForStation, currentPlayingStation]);
   
   const handlePlayToggle = () => {
+    console.log("Play toggle clicked. Current state:", isPlaying, "Station ID:", id);
+    
     if (isPlaying) {
       setCurrentPlayingStation(null);
     } else {
-      setCurrentPlayingStation(id!);
+      if (station?.streamDetails?.url) {
+        setCurrentPlayingStation(id!);
+        toast({
+          title: "Now Playing",
+          description: `${station.name} - Shoutcast stream started`,
+        });
+      } else {
+        toast({
+          title: "Stream Not Available",
+          description: "This station doesn't have a stream URL configured.",
+          variant: "destructive"
+        });
+      }
     }
     setIsPlaying(!isPlaying);
   };
@@ -138,7 +154,11 @@ const StationDetails: React.FC = () => {
                       isPlaying ? "bg-red-500 hover:bg-red-600" : "bg-blue hover:bg-blue-dark"
                     )}
                   >
-                    <Play className={cn("w-8 h-8", isPlaying ? "" : "ml-1")} />
+                    {isPlaying ? (
+                      <Pause className="w-8 h-8" />
+                    ) : (
+                      <Play className="w-8 h-8 ml-1" />
+                    )}
                   </Button>
                 </div>
               </div>

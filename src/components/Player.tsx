@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Volume2, VolumeX, Radio, Heart, Share2, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useRadio } from '@/contexts/RadioContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface PlayerProps {
   className?: string;
@@ -29,34 +31,189 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     { id: '3', user: 'musiclover', text: 'Can\'t stop listening to this!', time: '3 days ago' }
   ]);
   const [newComment, setNewComment] = useState('');
-
+  const [metadata, setMetadata] = useState<string>('');
+  const metadataTimerRef = useRef<number | null>(null);
+  const { toast } = useToast();
+  const { stations, currentPlayingStation } = useRadio();
+  
+  // Create and configure audio element
   useEffect(() => {
-    audioRef.current = new Audio('https://streams.90s90s.de/danceradio/mp3-192/streams.90s90s.de/');
+    // Default audio stream
+    let defaultStream = 'https://streams.90s90s.de/danceradio/mp3-192/streams.90s90s.de/';
+    
+    // Find the current station if any
+    const currentStation = stations.find(station => station.id === currentPlayingStation);
+    if (currentStation?.streamDetails?.url) {
+      defaultStream = currentStation.streamDetails.url;
+    }
+    
+    console.log("Setting up audio with stream:", defaultStream);
+    
+    // Create new audio element
+    audioRef.current = new Audio(defaultStream);
     audioRef.current.volume = volume / 100;
+    
+    // Set event listeners
+    audioRef.current.addEventListener('error', (e) => {
+      console.error("Audio playback error:", e);
+      toast({
+        title: "Playback Error",
+        description: "There was an error playing this station. Please try again later.",
+        variant: "destructive"
+      });
+      setIsPlaying(false);
+    });
+    
+    audioRef.current.addEventListener('playing', () => {
+      console.log("Audio is now playing");
+      setIsPlaying(true);
+    });
+    
+    audioRef.current.addEventListener('pause', () => {
+      console.log("Audio is now paused");
+      setIsPlaying(false);
+    });
     
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
+        audioRef.current.remove();
         audioRef.current = null;
+      }
+      
+      // Clear metadata timer
+      if (metadataTimerRef.current) {
+        window.clearInterval(metadataTimerRef.current);
       }
     };
   }, []);
   
+  // Update audio source when selected station changes
+  useEffect(() => {
+    if (!currentPlayingStation || !audioRef.current) return;
+    
+    const currentStation = stations.find(station => station.id === currentPlayingStation);
+    if (!currentStation?.streamDetails?.url) return;
+    
+    console.log("Changing audio source to:", currentStation.streamDetails.url);
+    
+    // Pause current audio
+    const wasPlaying = !audioRef.current.paused;
+    audioRef.current.pause();
+    
+    // Set new source
+    audioRef.current.src = currentStation.streamDetails.url;
+    
+    // Update station info
+    setStationInfo({
+      name: currentStation.name,
+      currentTrack: 'Loading...',
+      coverImage: currentStation.image
+    });
+    
+    // Resume playback if it was playing
+    if (wasPlaying) {
+      audioRef.current.load();
+      audioRef.current.play().catch(error => {
+        console.error("Failed to play audio:", error);
+        toast({
+          title: "Playback Error",
+          description: "Failed to play this station. Please try again.",
+          variant: "destructive"
+        });
+      });
+    }
+    
+    // Set up metadata polling
+    setupMetadataPolling(currentStation.streamDetails.url);
+    
+  }, [currentPlayingStation, stations]);
+  
+  // Update volume when it changes
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = isMuted ? 0 : volume / 100;
     }
   }, [volume, isMuted]);
+  
+  const setupMetadataPolling = (streamUrl: string) => {
+    // Clear existing timer
+    if (metadataTimerRef.current) {
+      window.clearInterval(metadataTimerRef.current);
+    }
+    
+    // Function to fetch Shoutcast metadata
+    const fetchMetadata = async () => {
+      try {
+        // Using a proxy or CORS-enabled endpoint would be better in production
+        // This is a simplified approach for demo purposes
+        const response = await fetch(`/api/metadata?url=${encodeURIComponent(streamUrl)}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.title) {
+            setMetadata(data.title);
+            setStationInfo(prev => ({
+              ...prev,
+              currentTrack: data.title
+            }));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch metadata:", error);
+      }
+    };
+    
+    // Simulate metadata with fake data since we can't actually fetch from Shoutcast
+    // without a proper backend
+    const simulateMetadata = () => {
+      const tracks = [
+        "DJ Lobo - Bachata Mix 2025",
+        "Marc Anthony - Vivir Mi Vida",
+        "Bad Bunny - Tití Me Preguntó",
+        "Romeo Santos - Propuesta Indecente",
+        "Daddy Yankee - Gasolina (Club Mix)",
+        "Luis Fonsi - Despacito (Radio Edit)",
+        "Aventura - Obsesión",
+        "Rauw Alejandro - Todo de Ti"
+      ];
+      
+      const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
+      setMetadata(randomTrack);
+      setStationInfo(prev => ({
+        ...prev,
+        currentTrack: randomTrack
+      }));
+    };
+    
+    // Call immediately
+    simulateMetadata();
+    
+    // Then set interval
+    // In a real app, we would use fetchMetadata instead
+    metadataTimerRef.current = window.setInterval(simulateMetadata, 15000);
+  };
 
   const togglePlayPause = () => {
+    if (!audioRef.current) return;
+    
     if (isPlaying) {
-      audioRef.current?.pause();
+      audioRef.current.pause();
     } else {
-      audioRef.current?.play().catch(error => {
+      audioRef.current.play().catch(error => {
         console.error("Failed to play audio:", error);
+        toast({
+          title: "Playback Error",
+          description: "There was an error playing this station. Please try again.",
+          variant: "destructive"
+        });
       });
     }
-    setIsPlaying(!isPlaying);
   };
 
   const toggleMute = () => {
