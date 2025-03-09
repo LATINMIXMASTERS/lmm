@@ -10,6 +10,7 @@ interface RadioContextType {
   addBooking: (booking: Omit<BookingSlot, 'id'>) => BookingSlot;
   approveBooking: (bookingId: string) => void;
   updateStreamDetails: (stationId: string, streamDetails: { url: string; port: string; password: string; }) => void;
+  updateStreamUrl: (stationId: string, streamUrl: string) => void;
   currentPlayingStation: string | null;
   setCurrentPlayingStation: (stationId: string | null) => void;
 }
@@ -146,6 +147,27 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setStations(updatedStations);
     localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
   };
+  
+  // New function to just update the stream URL
+  const updateStreamUrl = (stationId: string, streamUrl: string) => {
+    const updatedStations = stations.map(station => {
+      if (station.id === stationId) {
+        // Create or update the streamDetails object
+        const currentDetails = station.streamDetails || { url: '', port: '', password: '' };
+        return { 
+          ...station, 
+          streamDetails: { 
+            ...currentDetails,
+            url: streamUrl 
+          } 
+        };
+      }
+      return station;
+    });
+    
+    setStations(updatedStations);
+    localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+  };
 
   return (
     <RadioContext.Provider value={{
@@ -156,6 +178,7 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       addBooking,
       approveBooking,
       updateStreamDetails,
+      updateStreamUrl,
       currentPlayingStation,
       setCurrentPlayingStation
     }}>

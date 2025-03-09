@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,7 +26,8 @@ import {
   Ban,
   User,
   ShieldOff,
-  Search
+  Search,
+  Volume2
 } from "lucide-react";
 import { format, formatDistance } from "date-fns";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -60,6 +60,8 @@ const AdminDashboard: React.FC = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(null);
   
+  const [streamUrls, setStreamUrls] = useState<Record<string, string>>({});
+  
   useEffect(() => {
     // Redirect if not an admin
     if (!isAuthenticated || !user?.isAdmin) {
@@ -73,6 +75,7 @@ const AdminDashboard: React.FC = () => {
     
     // Initialize station settings from existing data
     const initialSettings: Record<string, {url: string; port: string; password: string}> = {};
+    const initialStreamUrls: Record<string, string> = {};
     
     stations.forEach(station => {
       initialSettings[station.id] = {
@@ -80,9 +83,12 @@ const AdminDashboard: React.FC = () => {
         port: station.streamDetails?.port || '',
         password: station.streamDetails?.password || ''
       };
+      
+      initialStreamUrls[station.id] = station.streamDetails?.url || '';
     });
     
     setStationSettings(initialSettings);
+    setStreamUrls(initialStreamUrls);
   }, [isAuthenticated, user, navigate, toast, stations]);
   
   const handleSettingChange = (stationId: string, field: 'url' | 'port' | 'password', value: string) => {
@@ -170,6 +176,33 @@ const AdminDashboard: React.FC = () => {
       );
     });
   
+  const handleStreamUrlChange = (stationId: string, url: string) => {
+    setStreamUrls(prev => ({
+      ...prev,
+      [stationId]: url
+    }));
+  };
+  
+  const handleSaveStreamUrl = (stationId: string) => {
+    const url = streamUrls[stationId];
+    
+    if (!url) {
+      toast({
+        title: "Validation Error",
+        description: "Stream URL is required.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    useRadio().updateStreamUrl(stationId, url);
+    
+    toast({
+      title: "Stream URL Updated",
+      description: "The streaming URL has been updated successfully."
+    });
+  };
+  
   return (
     <MainLayout>
       <div className="container mx-auto py-8 px-4">
@@ -178,11 +211,15 @@ const AdminDashboard: React.FC = () => {
           <h1 className="text-2xl font-bold">LATINMIXMASTERS Admin Dashboard</h1>
         </div>
         
-        <Tabs defaultValue="users" className="w-full">
+        <Tabs defaultValue="stations" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="stations" className="flex items-center">
               <Radio className="w-4 h-4 mr-2" />
               Manage Stations
+            </TabsTrigger>
+            <TabsTrigger value="streaming" className="flex items-center">
+              <Volume2 className="w-4 h-4 mr-2" />
+              Stream URLs
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center">
               <Users className="w-4 h-4 mr-2" />
@@ -204,6 +241,7 @@ const AdminDashboard: React.FC = () => {
             </TabsTrigger>
           </TabsList>
           
+          {/* Existing Stations Tab */}
           <TabsContent value="stations">
             <div className="grid grid-cols-1 gap-6">
               {stations.map((station) => (
@@ -273,6 +311,58 @@ const AdminDashboard: React.FC = () => {
             </div>
           </TabsContent>
           
+          {/* New Streaming URLs Tab */}
+          <TabsContent value="streaming">
+            <div className="grid grid-cols-1 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Volume2 className="w-5 h-5 mr-2 text-blue" />
+                    Streaming URLs
+                  </CardTitle>
+                  <CardDescription>
+                    Manage the streaming URLs for each radio station
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {stations.map((station) => (
+                      <div key={station.id} className="p-4 border rounded-md">
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="font-medium text-lg">{station.name}</h3>
+                          <span className="text-sm text-gray-500">{station.genre}</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                          <div className="md:col-span-3">
+                            <Label htmlFor={`stream-url-${station.id}`} className="mb-2 block">
+                              Stream URL
+                            </Label>
+                            <Input
+                              id={`stream-url-${station.id}`}
+                              value={streamUrls[station.id] || ''}
+                              onChange={(e) => handleStreamUrlChange(station.id, e.target.value)}
+                              placeholder="e.g., https://stream.server.com/station"
+                              className="w-full"
+                            />
+                          </div>
+                          <Button 
+                            onClick={() => handleSaveStreamUrl(station.id)}
+                            className="bg-blue hover:bg-blue-dark"
+                          >
+                            <Settings className="w-4 h-4 mr-2" />
+                            Save URL
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          {/* Users Tab */}
           <TabsContent value="users">
             <Card className="mb-6">
               <CardHeader>
@@ -478,6 +568,7 @@ const AdminDashboard: React.FC = () => {
             )}
           </TabsContent>
           
+          {/* Bookings Tab */}
           <TabsContent value="bookings">
             <Card>
               <CardHeader>
