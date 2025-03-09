@@ -15,13 +15,15 @@ interface StationCardProps {
   isPlaying: boolean;
   onPlayToggle: (id: string) => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const StationCard: React.FC<StationCardProps> = ({
   station,
   isPlaying,
   onPlayToggle,
-  className
+  className,
+  style
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +39,7 @@ const StationCard: React.FC<StationCardProps> = ({
         'hover:shadow-md hover:border-gray-light hover:translate-y-[-4px]',
         className
       )}
+      style={style}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

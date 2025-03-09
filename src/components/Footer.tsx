@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { GitHub, Twitter, Instagram, Music } from 'lucide-react';
+import { Github, Twitter, Instagram, Music } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
@@ -74,7 +73,7 @@ const Footer: React.FC = () => {
                 className="text-gray-dark hover:text-blue transition-colors duration-300"
                 aria-label="GitHub"
               >
-                <GitHub className="w-5 h-5" />
+                <Github className="w-5 h-5" />
               </a>
               <a
                 href="#"
