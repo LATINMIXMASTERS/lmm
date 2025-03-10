@@ -63,7 +63,6 @@ const AdminDashboard: React.FC = () => {
   const [streamUrls, setStreamUrls] = useState<Record<string, string>>({});
   
   useEffect(() => {
-    // Redirect if not an admin
     if (!isAuthenticated || !user?.isAdmin) {
       toast({
         title: "Access denied",
@@ -73,7 +72,6 @@ const AdminDashboard: React.FC = () => {
       navigate("/login");
     }
     
-    // Initialize station settings from existing data
     const initialSettings: Record<string, {url: string; port: string; password: string}> = {};
     const initialStreamUrls: Record<string, string> = {};
     
@@ -113,7 +111,20 @@ const AdminDashboard: React.FC = () => {
       return;
     }
     
-    updateStreamDetails(stationId, settings);
+    let formattedUrl = settings.url;
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = `https://${formattedUrl}`;
+    }
+    
+    updateStreamDetails(stationId, {
+      ...settings,
+      url: formattedUrl
+    });
+    
+    setStreamUrls(prev => ({
+      ...prev,
+      [stationId]: formattedUrl
+    }));
     
     toast({
       title: "Settings Updated",
@@ -164,7 +175,6 @@ const AdminDashboard: React.FC = () => {
   const pendingBookings = bookings.filter(booking => !booking.approved);
   const pendingUsers = users.filter(u => u.pendingApproval);
   
-  // Filter users for the All Users tab
   const filteredUsers = users
     .filter(u => !u.pendingApproval)
     .filter(u => {
@@ -195,7 +205,12 @@ const AdminDashboard: React.FC = () => {
       return;
     }
     
-    useRadio().updateStreamUrl(stationId, url);
+    let formattedUrl = url;
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = `https://${formattedUrl}`;
+    }
+    
+    useRadio().updateStreamUrl(stationId, formattedUrl);
     
     toast({
       title: "Stream URL Updated",
@@ -241,7 +256,6 @@ const AdminDashboard: React.FC = () => {
             </TabsTrigger>
           </TabsList>
           
-          {/* Existing Stations Tab */}
           <TabsContent value="stations">
             <div className="grid grid-cols-1 gap-6">
               {stations.map((station) => (
@@ -311,7 +325,6 @@ const AdminDashboard: React.FC = () => {
             </div>
           </TabsContent>
           
-          {/* New Streaming URLs Tab */}
           <TabsContent value="streaming">
             <div className="grid grid-cols-1 gap-6">
               <Card>
@@ -362,7 +375,6 @@ const AdminDashboard: React.FC = () => {
             </div>
           </TabsContent>
           
-          {/* Users Tab */}
           <TabsContent value="users">
             <Card className="mb-6">
               <CardHeader>
@@ -557,7 +569,6 @@ const AdminDashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* User Edit Dialog */}
             {editingUser && (
               <UserEditDialog
                 user={editingUser}
@@ -568,7 +579,6 @@ const AdminDashboard: React.FC = () => {
             )}
           </TabsContent>
           
-          {/* Bookings Tab */}
           <TabsContent value="bookings">
             <Card>
               <CardHeader>

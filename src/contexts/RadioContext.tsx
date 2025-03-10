@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { RadioStation, BookingSlot } from '@/models/RadioStation';
 
@@ -154,16 +155,35 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const updateStreamDetails = (stationId: string, streamDetails: { url: string; port: string; password: string; }) => {
+    // Ensure the URL has the proper format for streaming
+    let formattedUrl = streamDetails.url;
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = `https://${formattedUrl}`;
+    }
+    
     const updatedStations = stations.map(station => 
-      station.id === stationId ? { ...station, streamDetails } : station
+      station.id === stationId ? { 
+        ...station, 
+        streamDetails: { 
+          ...streamDetails, 
+          url: formattedUrl 
+        } 
+      } : station
     );
     
     setStations(updatedStations);
     localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+    
+    console.log(`Updated stream details for station ${stationId}:`, { ...streamDetails, url: formattedUrl });
   };
   
   // Updated function to just update the stream URL
   const updateStreamUrl = (stationId: string, streamUrl: string) => {
+    let formattedUrl = streamUrl;
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = `https://${formattedUrl}`;
+    }
+    
     const updatedStations = stations.map(station => {
       if (station.id === stationId) {
         // Create or update the streamDetails object
@@ -172,7 +192,7 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           ...station, 
           streamDetails: { 
             ...currentDetails,
-            url: streamUrl 
+            url: formattedUrl 
           } 
         };
       }
@@ -181,6 +201,8 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     
     setStations(updatedStations);
     localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+    
+    console.log(`Updated stream URL for station ${stationId}:`, formattedUrl);
   };
 
   return (

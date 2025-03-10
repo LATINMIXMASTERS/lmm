@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Volume2, VolumeX, Radio, Heart, Share2, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -42,6 +43,7 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     if (currentStation?.streamDetails?.url) {
       defaultStream = currentStation.streamDetails.url;
       
+      // URL should now be properly formatted in the RadioContext, but let's be sure
       if (!defaultStream.startsWith('http://') && !defaultStream.startsWith('https://')) {
         defaultStream = `https://${defaultStream}`;
       }
@@ -89,10 +91,19 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     if (!currentPlayingStation || !audioRef.current) return;
     
     const currentStation = stations.find(station => station.id === currentPlayingStation);
-    if (!currentStation?.streamDetails?.url) return;
+    if (!currentStation?.streamDetails?.url) {
+      console.error("No stream URL found for station:", currentPlayingStation);
+      toast({
+        title: "Stream Error",
+        description: "This station doesn't have a stream URL configured.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     let streamUrl = currentStation.streamDetails.url;
     
+    // URL should be properly formatted in the RadioContext, but let's be sure
     if (!streamUrl.startsWith('http://') && !streamUrl.startsWith('https://')) {
       streamUrl = `https://${streamUrl}`;
     }
