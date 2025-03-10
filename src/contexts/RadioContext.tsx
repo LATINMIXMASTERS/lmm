@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { RadioStation, BookingSlot } from '@/models/RadioStation';
 
@@ -26,7 +25,12 @@ const initialStations: RadioStation[] = [
     image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=1000&auto=format&fit=crop',
     description: 'The best Latin music mixes.',
     listeners: 120,
-    isLive: false
+    isLive: false,
+    streamDetails: {
+      url: 'https://lmmradiocast.com/lmmradio',
+      port: '8000',
+      password: 'demo123'
+    }
   },
   {
     id: '2',
@@ -35,7 +39,12 @@ const initialStations: RadioStation[] = [
     image: 'https://images.unsplash.com/photo-1504647164485-1d91e1d0a112?q=80&w=1000&auto=format&fit=crop',
     description: 'Your go-to station for the best Bachata hits.',
     listeners: 85,
-    isLive: false
+    isLive: false,
+    streamDetails: {
+      url: 'https://lmmradiocast.com/bachataradio',
+      port: '8000',
+      password: 'demo123'
+    }
   },
   {
     id: '3',
@@ -44,7 +53,12 @@ const initialStations: RadioStation[] = [
     image: 'https://images.unsplash.com/photo-1526218626217-dc65a29bb444?q=80&w=1000&auto=format&fit=crop',
     description: 'Hottest reggaeton tracks and latest hits.',
     listeners: 210,
-    isLive: false
+    isLive: false,
+    streamDetails: {
+      url: 'https://lmmradiocast.com/reggaetonradio',
+      port: '8000',
+      password: 'demo123'
+    }
   },
   {
     id: '4',

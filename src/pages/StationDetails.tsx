@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -66,7 +65,7 @@ const StationDetails: React.FC = () => {
         setCurrentPlayingStation(id!);
         toast({
           title: "Now Playing",
-          description: `${station.name} - Shoutcast stream started`,
+          description: `${station.name} - Stream started`,
         });
       } else {
         toast({

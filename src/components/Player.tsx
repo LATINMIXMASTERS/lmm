@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Volume2, VolumeX, Radio, Heart, Share2, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -36,24 +35,23 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
   const { toast } = useToast();
   const { stations, currentPlayingStation } = useRadio();
   
-  // Create and configure audio element
   useEffect(() => {
-    // Default audio stream
     let defaultStream = 'https://streams.90s90s.de/danceradio/mp3-192/streams.90s90s.de/';
     
-    // Find the current station if any
     const currentStation = stations.find(station => station.id === currentPlayingStation);
     if (currentStation?.streamDetails?.url) {
       defaultStream = currentStation.streamDetails.url;
+      
+      if (!defaultStream.startsWith('http://') && !defaultStream.startsWith('https://')) {
+        defaultStream = `https://${defaultStream}`;
+      }
+      
+      console.log("Setting up audio with stream:", defaultStream);
     }
     
-    console.log("Setting up audio with stream:", defaultStream);
-    
-    // Create new audio element
     audioRef.current = new Audio(defaultStream);
     audioRef.current.volume = volume / 100;
     
-    // Set event listeners
     audioRef.current.addEventListener('error', (e) => {
       console.error("Audio playback error:", e);
       toast({
@@ -81,37 +79,37 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
         audioRef.current = null;
       }
       
-      // Clear metadata timer
       if (metadataTimerRef.current) {
         window.clearInterval(metadataTimerRef.current);
       }
     };
   }, []);
   
-  // Update audio source when selected station changes
   useEffect(() => {
     if (!currentPlayingStation || !audioRef.current) return;
     
     const currentStation = stations.find(station => station.id === currentPlayingStation);
     if (!currentStation?.streamDetails?.url) return;
     
-    console.log("Changing audio source to:", currentStation.streamDetails.url);
+    let streamUrl = currentStation.streamDetails.url;
     
-    // Pause current audio
+    if (!streamUrl.startsWith('http://') && !streamUrl.startsWith('https://')) {
+      streamUrl = `https://${streamUrl}`;
+    }
+    
+    console.log("Changing audio source to:", streamUrl);
+    
     const wasPlaying = !audioRef.current.paused;
     audioRef.current.pause();
     
-    // Set new source
-    audioRef.current.src = currentStation.streamDetails.url;
+    audioRef.current.src = streamUrl;
     
-    // Update station info
     setStationInfo({
       name: currentStation.name,
       currentTrack: 'Loading...',
       coverImage: currentStation.image
     });
     
-    // Resume playback if it was playing
     if (wasPlaying) {
       audioRef.current.load();
       audioRef.current.play().catch(error => {
@@ -124,12 +122,9 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       });
     }
     
-    // Set up metadata polling
-    setupMetadataPolling(currentStation.streamDetails.url);
-    
+    setupMetadataPolling(streamUrl);
   }, [currentPlayingStation, stations]);
   
-  // Update volume when it changes
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = isMuted ? 0 : volume / 100;
@@ -137,16 +132,12 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
   }, [volume, isMuted]);
   
   const setupMetadataPolling = (streamUrl: string) => {
-    // Clear existing timer
     if (metadataTimerRef.current) {
       window.clearInterval(metadataTimerRef.current);
     }
     
-    // Function to fetch Shoutcast metadata
     const fetchMetadata = async () => {
       try {
-        // Using a proxy or CORS-enabled endpoint would be better in production
-        // This is a simplified approach for demo purposes
         const response = await fetch(`/api/metadata?url=${encodeURIComponent(streamUrl)}`, {
           method: 'GET',
           headers: {
@@ -169,8 +160,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       }
     };
     
-    // Simulate metadata with fake data since we can't actually fetch from Shoutcast
-    // without a proper backend
     const simulateMetadata = () => {
       const tracks = [
         "DJ Lobo - Bachata Mix 2025",
@@ -191,11 +180,8 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       }));
     };
     
-    // Call immediately
     simulateMetadata();
     
-    // Then set interval
-    // In a real app, we would use fetchMetadata instead
     metadataTimerRef.current = window.setInterval(simulateMetadata, 15000);
   };
 
@@ -260,7 +246,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     }
   };
 
-  // Generate random waveform bars
   const waveformBars = Array.from({ length: 40 }, (_, i) => {
     const height = Math.random() * 100;
     return (
@@ -288,9 +273,7 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       )}
     >
       <div className="max-w-7xl mx-auto px-4 md:px-8 h-full">
-        {/* Main player controls */}
         <div className="flex items-center h-20">
-          {/* Station info - always visible */}
           <div className="flex items-center space-x-3 flex-1 min-w-0">
             <div 
               className="w-12 h-12 rounded-md bg-gray-lightest overflow-hidden flex-shrink-0 relative"
@@ -313,9 +296,7 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
             </div>
           </div>
           
-          {/* Controls - always visible */}
           <div className="flex items-center space-x-6">
-            {/* Desktop volume controls */}
             <div className="hidden md:flex items-center space-x-2">
               <button
                 onClick={toggleMute}
@@ -339,7 +320,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
               />
             </div>
             
-            {/* Play/Pause button */}
             <button
               onClick={togglePlayPause}
               className="w-12 h-12 rounded-full bg-blue text-white flex items-center justify-center hover:bg-blue-dark transition-colors duration-300 shadow-sm"
@@ -352,7 +332,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
               )}
             </button>
             
-            {/* Action buttons */}
             <div className="hidden md:flex items-center space-x-4">
               <button 
                 onClick={handleLike}
@@ -387,14 +366,12 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
           </div>
         </div>
         
-        {/* Expanded waveform section */}
         {isExpanded && (
           <div className="px-4 py-4">
             <div className="flex h-16 items-end justify-center gap-0">
               {waveformBars}
             </div>
             
-            {/* Mobile action buttons */}
             <div className="md:hidden flex justify-between mt-4">
               <div className="flex items-center space-x-4">
                 <button 
@@ -454,12 +431,10 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
           </div>
         )}
         
-        {/* Comments section */}
         {showComments && (
           <div className="px-4 overflow-y-auto h-48 border-t border-gray-100 pt-4">
             <h3 className="font-medium mb-3">Comments ({comments.length})</h3>
             
-            {/* Comment form */}
             <form onSubmit={handleAddComment} className="flex gap-2 mb-4">
               <input 
                 type="text" 
@@ -471,7 +446,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
               <Button type="submit" size="sm">Post</Button>
             </form>
             
-            {/* Comments list */}
             <div className="space-y-3">
               {comments.map(comment => (
                 <div key={comment.id} className="flex gap-3">
