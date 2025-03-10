@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Radio, Headphones, Music } from 'lucide-react';
@@ -24,7 +25,8 @@ const featuredStations = [
     genre: 'Jazz, Blues',
     image: 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?q=80&w=500&auto=format&fit=crop',
     description: 'Relax and unwind with smooth jazz and blues classics from the greatest artists.',
-    listeners: 2183
+    listeners: 2183,
+    isLive: false // Adding the required isLive property
   },
   {
     id: '3',
@@ -32,7 +34,8 @@ const featuredStations = [
     genre: 'Rock, 70s, 80s',
     image: 'https://images.unsplash.com/photo-1461784180009-27c1303a64b6?q=80&w=500&auto=format&fit=crop',
     description: 'Experience the golden era of rock with these timeless anthems from the 70s and 80s.',
-    listeners: 3528
+    listeners: 3528,
+    isLive: false // Adding the required isLive property
   },
   {
     id: '4',
