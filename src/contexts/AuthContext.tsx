@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -114,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  // Fixed login functionality
+  // Fix login functionality to properly handle test accounts
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     
@@ -141,13 +142,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Check password based on account type
         let validPassword = false;
         
-        if (foundUser.email.toLowerCase() === 'admin@example.com') {
-          validPassword = password === 'admin';
+        if (foundUser.email.toLowerCase() === 'admin@example.com' && password === 'admin') {
+          validPassword = true;
         } else if (
-          foundUser.email.toLowerCase() === 'testhost@example.com' || 
-          foundUser.email.toLowerCase() === 'testuser@example.com'
+          (foundUser.email.toLowerCase() === 'testhost@example.com' || 
+          foundUser.email.toLowerCase() === 'testuser@example.com') && 
+          password === 'test123'
         ) {
-          validPassword = password === 'test123';
+          validPassword = true;
         } else {
           // For regular users, we'd normally check against hashed passwords
           // For demo, we'll accept "password"
