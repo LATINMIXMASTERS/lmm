@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { User as UserIcon, Calendar, Clock, HeadphonesIcon, Radio } from 'lucide-react';
+import { User as UserIcon, Calendar, Clock, HeadphonesIcon, Radio, Edit, Trash2 } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTrack } from '@/contexts/TrackContext';
@@ -11,14 +11,28 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Track } from '@/models/Track';
 
 const HostProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
-  const { users } = useAuth();
-  const { tracks, getTracksByUser } = useTrack();
+  const { user, users } = useAuth();
+  const { tracks, getTracksByUser, deleteTrack, canEditTrack } = useTrack();
   const { stations, setCurrentPlayingStation } = useRadio();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const [trackToDelete, setTrackToDelete] = useState<Track | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   // Find host user
   const hostUser = users.find(u => u.id === userId && u.isRadioHost);
@@ -55,6 +69,61 @@ const HostProfile: React.FC = () => {
       title: "Now Playing",
       description: `Started playing radio station`
     });
+  };
+
+  const handleEditTrack = (trackId: string) => {
+    navigate(`/edit-track/${trackId}`);
+  };
+
+  const handleDeleteTrack = (track: Track) => {
+    setTrackToDelete(track);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteTrack = () => {
+    if (trackToDelete) {
+      const success = deleteTrack(trackToDelete.id);
+      if (success) {
+        toast({
+          title: "Track deleted",
+          description: "The track has been removed",
+        });
+      }
+    }
+    setIsDeleteDialogOpen(false);
+    setTrackToDelete(null);
+  };
+  
+  // Check if current user can manage this track (admin or track owner)
+  const canManageTrack = (track: Track) => {
+    if (!user) return false;
+    return user.isAdmin || track.uploadedBy === user.id;
+  };
+
+  // Render track action buttons for edit/delete
+  const renderTrackActions = (track: Track) => {
+    if (!canManageTrack(track)) return null;
+    
+    return (
+      <div className="flex gap-2">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => handleEditTrack(track.id)}
+          className="h-8 w-8 text-blue"
+        >
+          <Edit className="h-4 w-4" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => handleDeleteTrack(track)}
+          className="h-8 w-8 text-red-500"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    );
   };
   
   return (
@@ -143,7 +212,14 @@ const HostProfile: React.FC = () => {
             
             {/* Mixes Tab */}
             <TabsContent value="mixes">
-              <h2 className="text-2xl font-bold mb-4">{hostUser.username}'s Mixes</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">{hostUser.username}'s Mixes</h2>
+                {user && (user.id === hostUser.id || user.isAdmin) && (
+                  <Button onClick={() => navigate('/upload-track')}>
+                    Upload New Mix
+                  </Button>
+                )}
+              </div>
               
               {userTracks.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -155,6 +231,28 @@ const HostProfile: React.FC = () => {
                           alt={track.title} 
                           className="object-cover w-full h-full"
                         />
+                        <div className="absolute bottom-0 right-0 p-2 flex gap-1">
+                          {canManageTrack(track) && (
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleEditTrack(track.id)}
+                                className="h-8 w-8 bg-white/70 hover:bg-white text-blue"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleDeleteTrack(track)}
+                                className="h-8 w-8 bg-white/70 hover:bg-white text-red-500"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </div>
                       <CardHeader>
                         <CardTitle>{track.title}</CardTitle>
@@ -230,6 +328,24 @@ const HostProfile: React.FC = () => {
           </Tabs>
         </div>
       </div>
+      
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the track "{trackToDelete?.title}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteTrack} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 };

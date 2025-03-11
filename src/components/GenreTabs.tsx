@@ -81,7 +81,7 @@ const GenreTabs: React.FC<GenreTabsProps> = ({
                 onCommentChange={(value) => handleCommentChange(track.id, value)}
                 onSubmitComment={(e) => handleSubmitComment(track.id, e)}
                 formatDuration={formatDuration}
-                renderTrackActions={renderTrackActions ? () => renderTrackActions(track) : undefined}
+                renderTrackActions={renderTrackActions}
               />
             ))
           )}
@@ -110,7 +110,7 @@ const GenreTabs: React.FC<GenreTabsProps> = ({
                   onCommentChange={(value) => handleCommentChange(track.id, value)}
                   onSubmitComment={(e) => handleSubmitComment(track.id, e)}
                   formatDuration={formatDuration}
-                  renderTrackActions={renderTrackActions ? () => renderTrackActions(track) : undefined}
+                  renderTrackActions={renderTrackActions}
                 />
               ))
             )}
