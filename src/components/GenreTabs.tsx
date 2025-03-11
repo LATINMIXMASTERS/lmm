@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Music } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +18,7 @@ interface GenreTabsProps {
   handleCommentChange: (trackId: string, value: string) => void;
   handleSubmitComment: (trackId: string, e: React.FormEvent) => void;
   formatDuration: (seconds?: number) => string;
+  renderTrackActions?: (track: any) => React.ReactNode;
 }
 
 const GenreTabs: React.FC<GenreTabsProps> = ({
@@ -34,7 +34,8 @@ const GenreTabs: React.FC<GenreTabsProps> = ({
   newComments,
   handleCommentChange,
   handleSubmitComment,
-  formatDuration
+  formatDuration,
+  renderTrackActions
 }) => {
   return (
     <Tabs 
