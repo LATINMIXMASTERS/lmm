@@ -27,4 +27,7 @@ export interface BookingSlot {
   endTime: Date;
   title: string;
   approved: boolean;
+  rejected?: boolean;
+  rejectionReason?: string;
 }
+

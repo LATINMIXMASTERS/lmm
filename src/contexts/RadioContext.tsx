@@ -1,6 +1,7 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { RadioStation, BookingSlot } from '@/models/RadioStation';
+import { isAfter, isBefore, format } from 'date-fns';
 
 interface RadioContextType {
   stations: RadioStation[];
@@ -9,10 +10,12 @@ interface RadioContextType {
   getBookingsForStation: (stationId: string) => BookingSlot[];
   addBooking: (booking: Omit<BookingSlot, 'id'>) => BookingSlot;
   approveBooking: (bookingId: string) => void;
+  rejectBooking: (bookingId: string, reason: string) => void;
   updateStreamDetails: (stationId: string, streamDetails: { url: string; port: string; password: string; }) => void;
   updateStreamUrl: (stationId: string, streamUrl: string) => void;
   currentPlayingStation: string | null;
   setCurrentPlayingStation: (stationId: string | null) => void;
+  hasBookingConflict: (stationId: string, startTime: Date, endTime: Date, excludeBookingId?: string) => boolean;
 }
 
 const RadioContext = createContext<RadioContextType | undefined>(undefined);
@@ -139,10 +142,44 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return bookings.filter(booking => booking.stationId === stationId);
   };
 
+  // New function to check for booking conflicts
+  const hasBookingConflict = (stationId: string, startTime: Date, endTime: Date, excludeBookingId?: string) => {
+    const stationBookings = getBookingsForStation(stationId)
+      .filter(booking => booking.id !== excludeBookingId && !booking.rejected);
+    
+    return stationBookings.some(booking => {
+      const bookingStart = new Date(booking.startTime);
+      const bookingEnd = new Date(booking.endTime);
+      
+      return (
+        (isAfter(startTime, bookingStart) && isBefore(startTime, bookingEnd)) ||
+        (isAfter(endTime, bookingStart) && isBefore(endTime, bookingEnd)) ||
+        (isBefore(startTime, bookingStart) && isAfter(endTime, bookingEnd)) ||
+        (startTime.getTime() === bookingStart.getTime()) ||
+        (endTime.getTime() === bookingEnd.getTime())
+      );
+    });
+  };
+
   const addBooking = (bookingData: Omit<BookingSlot, 'id'>) => {
+    const bookingId = Math.random().toString(36).substring(2, 11);
+    
+    // Check for conflicts
+    const hasConflict = hasBookingConflict(
+      bookingData.stationId, 
+      new Date(bookingData.startTime), 
+      new Date(bookingData.endTime)
+    );
+    
+    // Auto-approve if no conflicts and user is admin, otherwise pending approval
+    const autoApprove = bookingData.approved || !hasConflict;
+    
     const newBooking: BookingSlot = {
       ...bookingData,
-      id: Math.random().toString(36).substring(2, 11)
+      id: bookingId,
+      approved: autoApprove,
+      rejected: hasConflict ? true : false,
+      rejectionReason: hasConflict ? 'Conflicting time slot with an existing booking' : undefined
     };
     
     const updatedBookings = [...bookings, newBooking];
@@ -154,7 +191,27 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const approveBooking = (bookingId: string) => {
     const updatedBookings = bookings.map(booking => 
-      booking.id === bookingId ? { ...booking, approved: true } : booking
+      booking.id === bookingId ? { 
+        ...booking, 
+        approved: true, 
+        rejected: false,
+        rejectionReason: undefined 
+      } : booking
+    );
+    
+    setBookings(updatedBookings);
+    localStorage.setItem('latinmixmasters_bookings', JSON.stringify(updatedBookings));
+  };
+
+  // Add reject booking functionality
+  const rejectBooking = (bookingId: string, reason: string) => {
+    const updatedBookings = bookings.map(booking => 
+      booking.id === bookingId ? { 
+        ...booking, 
+        approved: false, 
+        rejected: true,
+        rejectionReason: reason 
+      } : booking
     );
     
     setBookings(updatedBookings);
@@ -215,10 +272,12 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       getBookingsForStation,
       addBooking,
       approveBooking,
+      rejectBooking,
       updateStreamDetails,
       updateStreamUrl,
       currentPlayingStation,
-      setCurrentPlayingStation
+      setCurrentPlayingStation,
+      hasBookingConflict
     }}>
       {children}
     </RadioContext.Provider>
