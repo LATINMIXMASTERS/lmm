@@ -6,6 +6,8 @@ export interface RadioStation {
   description: string;
   image: string;
   listeners: number;
+  isLive?: boolean;
+  streamUrl?: string;
   broadcastTime?: string;
   hosts?: string[];
   streamDetails?: {
@@ -13,4 +15,17 @@ export interface RadioStation {
     port: string;
     password: string;
   };
+}
+
+export interface BookingSlot {
+  id: string;
+  stationId: string;
+  hostId: string;
+  hostName: string;
+  startTime: string | Date;
+  endTime: string | Date;
+  title: string;
+  approved: boolean;
+  rejected?: boolean;
+  rejectionReason?: string;
 }
