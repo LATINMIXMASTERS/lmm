@@ -28,7 +28,7 @@ const HostProfile: React.FC = () => {
   
   // Filter stations where this host is featured
   const hostStations = stations.filter(station => 
-    station.hosts?.includes(hostUser?.id || '')
+    station.hosts && station.hosts.includes(hostUser?.id || '')
   );
   
   // User not found or not a host

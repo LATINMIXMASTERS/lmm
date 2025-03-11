@@ -1,34 +1,16 @@
 
-export interface StreamDetails {
-  url: string;
-  port: string;
-  password: string;
-}
-
 export interface RadioStation {
   id: string;
   name: string;
   genre: string;
-  image: string;
   description: string;
+  image: string;
   listeners: number;
-  isLive: boolean;
-  currentDJ?: string;
-  streamDetails?: StreamDetails;
-  streamUrl?: string;
-  hosts?: string[]; // Adding hosts property
-  broadcastTime?: string; // Adding broadcastTime property
-}
-
-export interface BookingSlot {
-  id: string;
-  stationId: string;
-  hostId: string;
-  hostName: string;
-  startTime: Date;
-  endTime: Date;
-  title: string;
-  approved: boolean;
-  rejected?: boolean;
-  rejectionReason?: string;
+  broadcastTime?: string;
+  hosts?: string[];
+  streamDetails?: {
+    url: string;
+    port: string;
+    password: string;
+  };
 }
