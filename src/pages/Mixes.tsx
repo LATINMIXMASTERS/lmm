@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import GenreTabs from '@/components/GenreTabs';
 import { formatDuration } from '@/utils/formatTime';
+import { Track } from '@/models/Track';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -136,21 +137,10 @@ const Mixes: React.FC = () => {
     navigate(`/edit-track/${trackId}`);
   };
 
-  const handleDeleteTrack = (trackId: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setTrackToDelete(trackId);
-  };
-
   const confirmDeleteTrack = () => {
     if (!trackToDelete) return;
     
-    if (deleteTrack(trackToDelete)) {
-      toast({
-        title: "Track deleted",
-        description: "Your track has been successfully deleted",
-      });
-    }
-    
+    deleteTrack(trackToDelete);
     setTrackToDelete(null);
   };
 
@@ -188,52 +178,48 @@ const Mixes: React.FC = () => {
     });
   };
 
-  const renderTrackWithActions = (track: any) => {
+  const renderTrackActions = (track: Track) => {
     const isEditable = canEditTrack(track.id);
     
+    if (!isEditable) return null;
+    
     return (
-      <div className="flex items-center">
-        {isEditable && (
-          <div className="flex space-x-2 mr-4">
+      <div className="flex space-x-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => handleEditTrack(track.id, e)}
+          title="Edit track"
+        >
+          <Edit className="h-4 w-4" />
+        </Button>
+        
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              onClick={(e) => handleEditTrack(track.id, e)}
-              title="Edit track"
+              onClick={(e) => e.stopPropagation()}
+              title="Delete track"
             >
-              <Edit className="h-4 w-4" />
+              <Trash2 className="h-4 w-4 text-red-500" />
             </Button>
-            
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => e.stopPropagation()}
-                  title="Delete track"
-                >
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete this track.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => {
-                    deleteTrack(track.id);
-                  }}>
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        )}
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete this track.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => deleteTrack(track.id)}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   };
@@ -285,7 +271,7 @@ const Mixes: React.FC = () => {
           handleCommentChange={handleCommentChange}
           handleSubmitComment={handleSubmitComment}
           formatDuration={formatDuration}
-          renderTrackActions={renderTrackWithActions}
+          renderTrackActions={renderTrackActions}
         />
       </div>
     </MainLayout>

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Play, Pause, Heart, MessageCircle, Share2 } from 'lucide-react';
+import { Play, Pause, Heart, MessageCircle, Share2, Edit, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ interface TrackCardProps {
   onCommentChange: (value: string) => void;
   onSubmitComment: (e: React.FormEvent) => void;
   formatDuration: (seconds?: number) => string;
+  renderTrackActions?: (track: Track) => React.ReactNode;
 }
 
 const TrackCard: React.FC<TrackCardProps> = ({
@@ -29,7 +30,8 @@ const TrackCard: React.FC<TrackCardProps> = ({
   newComment,
   onCommentChange,
   onSubmitComment,
-  formatDuration
+  formatDuration,
+  renderTrackActions
 }) => {
   const [showComments, setShowComments] = useState(false);
   
@@ -113,6 +115,8 @@ const TrackCard: React.FC<TrackCardProps> = ({
               <Share2 className="w-4 h-4" />
             </button>
           </div>
+          
+          {renderTrackActions && renderTrackActions(track)}
         </div>
         
         {/* Comments section */}
