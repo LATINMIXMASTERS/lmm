@@ -20,6 +20,7 @@ import UploadTrack from "./pages/UploadTrack";
 import ManageGenres from "./pages/ManageGenres";
 import UserProfile from "./pages/UserProfile";
 import HostProfile from "./pages/HostProfile";
+import DJs from "./pages/DJs";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
                 <Route path="/manage-genres" element={<ManageGenres />} />
                 <Route path="/user/:userId" element={<UserProfile />} />
                 <Route path="/host/:userId" element={<HostProfile />} />
+                <Route path="/djs" element={<DJs />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

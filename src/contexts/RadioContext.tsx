@@ -37,7 +37,9 @@ const initialStations: RadioStation[] = [
       port: '8000',
       password: 'demo123'
     },
-    streamUrl: 'https://lmmradiocast.com/lmmradio'
+    streamUrl: 'https://lmmradiocast.com/lmmradio',
+    hosts: ['host1', 'host2'],
+    broadcastTime: 'Weekdays 6PM-10PM'
   },
   {
     id: '2',
@@ -52,7 +54,9 @@ const initialStations: RadioStation[] = [
       port: '8000',
       password: 'demo123'
     },
-    streamUrl: 'https://lmmradiocast.com/bachataradio'
+    streamUrl: 'https://lmmradiocast.com/bachataradio',
+    hosts: ['host3'],
+    broadcastTime: 'Weekends 2PM-6PM'
   },
   {
     id: '3',
@@ -67,7 +71,9 @@ const initialStations: RadioStation[] = [
       port: '8000',
       password: 'demo123'
     },
-    streamUrl: 'https://lmmradiocast.com/reggaetonradio'
+    streamUrl: 'https://lmmradiocast.com/reggaetonradio',
+    hosts: ['host2', 'host4'],
+    broadcastTime: 'Daily 8PM-12AM'
   },
   {
     id: '4',

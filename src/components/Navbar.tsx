@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Radio, Music, Info, Home, User, LogOut, Shield } from 'lucide-react';
+import { Menu, X, Radio, Music, Info, Home, User, LogOut, Shield, Headphones } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 

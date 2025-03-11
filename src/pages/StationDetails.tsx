@@ -49,7 +49,6 @@ const StationDetails: React.FC = () => {
   const [stationBookings, setStationBookings] = useState<any[]>([]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   
-  // Cancel booking confirm dialog
   const [showCancelDialog, setShowCancelDialog] = useState<boolean>(false);
   const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
   
@@ -144,7 +143,6 @@ const StationDetails: React.FC = () => {
         description: "Your show booking has been canceled."
       });
       
-      // Update bookings list
       const bookings = getBookingsForStation(id!).filter(booking => booking.approved);
       setStationBookings(bookings);
       
@@ -287,7 +285,6 @@ const StationDetails: React.FC = () => {
                         <div className="flex items-center">
                           <CheckCircle2 className="w-5 h-5 text-green-500" />
                           
-                          {/* Show edit/cancel buttons if user is the host */}
                           {user && show.hostId === user.id && (
                             <div className="flex ml-2">
                               <Button 
@@ -347,6 +344,33 @@ const StationDetails: React.FC = () => {
                 </div>
               </div>
             </div>
+            
+            {station.hosts && station.hosts.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-2">Station Hosts:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {station.hosts.map(hostId => {
+                    const hostUser = users.find(u => u.id === hostId);
+                    return hostUser ? (
+                      <Link 
+                        key={hostId} 
+                        to={`/host/${hostId}`}
+                        className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 transition-colors p-2 rounded-lg"
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage 
+                            src={hostUser.profileImage || `https://api.dicebear.com/7.x/personas/svg?seed=${hostUser.username}`} 
+                            alt={hostUser.username} 
+                          />
+                          <AvatarFallback>{hostUser.username.substring(0, 2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <span>{hostUser.username}</span>
+                      </Link>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            )}
             
             {user?.isRadioHost ? (
               <div className="bg-blue-50 rounded-lg border border-blue-100 p-5">
@@ -448,7 +472,6 @@ const StationDetails: React.FC = () => {
         </div>
       </div>
       
-      {/* Cancel Booking Confirmation Dialog */}
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

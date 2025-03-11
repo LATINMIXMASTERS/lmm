@@ -1,9 +1,7 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
-// Export the User interface so it can be imported elsewhere
 export interface User {
   id: string;
   username: string;
@@ -50,7 +48,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
   
-  // Safely access navigate only if we're in a router context
   let navigate: ReturnType<typeof useNavigate> | null = null;
   try {
     navigate = useNavigate();
@@ -59,18 +56,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   useEffect(() => {
-    // Check if user is stored in localStorage
     const storedUser = localStorage.getItem('latinmixmasters_user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
 
-    // Load all users from localStorage or initialize with default users
     const storedUsers = localStorage.getItem('latinmixmasters_users');
     if (storedUsers) {
       setUsers(JSON.parse(storedUsers));
     } else {
-      // Initialize with admin user and test accounts if no users exist
       const initialUsers = [
         {
           id: '1',
@@ -106,6 +100,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           registeredAt: new Date().toISOString(),
           profileImage: 'https://api.dicebear.com/7.x/personas/svg?seed=testuser',
           biography: 'Test user account'
+        },
+        {
+          id: 'host1',
+          username: 'DJLatino',
+          email: 'djlatino@example.com',
+          password: 'password123',
+          isAdmin: false,
+          isRadioHost: true,
+          registeredAt: new Date().toISOString(),
+          profileImage: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=1000&auto=format&fit=crop',
+          biography: 'Passionate Latin music DJ with over 10 years of experience in the industry.',
+          socialLinks: {
+            facebook: 'https://facebook.com/djlatino',
+            twitter: 'https://twitter.com/djlatino',
+            instagram: 'https://instagram.com/djlatino',
+            youtube: null,
+            soundcloud: 'https://soundcloud.com/djlatino'
+          }
+        },
+        {
+          id: 'host2',
+          username: 'BachataQueen',
+          email: 'bachataqueen@example.com',
+          password: 'password123',
+          isAdmin: false,
+          isRadioHost: true,
+          registeredAt: new Date().toISOString(),
+          profileImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1000&auto=format&fit=crop',
+          biography: 'Dedicated to bringing you the best bachata mixes from around the world.',
+          socialLinks: {
+            facebook: 'https://facebook.com/bachataqueen',
+            twitter: null,
+            instagram: 'https://instagram.com/bachataqueen',
+            youtube: 'https://youtube.com/bachataqueen',
+            soundcloud: null
+          }
+        },
+        {
+          id: 'host3',
+          username: 'ReggaetonMaster',
+          email: 'reggaetonmaster@example.com',
+          password: 'password123',
+          isAdmin: false,
+          isRadioHost: true,
+          registeredAt: new Date().toISOString(),
+          profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1000&auto=format&fit=crop',
+          biography: 'Bringing you the hottest reggaeton tracks from Puerto Rico and beyond.',
+          socialLinks: {
+            facebook: null,
+            twitter: 'https://twitter.com/reggaetonmaster',
+            instagram: 'https://instagram.com/reggaetonmaster',
+            youtube: null,
+            soundcloud: 'https://soundcloud.com/reggaetonmaster'
+          }
+        },
+        {
+          id: 'host4',
+          username: 'SalsaKing',
+          email: 'salsaking@example.com',
+          password: 'password123',
+          isAdmin: false,
+          isRadioHost: true,
+          registeredAt: new Date().toISOString(),
+          profileImage: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1000&auto=format&fit=crop',
+          biography: 'Professional salsa DJ with a passion for Cuban and Puerto Rican rhythms.',
+          socialLinks: {
+            facebook: 'https://facebook.com/salsaking',
+            twitter: 'https://twitter.com/salsaking',
+            instagram: 'https://instagram.com/salsaking',
+            youtube: 'https://youtube.com/salsaking',
+            soundcloud: 'https://soundcloud.com/salsaking'
+          }
         }
       ];
       setUsers(initialUsers);
@@ -115,23 +181,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  // Fixed login functionality to properly handle all accounts
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     
     try {
       console.log("Login attempt with:", email, password);
       
-      // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Get users from local storage
       const storedUsers = localStorage.getItem('latinmixmasters_users');
       const allUsers = storedUsers ? JSON.parse(storedUsers) : [];
       
       console.log("Available users:", allUsers);
       
-      // Find user with case-insensitive email match
       const foundUser = allUsers.find((u: User) => 
         u.email.toLowerCase() === email.toLowerCase()
       );
@@ -139,7 +201,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Found user:", foundUser);
       
       if (foundUser) {
-        // Check password based on account type
         let validPassword = false;
         
         if (foundUser.email.toLowerCase() === 'admin@example.com' && password === 'admin') {
@@ -151,11 +212,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ) {
           validPassword = true;
         } else if (foundUser.email.toLowerCase() === 'test@gmail.com' && password === '123456') {
-          // For the newly registered user with specific credentials
           validPassword = true;
         } else {
-          // For regular users, we'd normally check against hashed passwords
-          // For demo, we'll accept "password" or any password used during registration
           validPassword = password === 'password';
         }
         
@@ -181,7 +239,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               description: `Welcome back, ${foundUser.username}!`,
             });
             
-            // Redirect to home page
             if (navigate) {
               navigate('/');
             }
@@ -218,16 +275,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Fixed register functionality
   const register = async (username: string, email: string, password: string) => {
     setIsLoading(true);
     try {
       console.log("Register attempt:", { username, email });
       
-      // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Check if user already exists
       const storedUsers = localStorage.getItem('latinmixmasters_users');
       const allUsers = storedUsers ? JSON.parse(storedUsers) : [];
       
@@ -241,7 +295,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // Create new user
       const newUser = {
         id: Math.random().toString(36).substring(2, 11),
         username,
@@ -254,7 +307,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profileImage: `https://api.dicebear.com/7.x/personas/svg?seed=${username}`
       };
       
-      // Add to users list
       const updatedUsers = [...allUsers, newUser];
       setUsers(updatedUsers);
       localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
@@ -282,7 +334,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       title: "Logged out",
       description: "You have been successfully logged out.",
     });
-    // Redirect to home page after logout
     if (navigate) {
       navigate('/');
     }
@@ -314,9 +365,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // Function to suspend a user
   const suspendUser = (userId: string) => {
-    // Cannot suspend admin
     const userToSuspend = users.find(u => u.id === userId);
     if (userToSuspend?.isAdmin) {
       toast({
@@ -334,7 +383,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsers(updatedUsers);
     localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
     
-    // If the suspended user is currently logged in, log them out
     if (user?.id === userId) {
       logout();
     }
@@ -345,7 +393,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // Function to activate a suspended user
   const activateUser = (userId: string) => {
     const updatedUsers = users.map(u => 
       u.id === userId ? { ...u, suspended: false } : u
@@ -360,9 +407,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // Function to edit a user
   const editUser = (userId: string, userData: Partial<User>) => {
-    // Cannot remove admin status from the main admin account
     if (userId === '1' && userData.isAdmin === false) {
       toast({
         title: "Operation denied",
@@ -379,7 +424,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsers(updatedUsers);
     localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
     
-    // If the edited user is currently logged in, update their session
     if (user?.id === userId) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
@@ -392,9 +436,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // Function to delete a user
   const deleteUser = (userId: string) => {
-    // Cannot delete the main admin account
     if (userId === '1') {
       toast({
         title: "Operation denied",
@@ -409,7 +451,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsers(updatedUsers);
     localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
     
-    // If the deleted user is currently logged in, log them out
     if (user?.id === userId) {
       logout();
     }
@@ -420,7 +461,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // New function for users to update their own profile
   const updateProfile = (userData: Partial<User>) => {
     if (!user) {
       toast({
@@ -431,18 +471,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Update the user's profile
     const updatedUser = { ...user, ...userData };
     setUser(updatedUser);
     
-    // Update the user in the users list
     const updatedUsers = users.map(u => 
       u.id === user.id ? updatedUser : u
     );
     
     setUsers(updatedUsers);
     
-    // Update localStorage
     localStorage.setItem('latinmixmasters_user', JSON.stringify(updatedUser));
     localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
     
