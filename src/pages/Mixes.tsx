@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Music, Upload, PlusCircle } from 'lucide-react';
+import { Music, Upload, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTrack } from '@/contexts/TrackContext';
@@ -9,6 +8,17 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import GenreTabs from '@/components/GenreTabs';
 import { formatDuration } from '@/utils/formatTime';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Mixes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -19,7 +29,9 @@ const Mixes: React.FC = () => {
     setCurrentPlayingTrack, 
     likeTrack, 
     addComment,
-    shareTrack
+    shareTrack,
+    deleteTrack,
+    canEditTrack
   } = useTrack();
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,6 +41,7 @@ const Mixes: React.FC = () => {
   const [filteredTracks, setFilteredTracks] = useState(tracks);
   const [selectedTabGenre, setSelectedTabGenre] = useState('all');
   const [newComments, setNewComments] = useState<Record<string, string>>({});
+  const [trackToDelete, setTrackToDelete] = useState<string | null>(null);
   
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -118,6 +131,29 @@ const Mixes: React.FC = () => {
     shareTrack(trackId);
   };
 
+  const handleEditTrack = (trackId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/edit-track/${trackId}`);
+  };
+
+  const handleDeleteTrack = (trackId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setTrackToDelete(trackId);
+  };
+
+  const confirmDeleteTrack = () => {
+    if (!trackToDelete) return;
+    
+    if (deleteTrack(trackToDelete)) {
+      toast({
+        title: "Track deleted",
+        description: "Your track has been successfully deleted",
+      });
+    }
+    
+    setTrackToDelete(null);
+  };
+
   const handleCommentChange = (trackId: string, value: string) => {
     setNewComments({
       ...newComments,
@@ -142,7 +178,7 @@ const Mixes: React.FC = () => {
 
     addComment(trackId, {
       userId: user?.id || 'anonymous',
-      username: user?.username || 'Anonymous', // Using username instead of displayName
+      username: user?.username || 'Anonymous',
       text: commentText
     });
     
@@ -150,6 +186,56 @@ const Mixes: React.FC = () => {
       ...newComments,
       [trackId]: ''
     });
+  };
+
+  const renderTrackWithActions = (track: any) => {
+    const isEditable = canEditTrack(track.id);
+    
+    return (
+      <div className="flex items-center">
+        {isEditable && (
+          <div className="flex space-x-2 mr-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => handleEditTrack(track.id, e)}
+              title="Edit track"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => e.stopPropagation()}
+                  title="Delete track"
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete this track.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => {
+                    deleteTrack(track.id);
+                  }}>
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -199,6 +285,7 @@ const Mixes: React.FC = () => {
           handleCommentChange={handleCommentChange}
           handleSubmitComment={handleSubmitComment}
           formatDuration={formatDuration}
+          renderTrackActions={renderTrackWithActions}
         />
       </div>
     </MainLayout>

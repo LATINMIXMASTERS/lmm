@@ -8,6 +8,8 @@ interface TrackContextType {
   tracks: Track[];
   genres: Genre[];
   addTrack: (track: Omit<Track, 'id' | 'likes' | 'uploadDate'>) => Track;
+  deleteTrack: (trackId: string) => boolean;
+  updateTrack: (trackId: string, trackData: Partial<Track>) => boolean;
   addGenre: (genreName: string) => Genre;
   getTracksByGenre: (genreId: string) => Track[];
   getTracksByUser: (userId: string) => Track[];
@@ -18,6 +20,7 @@ interface TrackContextType {
   setCurrentPlayingTrack: (trackId: string | null) => void;
   generateWaveformData: () => number[];
   shareTrack: (trackId: string) => void;
+  canEditTrack: (trackId: string) => boolean;
 }
 
 const TrackContext = createContext<TrackContextType | undefined>(undefined);
@@ -111,6 +114,120 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     });
     
     return newTrack;
+  };
+
+  // Delete a track - only if user is admin or the uploader
+  const deleteTrack = (trackId: string): boolean => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You must be logged in to delete tracks",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) {
+      toast({
+        title: "Track not found",
+        description: "The track you're trying to delete doesn't exist",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Check if user is admin or track uploader
+    if (!user.isAdmin && track.uploadedBy !== user.id) {
+      toast({
+        title: "Permission denied",
+        description: "You don't have permission to delete this track",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    const updatedTracks = tracks.filter(t => t.id !== trackId);
+    setTracks(updatedTracks);
+    localStorage.setItem('latinmixmasters_tracks', JSON.stringify(updatedTracks));
+    
+    // If this track was playing, stop it
+    if (currentPlayingTrack === trackId) {
+      setCurrentPlayingTrack(null);
+    }
+    
+    toast({
+      title: "Track deleted",
+      description: "The track has been successfully deleted",
+    });
+    
+    return true;
+  };
+
+  // Update a track - only if user is admin or the uploader
+  const updateTrack = (trackId: string, trackData: Partial<Track>): boolean => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You must be logged in to update tracks",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    const trackIndex = tracks.findIndex(t => t.id === trackId);
+    if (trackIndex === -1) {
+      toast({
+        title: "Track not found",
+        description: "The track you're trying to update doesn't exist",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    const track = tracks[trackIndex];
+    
+    // Check if user is admin or track uploader
+    if (!user.isAdmin && track.uploadedBy !== user.id) {
+      toast({
+        title: "Permission denied",
+        description: "You don't have permission to update this track",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Create updated track, preserving id and other essential properties
+    const updatedTrack = {
+      ...track,
+      ...trackData,
+      id: track.id, // Ensure ID cannot be changed
+      uploadDate: track.uploadDate, // Preserve original upload date
+      uploadedBy: track.uploadedBy, // Preserve original uploader
+    };
+
+    const updatedTracks = [...tracks];
+    updatedTracks[trackIndex] = updatedTrack;
+    
+    setTracks(updatedTracks);
+    localStorage.setItem('latinmixmasters_tracks', JSON.stringify(updatedTracks));
+    
+    toast({
+      title: "Track updated",
+      description: "The track has been successfully updated",
+    });
+    
+    return true;
+  };
+
+  // Helper function to check if user can edit a track
+  const canEditTrack = (trackId: string): boolean => {
+    if (!user) return false;
+    
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return false;
+    
+    return user.isAdmin || track.uploadedBy === user.id;
   };
 
   // Add a new genre
@@ -244,6 +361,8 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       tracks,
       genres,
       addTrack,
+      deleteTrack,
+      updateTrack,
       addGenre,
       getTracksByGenre,
       getTracksByUser,
@@ -253,7 +372,8 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       currentPlayingTrack,
       setCurrentPlayingTrack,
       generateWaveformData,
-      shareTrack
+      shareTrack,
+      canEditTrack
     }}>
       {children}
     </TrackContext.Provider>

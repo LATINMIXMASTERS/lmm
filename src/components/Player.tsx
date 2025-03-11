@@ -89,7 +89,7 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
-        audioRef.current.remove();
+        audioRef.current.src = '';
         audioRef.current = null;
       }
       
@@ -135,6 +135,10 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
         variant: "destructive"
       });
       return;
+    }
+    
+    if (!streamUrl.startsWith('http')) {
+      streamUrl = `https://${streamUrl}`;
     }
     
     console.log("Changing audio source to station:", streamUrl);

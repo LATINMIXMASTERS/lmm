@@ -17,6 +17,7 @@ import StationDetails from "./pages/StationDetails";
 import NotFound from "./pages/NotFound";
 import Mixes from "./pages/Mixes";
 import UploadTrack from "./pages/UploadTrack";
+import EditTrack from "./pages/EditTrack";
 import ManageGenres from "./pages/ManageGenres";
 import UserProfile from "./pages/UserProfile";
 import HostProfile from "./pages/HostProfile";
@@ -43,6 +44,7 @@ const App = () => (
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/mixes" element={<Mixes />} />
                 <Route path="/upload-track" element={<UploadTrack />} />
+                <Route path="/edit-track/:trackId" element={<EditTrack />} />
                 <Route path="/manage-genres" element={<ManageGenres />} />
                 <Route path="/user/:userId" element={<UserProfile />} />
                 <Route path="/host/:userId" element={<HostProfile />} />
