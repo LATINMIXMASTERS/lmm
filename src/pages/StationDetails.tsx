@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,7 +36,7 @@ import { format, isAfter, isBefore } from "date-fns";
 const StationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, users } = useAuth();
   const { 
     getStationById, 
     getBookingsForStation, 
