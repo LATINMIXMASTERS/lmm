@@ -1,7 +1,6 @@
-
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { RadioStation, BookingSlot } from '@/models/RadioStation';
-import { isAfter, isBefore, format } from 'date-fns';
+import { isAfter, isBefore, format, isToday } from 'date-fns';
 
 interface RadioContextType {
   stations: RadioStation[];
@@ -11,11 +10,14 @@ interface RadioContextType {
   addBooking: (booking: Omit<BookingSlot, 'id'>) => BookingSlot;
   approveBooking: (bookingId: string) => void;
   rejectBooking: (bookingId: string, reason: string) => void;
+  cancelBooking: (bookingId: string) => void;
+  updateBooking: (bookingId: string, updatedBooking: Partial<BookingSlot>) => BookingSlot | null;
   updateStreamDetails: (stationId: string, streamDetails: { url: string; port: string; password: string; }) => void;
   updateStreamUrl: (stationId: string, streamUrl: string) => void;
   currentPlayingStation: string | null;
   setCurrentPlayingStation: (stationId: string | null) => void;
   hasBookingConflict: (stationId: string, startTime: Date, endTime: Date, excludeBookingId?: string) => boolean;
+  getBookingsForToday: (stationId: string) => BookingSlot[];
 }
 
 const RadioContext = createContext<RadioContextType | undefined>(undefined);
@@ -142,7 +144,13 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return bookings.filter(booking => booking.stationId === stationId);
   };
 
-  // New function to check for booking conflicts
+  const getBookingsForToday = (stationId: string) => {
+    return bookings.filter(booking => 
+      booking.stationId === stationId && 
+      isToday(new Date(booking.startTime))
+    );
+  };
+
   const hasBookingConflict = (stationId: string, startTime: Date, endTime: Date, excludeBookingId?: string) => {
     const stationBookings = getBookingsForStation(stationId)
       .filter(booking => booking.id !== excludeBookingId && !booking.rejected);
@@ -203,7 +211,6 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     localStorage.setItem('latinmixmasters_bookings', JSON.stringify(updatedBookings));
   };
 
-  // Add reject booking functionality
   const rejectBooking = (bookingId: string, reason: string) => {
     const updatedBookings = bookings.map(booking => 
       booking.id === bookingId ? { 
@@ -216,6 +223,56 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     
     setBookings(updatedBookings);
     localStorage.setItem('latinmixmasters_bookings', JSON.stringify(updatedBookings));
+  };
+
+  const cancelBooking = (bookingId: string) => {
+    const updatedBookings = bookings.filter(booking => booking.id !== bookingId);
+    
+    setBookings(updatedBookings);
+    localStorage.setItem('latinmixmasters_bookings', JSON.stringify(updatedBookings));
+    
+    console.log(`Booking ${bookingId} has been canceled`);
+  };
+
+  const updateBooking = (bookingId: string, updatedBookingData: Partial<BookingSlot>) => {
+    const bookingIndex = bookings.findIndex(booking => booking.id === bookingId);
+    
+    if (bookingIndex === -1) {
+      console.error(`Booking with ID ${bookingId} not found`);
+      return null;
+    }
+    
+    // If start or end time is being updated, check for conflicts
+    if (updatedBookingData.startTime || updatedBookingData.endTime) {
+      const booking = bookings[bookingIndex];
+      const stationId = booking.stationId;
+      const startTime = updatedBookingData.startTime 
+        ? new Date(updatedBookingData.startTime) 
+        : new Date(booking.startTime);
+      const endTime = updatedBookingData.endTime 
+        ? new Date(updatedBookingData.endTime) 
+        : new Date(booking.endTime);
+      
+      const hasConflict = hasBookingConflict(stationId, startTime, endTime, bookingId);
+      
+      if (hasConflict) {
+        console.error('Time slot conflict detected');
+        return null;
+      }
+    }
+    
+    const updatedBookings = bookings.map((booking, index) => {
+      if (index === bookingIndex) {
+        return { ...booking, ...updatedBookingData };
+      }
+      return booking;
+    });
+    
+    setBookings(updatedBookings);
+    localStorage.setItem('latinmixmasters_bookings', JSON.stringify(updatedBookings));
+    
+    console.log(`Booking ${bookingId} has been updated:`, updatedBookings[bookingIndex]);
+    return updatedBookings[bookingIndex];
   };
 
   const updateStreamDetails = (stationId: string, streamDetails: { url: string; port: string; password: string; }) => {
@@ -241,7 +298,6 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     console.log(`Updated stream details for station ${stationId}:`, { ...streamDetails, url: formattedUrl });
   };
   
-  // Updated function to just update the stream URL for player
   const updateStreamUrl = (stationId: string, streamUrl: string) => {
     let formattedUrl = streamUrl;
     if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
@@ -273,11 +329,14 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       addBooking,
       approveBooking,
       rejectBooking,
+      cancelBooking,
+      updateBooking,
       updateStreamDetails,
       updateStreamUrl,
       currentPlayingStation,
       setCurrentPlayingStation,
-      hasBookingConflict
+      hasBookingConflict,
+      getBookingsForToday
     }}>
       {children}
     </RadioContext.Provider>

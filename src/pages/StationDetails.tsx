@@ -6,6 +6,16 @@ import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Radio, 
   Play, 
@@ -15,7 +25,9 @@ import {
   Clock, 
   CheckCircle2,
   ChevronLeft,
-  Pause
+  Pause,
+  Edit,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isAfter, isBefore } from "date-fns";
@@ -24,12 +36,22 @@ const StationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  const { getStationById, getBookingsForStation, setCurrentPlayingStation, currentPlayingStation } = useRadio();
+  const { 
+    getStationById, 
+    getBookingsForStation, 
+    setCurrentPlayingStation, 
+    currentPlayingStation,
+    cancelBooking 
+  } = useRadio();
   const { toast } = useToast();
   
   const [station, setStation] = useState<any>(null);
   const [stationBookings, setStationBookings] = useState<any[]>([]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  
+  // Cancel booking confirm dialog
+  const [showCancelDialog, setShowCancelDialog] = useState<boolean>(false);
+  const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
   
   useEffect(() => {
     if (!id) {
@@ -100,6 +122,42 @@ const StationDetails: React.FC = () => {
       booking.hostId === user.id && 
       isAfter(new Date(booking.startTime), new Date())
     );
+  };
+  
+  const handleEditBooking = (bookingId: string) => {
+    navigate(`/book-show/${id}?edit=${bookingId}`);
+  };
+  
+  const handleCancelBooking = (bookingId: string) => {
+    setBookingToCancel(bookingId);
+    setShowCancelDialog(true);
+  };
+  
+  const confirmCancelBooking = () => {
+    if (!bookingToCancel) return;
+    
+    try {
+      cancelBooking(bookingToCancel);
+      
+      toast({
+        title: "Show canceled",
+        description: "Your show booking has been canceled."
+      });
+      
+      // Update bookings list
+      const bookings = getBookingsForStation(id!).filter(booking => booking.approved);
+      setStationBookings(bookings);
+      
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to cancel the booking. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setShowCancelDialog(false);
+      setBookingToCancel(null);
+    }
   };
   
   if (!station) {
@@ -226,7 +284,31 @@ const StationDetails: React.FC = () => {
                             <span>{format(new Date(show.startTime), "h:mm a")} - {format(new Date(show.endTime), "h:mm a")}</span>
                           </div>
                         </div>
-                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        <div className="flex items-center">
+                          <CheckCircle2 className="w-5 h-5 text-green-500" />
+                          
+                          {/* Show edit/cancel buttons if user is the host */}
+                          {user && show.hostId === user.id && (
+                            <div className="flex ml-2">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0" 
+                                onClick={() => handleEditBooking(show.id)}
+                              >
+                                <Edit className="h-4 w-4 text-blue" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0" 
+                                onClick={() => handleCancelBooking(show.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -277,10 +359,33 @@ const StationDetails: React.FC = () => {
                     <div className="space-y-3">
                       {userBookings.map(booking => (
                         <div key={booking.id} className="bg-white p-3 rounded-md border border-blue-100">
-                          <h4 className="font-medium">{booking.title}</h4>
-                          <p className="text-sm text-gray-600">
-                            {format(new Date(booking.startTime), "MMM d, yyyy - h:mm a")} to {format(new Date(booking.endTime), "h:mm a")}
-                          </p>
+                          <div className="flex justify-between">
+                            <div>
+                              <h4 className="font-medium">{booking.title}</h4>
+                              <p className="text-sm text-gray-600">
+                                {format(new Date(booking.startTime), "MMM d, yyyy - h:mm a")} to {format(new Date(booking.endTime), "h:mm a")}
+                              </p>
+                            </div>
+                            
+                            <div className="flex">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0" 
+                                onClick={() => handleEditBooking(booking.id)}
+                              >
+                                <Edit className="h-4 w-4 text-blue" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0" 
+                                onClick={() => handleCancelBooking(booking.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </div>
                           
                           {station.streamDetails && (
                             <div className="mt-2 pt-2 border-t border-gray-100">
@@ -342,6 +447,27 @@ const StationDetails: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Cancel Booking Confirmation Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Show Booking</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this show booking? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmCancelBooking}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Yes, Cancel Show
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 };

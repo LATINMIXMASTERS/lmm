@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +8,16 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   CalendarIcon, 
   Clock, 
@@ -16,12 +25,13 @@ import {
   Info, 
   CheckCircle2,
   AlertCircle,
-  X
+  X,
+  Edit,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, addHours, isAfter, addMinutes, isBefore, startOfHour, endOfHour, setHours, setMinutes } from "date-fns";
+import { format, addHours, isAfter, addMinutes, isBefore, startOfHour, endOfHour, setHours, setMinutes, isToday } from "date-fns";
 
-// Available time slots (1-hour blocks)
 const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => {
   const hour = i;
   return {
@@ -35,7 +45,16 @@ const BookShow: React.FC = () => {
   const { stationId } = useParams<{ stationId: string }>();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  const { getStationById, addBooking, bookings, getBookingsForStation, hasBookingConflict } = useRadio();
+  const { 
+    getStationById, 
+    addBooking, 
+    bookings, 
+    getBookingsForStation, 
+    hasBookingConflict,
+    cancelBooking,
+    updateBooking,
+    getBookingsForToday
+  } = useRadio();
   const { toast } = useToast();
   
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -44,9 +63,16 @@ const BookShow: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [station, setStation] = useState<any>(null);
   const [stationBookings, setStationBookings] = useState<any[]>([]);
+  const [todayBookings, setTodayBookings] = useState<any[]>([]);
   const [bookingSuccess, setBookingSuccess] = useState<boolean>(false);
   const [newBooking, setNewBooking] = useState<any>(null);
   const [availableTimeSlots, setAvailableTimeSlots] = useState<any[]>([]);
+  
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
+  
+  const [showCancelDialog, setShowCancelDialog] = useState<boolean>(false);
+  const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
   
   useEffect(() => {
     if (!isAuthenticated || !user?.isRadioHost) {
@@ -84,7 +110,9 @@ const BookShow: React.FC = () => {
     const bookingsData = getBookingsForStation(stationId);
     setStationBookings(bookingsData);
     
-    // Update available time slots whenever bookings change
+    const todayData = getBookingsForToday(stationId);
+    setTodayBookings(todayData);
+    
     if (date) {
       updateAvailableTimeSlots(date);
     }
@@ -97,19 +125,15 @@ const BookShow: React.FC = () => {
   }, [date, stationBookings]);
   
   const updateAvailableTimeSlots = (selectedDate: Date) => {
-    // Create a date object for each time slot to check availability
     const slots = TIME_SLOTS.map(slot => {
       const [hours] = slot.value.split(':').map(Number);
       const slotDate = new Date(selectedDate);
       slotDate.setHours(hours, 0, 0, 0);
       
-      // End time is 1 hour after start time
       const endTime = addHours(slotDate, 1);
       
-      // Check if this slot conflicts with any existing bookings
-      const isBooked = hasBookingConflict(stationId!, slotDate, endTime);
+      const isBooked = hasBookingConflict(stationId!, slotDate, endTime, editingBookingId || undefined);
       
-      // Check if slot is in the past
       const isPast = isAfter(new Date(), endTime);
       
       return {
@@ -122,10 +146,8 @@ const BookShow: React.FC = () => {
     
     setAvailableTimeSlots(slots);
     
-    // If currently selected time slot is not available, reset it
     const currentSlot = slots.find(slot => slot.value === selectedTimeSlot);
     if (currentSlot && !currentSlot.isAvailable) {
-      // Find the first available slot
       const firstAvailable = slots.find(slot => slot.isAvailable);
       if (firstAvailable) {
         setSelectedTimeSlot(firstAvailable.value);
@@ -145,15 +167,12 @@ const BookShow: React.FC = () => {
       return;
     }
     
-    // Parse the selected date and time
     const [hours] = selectedTimeSlot.split(":").map(Number);
     const startDateTime = new Date(date);
     startDateTime.setHours(hours, 0, 0, 0);
     
-    // Calculate end time (1 hour after start time)
     const endDateTime = addHours(startDateTime, 1);
     
-    // Validate booking is at least 30 minutes in the future
     const minBookingTime = addMinutes(new Date(), 30);
     if (isBefore(startDateTime, minBookingTime)) {
       toast({
@@ -164,61 +183,145 @@ const BookShow: React.FC = () => {
       return;
     }
     
-    // Check for conflicts with existing bookings
-    if (hasBookingConflict(stationId!, startDateTime, endDateTime)) {
-      toast({
-        title: "Booking conflict",
-        description: "This time slot is already booked. Please choose another slot.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     setIsLoading(true);
     
     try {
-      // Add the booking - it will be auto-approved if there's no conflict
-      const booking = addBooking({
-        stationId: stationId!,
-        hostId: user.id,
-        hostName: user.username,
-        startTime: startDateTime,
-        endTime: endDateTime,
-        title: showTitle,
-        approved: user.isAdmin ? true : false
-      });
-      
-      setNewBooking(booking);
-      setBookingSuccess(true);
-      
-      if (booking.rejected) {
-        toast({
-          title: "Booking rejected",
-          description: booking.rejectionReason || "This time slot conflicts with another booking.",
-          variant: "destructive"
+      if (isEditing && editingBookingId) {
+        const updatedBooking = updateBooking(editingBookingId, {
+          title: showTitle,
+          startTime: startDateTime,
+          endTime: endDateTime
         });
-        return;
+        
+        if (!updatedBooking) {
+          toast({
+            title: "Update failed",
+            description: "This time slot conflicts with another booking.",
+            variant: "destructive"
+          });
+          setIsLoading(false);
+          return;
+        }
+        
+        setNewBooking(updatedBooking);
+        setBookingSuccess(true);
+        
+        toast({
+          title: "Show updated successfully",
+          description: "Your show booking has been updated."
+        });
+        
+      } else {
+        if (hasBookingConflict(stationId!, startDateTime, endDateTime)) {
+          toast({
+            title: "Booking conflict",
+            description: "This time slot is already booked. Please choose another slot.",
+            variant: "destructive"
+          });
+          setIsLoading(false);
+          return;
+        }
+        
+        const booking = addBooking({
+          stationId: stationId!,
+          hostId: user.id,
+          hostName: user.username,
+          startTime: startDateTime,
+          endTime: endDateTime,
+          title: showTitle,
+          approved: user.isAdmin ? true : false
+        });
+        
+        setNewBooking(booking);
+        setBookingSuccess(true);
+        
+        if (booking.rejected) {
+          toast({
+            title: "Booking rejected",
+            description: booking.rejectionReason || "This time slot conflicts with another booking.",
+            variant: "destructive"
+          });
+          setIsLoading(false);
+          return;
+        }
+        
+        toast({
+          title: "Show booked successfully",
+          description: booking.approved 
+            ? "Your show has been scheduled." 
+            : "Your booking request has been submitted and is waiting for approval.",
+        });
       }
       
-      toast({
-        title: "Show booked successfully",
-        description: booking.approved 
-          ? "Your show has been scheduled." 
-          : "Your booking request has been submitted and is waiting for approval.",
-      });
+      setIsEditing(false);
+      setEditingBookingId(null);
       
-      // Update bookings list to refresh available slots
       updateStationBookings();
-      
     } catch (error) {
       toast({
-        title: "Booking failed",
-        description: "There was an error booking your show. Please try again.",
+        title: isEditing ? "Update failed" : "Booking failed",
+        description: `There was an error ${isEditing ? "updating" : "booking"} your show. Please try again.`,
         variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  const handleEditBooking = (booking: any) => {
+    setIsEditing(true);
+    setEditingBookingId(booking.id);
+    setShowTitle(booking.title);
+    
+    const bookingDate = new Date(booking.startTime);
+    setDate(bookingDate);
+    
+    const hours = bookingDate.getHours();
+    const formattedHours = hours < 10 ? `0${hours}:00` : `${hours}:00`;
+    setSelectedTimeSlot(formattedHours);
+    
+    updateAvailableTimeSlots(bookingDate);
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const handleCancelBooking = (bookingId: string) => {
+    setBookingToCancel(bookingId);
+    setShowCancelDialog(true);
+  };
+  
+  const confirmCancelBooking = () => {
+    if (!bookingToCancel) return;
+    
+    try {
+      cancelBooking(bookingToCancel);
+      
+      toast({
+        title: "Show canceled",
+        description: "Your show booking has been canceled."
+      });
+      
+      updateStationBookings();
+      
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to cancel the booking. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setShowCancelDialog(false);
+      setBookingToCancel(null);
+    }
+  };
+  
+  const resetForm = () => {
+    setIsEditing(false);
+    setEditingBookingId(null);
+    setShowTitle("");
+    setDate(new Date());
+    setSelectedTimeSlot("12:00");
+    updateAvailableTimeSlots(new Date());
   };
   
   if (!station) {
@@ -238,7 +341,7 @@ const BookShow: React.FC = () => {
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center mb-6">
               <CheckCircle2 className="text-green-500 mr-2" />
-              <h1 className="text-2xl font-bold">Show Booked Successfully</h1>
+              <h1 className="text-2xl font-bold">{isEditing ? "Show Updated Successfully" : "Show Booked Successfully"}</h1>
             </div>
             
             <div className="bg-white rounded-lg shadow-md p-6 mb-8">
@@ -246,7 +349,7 @@ const BookShow: React.FC = () => {
                 <CheckCircle2 className="w-5 h-5 mr-2" />
                 <p className="text-sm">
                   {newBooking?.approved 
-                    ? "Your show has been scheduled successfully." 
+                    ? isEditing ? "Your show has been updated successfully." : "Your show has been scheduled successfully."
                     : "Your booking request has been submitted and is waiting for approval."}
                 </p>
               </div>
@@ -324,10 +427,7 @@ const BookShow: React.FC = () => {
                 <Button 
                   onClick={() => {
                     setBookingSuccess(false);
-                    setShowTitle("");
-                    setDate(new Date());
-                    setSelectedTimeSlot("12:00");
-                    updateAvailableTimeSlots(new Date());
+                    resetForm();
                   }}
                   variant="outline"
                 >
@@ -347,7 +447,19 @@ const BookShow: React.FC = () => {
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center mb-6">
             <Radio className="text-red-500 mr-2" />
-            <h1 className="text-2xl font-bold">Book a Show on {station.name}</h1>
+            <h1 className="text-2xl font-bold">
+              {isEditing ? "Edit Show Booking" : `Book a Show on ${station.name}`}
+            </h1>
+            {isEditing && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={resetForm} 
+                className="ml-auto"
+              >
+                <X className="w-4 h-4 mr-1" /> Cancel Edit
+              </Button>
+            )}
           </div>
           
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
@@ -440,7 +552,9 @@ const BookShow: React.FC = () => {
                       className="w-full bg-blue hover:bg-blue-dark" 
                       disabled={isLoading || availableTimeSlots.filter(slot => slot.isAvailable).length === 0}
                     >
-                      {isLoading ? "Booking..." : "Book Show"}
+                      {isLoading 
+                        ? (isEditing ? "Updating..." : "Booking...") 
+                        : (isEditing ? "Update Show" : "Book Show")}
                     </Button>
                   </div>
                 </div>
@@ -449,10 +563,10 @@ const BookShow: React.FC = () => {
           </div>
           
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-semibold mb-4">Current Bookings</h2>
-            {stationBookings.length > 0 ? (
+            <h2 className="text-lg font-semibold mb-4">Today's Bookings</h2>
+            {todayBookings.length > 0 ? (
               <div className="space-y-3">
-                {stationBookings
+                {todayBookings
                   .filter(booking => !booking.rejected) // Don't show rejected bookings
                   .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
                   .map((booking) => (
@@ -469,23 +583,66 @@ const BookShow: React.FC = () => {
                         <p className="text-sm text-gray-600">
                           Host: {booking.hostName}
                         </p>
+                        <p className="text-sm mt-1">
+                          {format(new Date(booking.startTime), "h:mm a")} to {format(new Date(booking.endTime), "h:mm a")}
+                        </p>
                       </div>
-                      {booking.approved && (
-                        <CheckCircle2 className="w-5 h-5 text-green-500" />
-                      )}
-                    </div>
-                    <div className="text-sm mt-1">
-                      {format(new Date(booking.startTime), "MMMM d, yyyy - h:mm a")} to {format(new Date(booking.endTime), "h:mm a")}
+                      <div className="flex flex-col space-y-2">
+                        {booking.approved && (
+                          <CheckCircle2 className="w-5 h-5 text-green-500 ml-auto" />
+                        )}
+                        
+                        {booking.hostId === user?.id && isAfter(new Date(booking.startTime), new Date()) && (
+                          <div className="flex space-x-1 mt-auto">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0" 
+                              onClick={() => handleEditBooking(booking)}
+                            >
+                              <Edit className="h-4 w-4 text-blue" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0" 
+                              onClick={() => handleCancelBooking(booking.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500">No bookings scheduled for this station yet.</p>
+              <p className="text-gray-500">No bookings scheduled for today.</p>
             )}
           </div>
         </div>
       </div>
+      
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Show Booking</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this show booking? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmCancelBooking}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Yes, Cancel Show
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 };
