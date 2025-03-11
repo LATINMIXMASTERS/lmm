@@ -3,15 +3,18 @@ export interface Track {
   id: string;
   title: string;
   artist: string;
-  artistId: string; // Added to store the actual user ID
+  artistId: string;
   genre: string;
   coverImage: string;
   audioFile: string;
-  fileSize: number; // Size in bytes
+  fileSize: number;
   uploadDate: string;
   uploadedBy: string;
   likes: number;
+  duration?: number; // Duration in seconds
+  waveformData?: number[]; // Array of amplitude data for waveform display
   comments?: Comment[];
+  playCount?: number; // Track play count
 }
 
 export interface Comment {

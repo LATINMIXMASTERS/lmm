@@ -1,8 +1,8 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { Track, Genre, Comment } from '@/models/Track';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthContext';
+import { useRadio } from './RadioContext';
 
 interface TrackContextType {
   tracks: Track[];
@@ -14,6 +14,10 @@ interface TrackContextType {
   likeTrack: (trackId: string) => void;
   addComment: (trackId: string, comment: Omit<Comment, 'id' | 'date'>) => void;
   getGenreById: (id: string) => Genre | undefined;
+  currentPlayingTrack: string | null;
+  setCurrentPlayingTrack: (trackId: string | null) => void;
+  generateWaveformData: () => number[];
+  shareTrack: (trackId: string) => void;
 }
 
 const TrackContext = createContext<TrackContextType | undefined>(undefined);
@@ -43,8 +47,10 @@ const initialGenres: Genre[] = [
 export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
+  const [currentPlayingTrack, setCurrentPlayingTrack] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { setCurrentPlayingStation } = useRadio();
 
   // Initialize from localStorage
   useEffect(() => {
@@ -57,15 +63,25 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (savedGenres) {
       setGenres(JSON.parse(savedGenres));
     } else {
-      // Initialize with default genres if not in localStorage
       setGenres(initialGenres);
       localStorage.setItem('latinmixmasters_genres', JSON.stringify(initialGenres));
     }
   }, []);
 
+  // When a track is selected for playing, stop station streams
+  useEffect(() => {
+    if (currentPlayingTrack) {
+      setCurrentPlayingStation(null);
+    }
+  }, [currentPlayingTrack, setCurrentPlayingStation]);
+
+  // Generate mock waveform data for visualization
+  const generateWaveformData = () => {
+    return Array.from({ length: 40 }, () => Math.floor(Math.random() * 95) + 5);
+  };
+
   // Add a new track
   const addTrack = (trackData: Omit<Track, 'id' | 'likes' | 'uploadDate'>) => {
-    // Validate file size (max 250MB = 262144000 bytes)
     if (trackData.fileSize > 262144000) {
       toast({
         title: "File too large",
@@ -79,7 +95,10 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       ...trackData,
       id: Math.random().toString(36).substring(2, 11),
       likes: 0,
-      uploadDate: new Date().toISOString()
+      uploadDate: new Date().toISOString(),
+      waveformData: generateWaveformData(),
+      playCount: 0,
+      duration: Math.floor(Math.random() * 300) + 180
     };
     
     const updatedTracks = [...tracks, newTrack];
@@ -105,7 +124,6 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       throw new Error("Authentication required");
     }
 
-    // Check if genre already exists
     if (genres.some(g => g.name.toLowerCase() === genreName.toLowerCase())) {
       toast({
         title: "Genre exists",
@@ -185,6 +203,42 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return genres.find(genre => genre.id === id);
   };
 
+  // Share track functionality
+  const shareTrack = (trackId: string) => {
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return;
+    
+    const shareUrl = `${window.location.origin}/mixes?track=${trackId}`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: `${track.artist} - ${track.title}`,
+        text: 'Check out this awesome mix on Latin Mix Masters!',
+        url: shareUrl,
+      }).catch((error) => {
+        console.log('Error sharing', error);
+        copyToClipboard(shareUrl);
+      });
+    } else {
+      copyToClipboard(shareUrl);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast({
+        title: "Link copied!",
+        description: "Share link copied to clipboard",
+      });
+    }).catch(() => {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy the link to clipboard",
+        variant: "destructive"
+      });
+    });
+  };
+
   return (
     <TrackContext.Provider value={{
       tracks,
@@ -195,7 +249,11 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       getTracksByUser,
       likeTrack,
       addComment,
-      getGenreById
+      getGenreById,
+      currentPlayingTrack,
+      setCurrentPlayingTrack,
+      generateWaveformData,
+      shareTrack
     }}>
       {children}
     </TrackContext.Provider>

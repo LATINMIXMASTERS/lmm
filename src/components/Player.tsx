@@ -1,10 +1,11 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Volume2, VolumeX, Radio, Heart, Share2, MessageCircle } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Radio, Heart, Share2, MessageCircle, Music } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useRadio } from '@/contexts/RadioContext';
+import { useTrack } from '@/contexts/TrackContext';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 interface PlayerProps {
   className?: string;
@@ -19,8 +20,8 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     currentTrack: 'Unknown Artist - Groove Session',
     coverImage: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=200&auto=format&fit=crop'
   });
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [prevVolume, setPrevVolume] = useState(80);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [likes, setLikes] = useState(127);
@@ -31,34 +32,26 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     { id: '3', user: 'musiclover', text: 'Can\'t stop listening to this!', time: '3 days ago' }
   ]);
   const [newComment, setNewComment] = useState('');
-  const [metadata, setMetadata] = useState<string>('');
+  const [isTrackPlaying, setIsTrackPlaying] = useState(false);
+  
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const prevVolume = useRef(80);
   const metadataTimerRef = useRef<number | null>(null);
+  
   const { toast } = useToast();
   const { stations, currentPlayingStation } = useRadio();
+  const { tracks, currentPlayingTrack, setCurrentPlayingTrack, likeTrack, addComment, shareTrack } = useTrack();
   
+  // Set up audio element
   useEffect(() => {
-    let defaultStream = 'https://streams.90s90s.de/danceradio/mp3-192/streams.90s90s.de/';
-    
-    const currentStation = stations.find(station => station.id === currentPlayingStation);
-    if (currentStation?.streamDetails?.url) {
-      defaultStream = currentStation.streamDetails.url;
-      
-      // URL should now be properly formatted in the RadioContext, but let's be sure
-      if (!defaultStream.startsWith('http://') && !defaultStream.startsWith('https://')) {
-        defaultStream = `https://${defaultStream}`;
-      }
-      
-      console.log("Setting up audio with stream:", defaultStream);
-    }
-    
-    audioRef.current = new Audio(defaultStream);
+    audioRef.current = new Audio();
     audioRef.current.volume = volume / 100;
     
     audioRef.current.addEventListener('error', (e) => {
       console.error("Audio playback error:", e);
       toast({
         title: "Playback Error",
-        description: "There was an error playing this station. Please try again later.",
+        description: "There was an error playing this media. Please try again later.",
         variant: "destructive"
       });
       setIsPlaying(false);
@@ -74,6 +67,26 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       setIsPlaying(false);
     });
     
+    audioRef.current.addEventListener('timeupdate', () => {
+      if (audioRef.current) {
+        setCurrentTime(audioRef.current.currentTime);
+      }
+    });
+    
+    audioRef.current.addEventListener('loadedmetadata', () => {
+      if (audioRef.current) {
+        setDuration(audioRef.current.duration);
+      }
+    });
+    
+    audioRef.current.addEventListener('ended', () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+      }
+    });
+    
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -87,11 +100,21 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     };
   }, []);
   
+  // Handle volume changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume / 100;
+    }
+  }, [volume, isMuted]);
+  
+  // Handle radio station source changes
   useEffect(() => {
     if (!currentPlayingStation || !audioRef.current) return;
+    setIsTrackPlaying(false);
+    setCurrentPlayingTrack(null);
     
     const currentStation = stations.find(station => station.id === currentPlayingStation);
-    if (!currentStation?.streamDetails?.url) {
+    if (!currentStation?.streamDetails?.url && !currentStation?.streamUrl) {
       console.error("No stream URL found for station:", currentPlayingStation);
       toast({
         title: "Stream Error",
@@ -101,14 +124,14 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       return;
     }
     
-    let streamUrl = currentStation.streamDetails.url;
+    let streamUrl = currentStation.streamDetails?.url || currentStation.streamUrl || '';
     
     // URL should be properly formatted in the RadioContext, but let's be sure
     if (!streamUrl.startsWith('http://') && !streamUrl.startsWith('https://')) {
       streamUrl = `https://${streamUrl}`;
     }
     
-    console.log("Changing audio source to:", streamUrl);
+    console.log("Changing audio source to station:", streamUrl);
     
     const wasPlaying = !audioRef.current.paused;
     audioRef.current.pause();
@@ -136,11 +159,68 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     setupMetadataPolling(streamUrl);
   }, [currentPlayingStation, stations]);
   
+  // Handle track source changes
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume / 100;
+    if (!currentPlayingTrack || !audioRef.current) return;
+    
+    const track = tracks.find(t => t.id === currentPlayingTrack);
+    if (!track) {
+      console.error("Track not found:", currentPlayingTrack);
+      return;
     }
-  }, [volume, isMuted]);
+    
+    console.log("Changing audio source to track:", track.audioFile);
+    
+    audioRef.current.pause();
+    audioRef.current.src = track.audioFile;
+    
+    setStationInfo({
+      name: track.artist,
+      currentTrack: track.title,
+      coverImage: track.coverImage
+    });
+    
+    // Reset current track time
+    setCurrentTime(0);
+    
+    // Set track duration if available
+    if (track.duration) {
+      setDuration(track.duration);
+    }
+    
+    audioRef.current.load();
+    audioRef.current.play().catch(error => {
+      console.error("Failed to play track:", error);
+      toast({
+        title: "Playback Error",
+        description: "Failed to play this track. Please try again.",
+        variant: "destructive"
+      });
+    });
+    
+    setIsTrackPlaying(true);
+    
+    // Clear any radio metadata polling
+    if (metadataTimerRef.current) {
+      window.clearInterval(metadataTimerRef.current);
+    }
+    
+    // Update comments from the track
+    if (track.comments) {
+      setComments(track.comments.map((comment: any) => ({
+        id: comment.id,
+        user: comment.username,
+        text: comment.text,
+        time: format(new Date(comment.date), 'MMM d, h:mma')
+      })));
+    } else {
+      setComments([]);
+    }
+    
+    // Update likes
+    setLikes(track.likes || 0);
+    
+  }, [currentPlayingTrack, tracks]);
   
   const setupMetadataPolling = (streamUrl: string) => {
     if (metadataTimerRef.current) {
@@ -159,7 +239,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
         if (response.ok) {
           const data = await response.json();
           if (data.title) {
-            setMetadata(data.title);
             setStationInfo(prev => ({
               ...prev,
               currentTrack: data.title
@@ -184,7 +263,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       ];
       
       const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
-      setMetadata(randomTrack);
       setStationInfo(prev => ({
         ...prev,
         currentTrack: randomTrack
@@ -193,6 +271,7 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     
     simulateMetadata();
     
+    // Poll for metadata every 15 seconds
     metadataTimerRef.current = window.setInterval(simulateMetadata, 15000);
   };
 
@@ -206,7 +285,7 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
         console.error("Failed to play audio:", error);
         toast({
           title: "Playback Error",
-          description: "There was an error playing this station. Please try again.",
+          description: "There was an error playing this media. Please try again.",
           variant: "destructive"
         });
       });
@@ -215,10 +294,10 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
 
   const toggleMute = () => {
     if (isMuted) {
-      setVolume(prevVolume);
+      setVolume(prevVolume.current);
       setIsMuted(false);
     } else {
-      setPrevVolume(volume);
+      prevVolume.current = volume;
       setVolume(0);
       setIsMuted(true);
     }
@@ -230,33 +309,63 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     setIsMuted(newVolume === 0);
   };
 
+  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!audioRef.current) return;
+    const position = parseInt(e.target.value, 10);
+    audioRef.current.currentTime = position;
+    setCurrentTime(position);
+  };
+
   const handleLike = () => {
-    if (isLiked) {
-      setLikes(likes - 1);
-    } else {
-      setLikes(likes + 1);
+    if (currentPlayingTrack) {
+      likeTrack(currentPlayingTrack);
+      // Update the likes in the player UI
+      if (isLiked) {
+        setLikes(likes - 1);
+      } else {
+        setLikes(likes + 1);
+      }
+      setIsLiked(!isLiked);
     }
-    setIsLiked(!isLiked);
   };
 
   const handleShare = () => {
-    alert('Share functionality will be implemented soon!');
+    if (currentPlayingTrack) {
+      shareTrack(currentPlayingTrack);
+    } else {
+      alert('Share functionality will be implemented soon!');
+    }
   };
 
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newComment.trim()) {
-      const newCommentObj = {
-        id: Date.now().toString(),
-        user: 'You',
-        text: newComment,
-        time: 'Just now'
-      };
-      setComments([newCommentObj, ...comments]);
-      setNewComment('');
-    }
+    if (!newComment.trim() || !currentPlayingTrack) return;
+    
+    addComment(currentPlayingTrack, {
+      userId: 'current-user',
+      username: 'You',
+      text: newComment
+    });
+    
+    // Update the local comments list with the new comment
+    const newCommentObj = {
+      id: Date.now().toString(),
+      user: 'You',
+      text: newComment,
+      time: 'Just now'
+    };
+    setComments([newCommentObj, ...comments]);
+    setNewComment('');
   };
 
+  // Format time function (converts seconds to MM:SS format)
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  };
+
+  // Generate waveform for visualization
   const waveformBars = Array.from({ length: 40 }, (_, i) => {
     const height = Math.random() * 100;
     return (
@@ -297,13 +406,33 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
                 loading="lazy"
               />
               <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity duration-300">
-                <Radio className="w-5 h-5 text-white" />
+                {isTrackPlaying ? (
+                  <Music className="w-5 h-5 text-white" />
+                ) : (
+                  <Radio className="w-5 h-5 text-white" />
+                )}
               </div>
             </div>
             
             <div className="min-w-0 flex-1">
               <h4 className="font-medium text-black truncate">{stationInfo.name}</h4>
               <p className="text-xs text-gray truncate">{stationInfo.currentTrack}</p>
+              
+              {/* Track progress bar (only shown for tracks, not radio streams) */}
+              {isTrackPlaying && duration > 0 && (
+                <div className="flex items-center space-x-2 mt-1">
+                  <span className="text-xs text-gray-500">{formatTime(currentTime)}</span>
+                  <input 
+                    type="range"
+                    min="0"
+                    max={duration}
+                    value={currentTime}
+                    onChange={handleProgressChange}
+                    className="h-1 flex-1 accent-blue"
+                  />
+                  <span className="text-xs text-gray-500">{formatTime(duration)}</span>
+                </div>
+              )}
             </div>
           </div>
           
@@ -472,6 +601,10 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
                   </div>
                 </div>
               ))}
+              
+              {comments.length === 0 && (
+                <p className="text-center text-gray-500 py-4">No comments yet. Be the first to comment!</p>
+              )}
             </div>
           </div>
         )}
