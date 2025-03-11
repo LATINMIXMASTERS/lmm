@@ -258,7 +258,7 @@ const StationDetails: React.FC = () => {
                 <h2 className="text-xl font-semibold">Upcoming Shows</h2>
                 {user?.isRadioHost && (
                   <Button 
-                    onClick={() => navigate(`/book-show/${station.id}`)}
+                    onClick={() => navigate(`/book-show/${id}`)}
                     variant="outline" 
                     className="text-blue border-blue hover:bg-blue/10"
                   >
@@ -317,7 +317,7 @@ const StationDetails: React.FC = () => {
                   <p className="text-gray-500">No upcoming shows scheduled yet.</p>
                   {user?.isRadioHost && (
                     <Button 
-                      onClick={() => navigate(`/book-show/${station.id}`)}
+                      onClick={() => navigate(`/book-show/${id}`)}
                       variant="outline" 
                       className="mt-3 text-blue border-blue hover:bg-blue/10"
                     >
@@ -429,7 +429,7 @@ const StationDetails: React.FC = () => {
                 ) : null}
                 
                 <Button 
-                  onClick={() => navigate(`/book-show/${station.id}`)}
+                  onClick={() => navigate(`/book-show/${id}`)}
                   className="w-full bg-blue hover:bg-blue-dark"
                 >
                   <Calendar className="w-4 h-4 mr-2" />

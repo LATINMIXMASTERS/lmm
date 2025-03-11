@@ -42,7 +42,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
   const { stations, currentPlayingStation } = useRadio();
   const { tracks, currentPlayingTrack, setCurrentPlayingTrack, likeTrack, addComment, shareTrack } = useTrack();
   
-  // Set up audio element
   useEffect(() => {
     audioRef.current = new Audio();
     audioRef.current.volume = volume / 100;
@@ -100,22 +99,20 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     };
   }, []);
   
-  // Handle volume changes
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = isMuted ? 0 : volume / 100;
     }
   }, [volume, isMuted]);
   
-  // Handle radio station source changes
   useEffect(() => {
     if (!currentPlayingStation || !audioRef.current) return;
     setIsTrackPlaying(false);
     setCurrentPlayingTrack(null);
     
     const currentStation = stations.find(station => station.id === currentPlayingStation);
-    if (!currentStation?.streamDetails?.url && !currentStation?.streamUrl) {
-      console.error("No stream URL found for station:", currentPlayingStation);
+    if (!currentStation) {
+      console.error("Station not found:", currentPlayingStation);
       toast({
         title: "Stream Error",
         description: "This station doesn't have a stream URL configured.",
@@ -124,11 +121,20 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       return;
     }
     
-    let streamUrl = currentStation.streamDetails?.url || currentStation.streamUrl || '';
+    let streamUrl = '';
     
-    // URL should be properly formatted in the RadioContext, but let's be sure
-    if (!streamUrl.startsWith('http://') && !streamUrl.startsWith('https://')) {
-      streamUrl = `https://${streamUrl}`;
+    if (currentStation.streamUrl) {
+      streamUrl = currentStation.streamUrl;
+    } else if (currentStation.streamDetails?.url) {
+      streamUrl = currentStation.streamDetails.url;
+    } else {
+      console.error("No stream URL found for station:", currentPlayingStation);
+      toast({
+        title: "Stream Error",
+        description: "This station doesn't have a stream URL configured.",
+        variant: "destructive"
+      });
+      return;
     }
     
     console.log("Changing audio source to station:", streamUrl);
@@ -159,7 +165,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     setupMetadataPolling(streamUrl);
   }, [currentPlayingStation, stations]);
   
-  // Handle track source changes
   useEffect(() => {
     if (!currentPlayingTrack || !audioRef.current) return;
     
@@ -180,10 +185,8 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       coverImage: track.coverImage
     });
     
-    // Reset current track time
     setCurrentTime(0);
     
-    // Set track duration if available
     if (track.duration) {
       setDuration(track.duration);
     }
@@ -200,12 +203,10 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     
     setIsTrackPlaying(true);
     
-    // Clear any radio metadata polling
     if (metadataTimerRef.current) {
       window.clearInterval(metadataTimerRef.current);
     }
     
-    // Update comments from the track
     if (track.comments) {
       setComments(track.comments.map((comment: any) => ({
         id: comment.id,
@@ -217,9 +218,7 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       setComments([]);
     }
     
-    // Update likes
     setLikes(track.likes || 0);
-    
   }, [currentPlayingTrack, tracks]);
   
   const setupMetadataPolling = (streamUrl: string) => {
@@ -248,7 +247,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     
     simulateMetadata();
     
-    // Poll for metadata every 15 seconds
     metadataTimerRef.current = window.setInterval(simulateMetadata, 15000);
   };
 
@@ -296,7 +294,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
   const handleLike = () => {
     if (currentPlayingTrack) {
       likeTrack(currentPlayingTrack);
-      // Update the likes in the player UI
       if (isLiked) {
         setLikes(likes - 1);
       } else {
@@ -324,7 +321,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       text: newComment
     });
     
-    // Update the local comments list with the new comment
     const newCommentObj = {
       id: Date.now().toString(),
       username: 'You',
