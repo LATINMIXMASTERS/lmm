@@ -16,6 +16,8 @@ export interface RadioStation {
   currentDJ?: string;
   streamDetails?: StreamDetails;
   streamUrl?: string;
+  hosts?: string[]; // Adding hosts property
+  broadcastTime?: string; // Adding broadcastTime property
 }
 
 export interface BookingSlot {
@@ -30,4 +32,3 @@ export interface BookingSlot {
   rejected?: boolean;
   rejectionReason?: string;
 }
-

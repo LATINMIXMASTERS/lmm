@@ -30,4 +30,5 @@ export interface Genre {
   name: string;
   createdBy: string;
   createdAt: string;
+  trackCount?: number; // Adding trackCount property
 }
