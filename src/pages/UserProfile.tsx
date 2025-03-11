@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { User as UserIcon, HeartIcon, MessageSquare, Link as LinkIcon, Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +30,13 @@ const UserProfile: React.FC = () => {
   
   // Check if this is the current user's profile
   const isOwnProfile = user && profileUser && user.id === profileUser.id;
+  
+  // Handle redirect to host profile for radio hosts
+  useEffect(() => {
+    if (profileUser?.isRadioHost) {
+      navigate(`/host/${profileUser.id}`);
+    }
+  }, [profileUser, navigate]);
   
   // User not found
   if (!profileUser) {
@@ -91,6 +98,11 @@ const UserProfile: React.FC = () => {
     if (isOwnProfile && updateProfile) {
       updateProfile(userData);
       setEditMode(false);
+      
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been successfully updated"
+      });
     }
   };
   

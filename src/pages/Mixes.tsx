@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Music, Upload, PlusCircle } from 'lucide-react';
@@ -141,7 +142,7 @@ const Mixes: React.FC = () => {
 
     addComment(trackId, {
       userId: user?.id || 'anonymous',
-      username: user?.username || 'Anonymous',
+      username: user?.username || 'Anonymous', // Using username instead of displayName
       text: commentText
     });
     

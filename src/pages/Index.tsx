@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Radio, Headphones, Music } from 'lucide-react';
@@ -7,69 +6,21 @@ import Hero from '@/components/Hero';
 import StationCard from '@/components/StationCard';
 import { cn } from '@/lib/utils';
 import { useRadio } from '@/contexts/RadioContext';
-
-// Sample featured stations data - now with descriptions
-const featuredStations = [
-  {
-    id: '1',
-    name: 'House Electro Beats',
-    genre: 'Electronic, House',
-    image: 'https://images.unsplash.com/photo-1571330735066-03aaa9429d89?q=80&w=500&auto=format&fit=crop',
-    description: 'The best electronic and house music to keep your energy up all day long.',
-    listeners: 4271,
-    isLive: true
-  },
-  {
-    id: '2',
-    name: 'Smooth Jazz',
-    genre: 'Jazz, Blues',
-    image: 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?q=80&w=500&auto=format&fit=crop',
-    description: 'Relax and unwind with smooth jazz and blues classics from the greatest artists.',
-    listeners: 2183,
-    isLive: false // Adding the required isLive property
-  },
-  {
-    id: '3',
-    name: 'Classic Rock Anthems',
-    genre: 'Rock, 70s, 80s',
-    image: 'https://images.unsplash.com/photo-1461784180009-27c1303a64b6?q=80&w=500&auto=format&fit=crop',
-    description: 'Experience the golden era of rock with these timeless anthems from the 70s and 80s.',
-    listeners: 3528,
-    isLive: false // Adding the required isLive property
-  },
-  {
-    id: '4',
-    name: 'Hip-Hop Masters',
-    genre: 'Hip-Hop, Rap',
-    image: 'https://images.unsplash.com/photo-1546528377-65924449c301?q=80&w=500&auto=format&fit=crop',
-    description: 'The latest and greatest hip-hop and rap tracks from around the world.',
-    listeners: 5129,
-    isLive: true
-  }
-];
-
-// Sample genres
-const popularGenres = [
-  { name: 'Electronic', icon: <Radio className="w-5 h-5" />, count: 324 },
-  { name: 'Rock', icon: <Music className="w-5 h-5" />, count: 253 },
-  { name: 'Jazz', icon: <Music className="w-5 h-5" />, count: 186 },
-  { name: 'Pop', icon: <Headphones className="w-5 h-5" />, count: 412 },
-  { name: 'Hip-Hop', icon: <Music className="w-5 h-5" />, count: 278 },
-  { name: 'Classical', icon: <Music className="w-5 h-5" />, count: 143 }
-];
+import { useTrack } from '@/contexts/TrackContext';
 
 const Index: React.FC = () => {
   const [animatedSections, setAnimatedSections] = useState<{ [key: string]: boolean }>({
-    featured: false,
+    stations: false,
     genres: false,
     download: false
   });
-  const { currentPlayingStation, setCurrentPlayingStation } = useRadio();
+  const { stations, currentPlayingStation, setCurrentPlayingStation } = useRadio();
+  const { genres } = useTrack();
 
   useEffect(() => {
     const handleScroll = () => {
       const sections = {
-        featured: document.getElementById('featured-section'),
+        stations: document.getElementById('stations-section'),
         genres: document.getElementById('genres-section'),
         download: document.getElementById('download-section')
       };
@@ -97,22 +48,25 @@ const Index: React.FC = () => {
     setCurrentPlayingStation(currentPlayingStation === stationId ? null : stationId);
   };
 
+  // Filter out unavailable stations
+  const availableStations = stations.filter(station => !!station.streamDetails?.url);
+
   return (
     <MainLayout>
       <Hero className="mx-auto -mt-16 mb-24" />
       
-      {/* Featured Stations */}
+      {/* Available Stations */}
       <section 
-        id="featured-section"
+        id="stations-section"
         className="mb-24"
       >
         <div 
           className={cn(
             "flex justify-between items-center mb-8",
-            !animatedSections.featured ? "opacity-0" : "animate-slide-down"
+            !animatedSections.stations ? "opacity-0" : "animate-slide-down"
           )}
         >
-          <h2 className="text-3xl font-semibold">Featured Stations</h2>
+          <h2 className="text-3xl font-semibold">Available Stations</h2>
           <Link 
             to="/stations" 
             className="flex items-center text-blue hover:underline font-medium"
@@ -121,23 +75,29 @@ const Index: React.FC = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredStations.map((station, index) => (
-            <StationCard
-              key={station.id}
-              station={station}
-              isPlaying={currentPlayingStation === station.id}
-              onPlayToggle={handlePlayToggle}
-              className={cn(
-                !animatedSections.featured ? "opacity-0" : "animate-scale-in",
-              )}
-              style={{ animationDelay: `${index * 0.1 + 0.2}s` }}
-            />
-          ))}
-        </div>
+        {availableStations.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {availableStations.slice(0, 4).map((station, index) => (
+              <StationCard
+                key={station.id}
+                station={station}
+                isPlaying={currentPlayingStation === station.id}
+                onPlayToggle={handlePlayToggle}
+                className={cn(
+                  !animatedSections.stations ? "opacity-0" : "animate-scale-in",
+                )}
+                style={{ animationDelay: `${index * 0.1 + 0.2}s` }}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center p-8 bg-gray-100 rounded-lg">
+            <p>No available stations found. Check back later!</p>
+          </div>
+        )}
       </section>
 
-      {/* Popular Genres */}
+      {/* Mix Genres */}
       <section 
         id="genres-section"
         className="mb-24"
@@ -148,20 +108,20 @@ const Index: React.FC = () => {
             !animatedSections.genres ? "opacity-0" : "animate-slide-down"
           )}
         >
-          <h2 className="text-3xl font-semibold">Popular Genres</h2>
+          <h2 className="text-3xl font-semibold">Mix Genres</h2>
           <Link 
-            to="/stations" 
+            to="/mixes" 
             className="flex items-center text-blue hover:underline font-medium"
           >
-            All Genres <ChevronRight className="w-4 h-4 ml-1" />
+            View All Mixes <ChevronRight className="w-4 h-4 ml-1" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {popularGenres.map((genre, index) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {genres.map((genre, index) => (
             <Link
-              to={`/stations?genre=${genre.name.toLowerCase()}`}
-              key={genre.name}
+              to={`/mixes?genre=${genre.id}`}
+              key={genre.id}
               className={cn(
                 "flex flex-col items-center justify-center p-6 rounded-lg bg-white border border-gray-light",
                 "hover:shadow-md hover:border-gray transition-all duration-300 hover:translate-y-[-4px]",
@@ -170,10 +130,10 @@ const Index: React.FC = () => {
               style={{ animationDelay: `${index * 0.1 + 0.2}s` }}
             >
               <div className="w-14 h-14 rounded-full bg-blue/10 text-blue flex items-center justify-center mb-4">
-                {genre.icon}
+                <Music className="w-5 h-5" />
               </div>
               <h3 className="font-medium mb-1">{genre.name}</h3>
-              <p className="text-sm text-gray">{genre.count} stations</p>
+              <p className="text-sm text-gray">{genre.trackCount || 0} mixes</p>
             </Link>
           ))}
         </div>
