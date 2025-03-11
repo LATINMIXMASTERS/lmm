@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Music, Upload, PlusCircle } from 'lucide-react';
@@ -30,7 +29,6 @@ const Mixes: React.FC = () => {
   const [selectedTabGenre, setSelectedTabGenre] = useState('all');
   const [newComments, setNewComments] = useState<Record<string, string>>({});
   
-  // Parse URL query params on initial load
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const trackId = searchParams.get('track');
@@ -38,7 +36,6 @@ const Mixes: React.FC = () => {
       const track = tracks.find(t => t.id === trackId);
       if (track) {
         setCurrentPlayingTrack(trackId);
-        // If the track has a genre, select that genre
         if (track.genre) {
           const genreObj = genres.find(g => g.name === track.genre);
           if (genreObj) {
@@ -49,7 +46,6 @@ const Mixes: React.FC = () => {
     }
   }, [location.search, tracks, genres, setCurrentPlayingTrack]);
   
-  // Filter tracks by genre
   useEffect(() => {
     if (selectedTabGenre === 'all') {
       setFilteredTracks(tracks);
@@ -81,7 +77,6 @@ const Mixes: React.FC = () => {
       return;
     }
 
-    // Navigate to upload page
     navigate('/upload-track');
   };
 
@@ -105,7 +100,6 @@ const Mixes: React.FC = () => {
       return;
     }
 
-    // Navigate to genres page
     navigate('/manage-genres');
   };
 
@@ -147,11 +141,10 @@ const Mixes: React.FC = () => {
 
     addComment(trackId, {
       userId: user?.id || 'anonymous',
-      username: user?.displayName || 'Anonymous', // Fix: Use displayName instead of name
+      username: user?.username || 'Anonymous',
       text: commentText
     });
     
-    // Clear the comment input
     setNewComments({
       ...newComments,
       [trackId]: ''
@@ -191,7 +184,6 @@ const Mixes: React.FC = () => {
           </div>
         </div>
         
-        {/* Genre tabs */}
         <GenreTabs 
           genres={genres}
           tracks={tracks}
