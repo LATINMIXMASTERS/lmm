@@ -15,6 +15,7 @@ export interface RadioStation {
   isLive: boolean;
   currentDJ?: string;
   streamDetails?: StreamDetails;
+  streamUrl?: string;
 }
 
 export interface BookingSlot {

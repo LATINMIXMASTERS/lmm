@@ -31,7 +31,8 @@ const initialStations: RadioStation[] = [
       url: 'https://lmmradiocast.com/lmmradio',
       port: '8000',
       password: 'demo123'
-    }
+    },
+    streamUrl: 'https://lmmradiocast.com/lmmradio'
   },
   {
     id: '2',
@@ -45,7 +46,8 @@ const initialStations: RadioStation[] = [
       url: 'https://lmmradiocast.com/bachataradio',
       port: '8000',
       password: 'demo123'
-    }
+    },
+    streamUrl: 'https://lmmradiocast.com/bachataradio'
   },
   {
     id: '3',
@@ -59,7 +61,8 @@ const initialStations: RadioStation[] = [
       url: 'https://lmmradiocast.com/reggaetonradio',
       port: '8000',
       password: 'demo123'
-    }
+    },
+    streamUrl: 'https://lmmradiocast.com/reggaetonradio'
   },
   {
     id: '4',
@@ -68,7 +71,8 @@ const initialStations: RadioStation[] = [
     image: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=1000&auto=format&fit=crop',
     description: 'Classic and contemporary salsa music.',
     listeners: 95,
-    isLive: false
+    isLive: false,
+    streamUrl: 'https://lmmradiocast.com/salsaradio'
   },
   {
     id: '5',
@@ -77,7 +81,8 @@ const initialStations: RadioStation[] = [
     image: 'https://images.unsplash.com/photo-1571151424566-c2c2b5c8c10c?q=80&w=1000&auto=format&fit=crop',
     description: 'Electronic dance music that keeps you moving.',
     listeners: 178,
-    isLive: false
+    isLive: false,
+    streamUrl: 'https://lmmradiocast.com/edmradio'
   },
   {
     id: '6',
@@ -86,7 +91,8 @@ const initialStations: RadioStation[] = [
     image: 'https://images.unsplash.com/photo-1499364615650-ec38552f4f34?q=80&w=1000&auto=format&fit=crop',
     description: 'Urban beats and street vibes.',
     listeners: 156,
-    isLive: false
+    isLive: false,
+    streamUrl: 'https://lmmradiocast.com/urbanradio'
   },
   {
     id: '7',
@@ -95,7 +101,8 @@ const initialStations: RadioStation[] = [
     image: 'https://images.unsplash.com/photo-1629276301820-a7e787d5c8b1?q=80&w=1000&auto=format&fit=crop',
     description: 'Eclectic mix of the hottest tracks.',
     listeners: 125,
-    isLive: false
+    isLive: false,
+    streamUrl: 'https://lmmradiocast.com/latokadaradio'
   }
 ];
 
@@ -167,7 +174,7 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         streamDetails: { 
           ...streamDetails, 
           url: formattedUrl 
-        } 
+        }
       } : station
     );
     
@@ -177,7 +184,7 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     console.log(`Updated stream details for station ${stationId}:`, { ...streamDetails, url: formattedUrl });
   };
   
-  // Updated function to just update the stream URL
+  // Updated function to just update the stream URL for player
   const updateStreamUrl = (stationId: string, streamUrl: string) => {
     let formattedUrl = streamUrl;
     if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
@@ -186,14 +193,9 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     
     const updatedStations = stations.map(station => {
       if (station.id === stationId) {
-        // Create or update the streamDetails object
-        const currentDetails = station.streamDetails || { url: '', port: '', password: '' };
         return { 
           ...station, 
-          streamDetails: { 
-            ...currentDetails,
-            url: formattedUrl 
-          } 
+          streamUrl: formattedUrl 
         };
       }
       return station;
@@ -202,7 +204,7 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setStations(updatedStations);
     localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
     
-    console.log(`Updated stream URL for station ${stationId}:`, formattedUrl);
+    console.log(`Updated player stream URL for station ${stationId}:`, formattedUrl);
   };
 
   return (

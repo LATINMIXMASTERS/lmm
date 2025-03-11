@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,7 +28,9 @@ import {
   User,
   ShieldOff,
   Search,
-  Volume2
+  Volume2,
+  Mic,
+  Music
 } from "lucide-react";
 import { format, formatDistance } from "date-fns";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -46,7 +49,7 @@ const AdminDashboard: React.FC = () => {
     editUser, 
     deleteUser 
   } = useAuth();
-  const { stations, bookings, updateStreamDetails, approveBooking } = useRadio();
+  const { stations, bookings, updateStreamDetails, approveBooking, updateStreamUrl } = useRadio();
   const { toast } = useToast();
   
   const [stationSettings, setStationSettings] = useState<Record<string, {
@@ -82,7 +85,7 @@ const AdminDashboard: React.FC = () => {
         password: station.streamDetails?.password || ''
       };
       
-      initialStreamUrls[station.id] = station.streamDetails?.url || '';
+      initialStreamUrls[station.id] = station.streamUrl || '';
     });
     
     setStationSettings(initialSettings);
@@ -121,14 +124,9 @@ const AdminDashboard: React.FC = () => {
       url: formattedUrl
     });
     
-    setStreamUrls(prev => ({
-      ...prev,
-      [stationId]: formattedUrl
-    }));
-    
     toast({
       title: "Settings Updated",
-      description: "Stream settings have been updated successfully."
+      description: "Stream settings for hosts have been updated successfully."
     });
   };
   
@@ -210,11 +208,11 @@ const AdminDashboard: React.FC = () => {
       formattedUrl = `https://${formattedUrl}`;
     }
     
-    useRadio().updateStreamUrl(stationId, formattedUrl);
+    updateStreamUrl(stationId, formattedUrl);
     
     toast({
-      title: "Stream URL Updated",
-      description: "The streaming URL has been updated successfully."
+      title: "Player Stream URL Updated",
+      description: "The listener streaming URL has been updated successfully."
     });
   };
   
@@ -229,12 +227,12 @@ const AdminDashboard: React.FC = () => {
         <Tabs defaultValue="stations" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="stations" className="flex items-center">
-              <Radio className="w-4 h-4 mr-2" />
-              Manage Stations
+              <Mic className="w-4 h-4 mr-2" />
+              Host Streaming Setup
             </TabsTrigger>
             <TabsTrigger value="streaming" className="flex items-center">
               <Volume2 className="w-4 h-4 mr-2" />
-              Stream URLs
+              Player Stream URLs
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center">
               <Users className="w-4 h-4 mr-2" />
@@ -258,6 +256,26 @@ const AdminDashboard: React.FC = () => {
           
           <TabsContent value="stations">
             <div className="grid grid-cols-1 gap-6">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center">
+                    <Mic className="w-5 h-5 mr-2 text-blue" />
+                    Host Streaming Setup
+                  </CardTitle>
+                  <CardDescription>Configure the streaming settings for radio hosts to connect with their broadcasting software</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-blue-50 rounded-md p-3 mb-4 flex items-start">
+                    <Lock className="w-5 h-5 text-blue mr-2 mt-0.5" />
+                    <div className="text-sm text-blue-800">
+                      These Shoutcast/Icecast streaming details are only visible to admins and will be provided to verified radio hosts when they go live.
+                      <br />
+                      <strong>Note:</strong> These settings are for hosts to <strong>broadcast</strong> to the server, not for listeners to connect.
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
               {stations.map((station) => (
                 <Card key={station.id}>
                   <CardHeader className="pb-2">
@@ -268,17 +286,10 @@ const AdminDashboard: React.FC = () => {
                     <CardDescription>{station.genre} • {station.listeners} listeners</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="bg-blue-50 rounded-md p-3 mb-4 flex items-start">
-                      <Lock className="w-5 h-5 text-blue mr-2 mt-0.5" />
-                      <div className="text-sm text-blue-800">
-                        These streaming details are only visible to admins and will be provided to verified radio hosts when they go live.
-                      </div>
-                    </div>
-                    
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                       <div>
                         <Label htmlFor={`url-${station.id}`} className="mb-2 block">
-                          Stream URL
+                          Stream Server URL
                         </Label>
                         <Input
                           id={`url-${station.id}`}
@@ -286,6 +297,7 @@ const AdminDashboard: React.FC = () => {
                           onChange={(e) => handleSettingChange(station.id, 'url', e.target.value)}
                           placeholder="e.g., stream.yourserver.com"
                         />
+                        <p className="text-xs text-gray-500 mt-1">The URL hosts will connect to for broadcasting</p>
                       </div>
                       <div>
                         <Label htmlFor={`port-${station.id}`} className="mb-2 block">
@@ -297,6 +309,7 @@ const AdminDashboard: React.FC = () => {
                           onChange={(e) => handleSettingChange(station.id, 'port', e.target.value)}
                           placeholder="e.g., 8000"
                         />
+                        <p className="text-xs text-gray-500 mt-1">The server port for Shoutcast/Icecast</p>
                       </div>
                       <div>
                         <Label htmlFor={`password-${station.id}`} className="mb-2 block">
@@ -309,6 +322,7 @@ const AdminDashboard: React.FC = () => {
                           onChange={(e) => handleSettingChange(station.id, 'password', e.target.value)}
                           placeholder="Password"
                         />
+                        <p className="text-xs text-gray-500 mt-1">The password hosts need to authenticate</p>
                       </div>
                     </div>
                     
@@ -317,7 +331,7 @@ const AdminDashboard: React.FC = () => {
                       className="bg-blue hover:bg-blue-dark"
                     >
                       <Settings className="w-4 h-4 mr-2" />
-                      Save Stream Settings
+                      Save Host Streaming Settings
                     </Button>
                   </CardContent>
                 </Card>
@@ -331,13 +345,22 @@ const AdminDashboard: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Volume2 className="w-5 h-5 mr-2 text-blue" />
-                    Streaming URLs
+                    Player Streaming URLs
                   </CardTitle>
                   <CardDescription>
-                    Manage the streaming URLs for each radio station
+                    Configure the URLs that listeners and the player will use to connect to each station
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div className="bg-blue-50 rounded-md p-3 mb-6 flex items-start">
+                    <Music className="w-5 h-5 text-blue mr-2 mt-0.5" />
+                    <div className="text-sm text-blue-800">
+                      These are the public stream URLs that will be used by the player and listeners to tune in to each station. 
+                      <br/>
+                      <strong>Note:</strong> These should be the publicly accessible URLs for <strong>listening</strong>, not for broadcasting.
+                    </div>
+                  </div>
+                
                   <div className="space-y-6">
                     {stations.map((station) => (
                       <div key={station.id} className="p-4 border rounded-md">
@@ -349,7 +372,7 @@ const AdminDashboard: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                           <div className="md:col-span-3">
                             <Label htmlFor={`stream-url-${station.id}`} className="mb-2 block">
-                              Stream URL
+                              Public Stream URL
                             </Label>
                             <Input
                               id={`stream-url-${station.id}`}
@@ -358,15 +381,22 @@ const AdminDashboard: React.FC = () => {
                               placeholder="e.g., https://stream.server.com/station"
                               className="w-full"
                             />
+                            <p className="text-xs text-gray-500 mt-1">The URL listeners will use to hear this station</p>
                           </div>
                           <Button 
                             onClick={() => handleSaveStreamUrl(station.id)}
                             className="bg-blue hover:bg-blue-dark"
                           >
-                            <Settings className="w-4 h-4 mr-2" />
-                            Save URL
+                            <Volume2 className="w-4 h-4 mr-2" />
+                            Save Player URL
                           </Button>
                         </div>
+                        
+                        {station.streamUrl && (
+                          <div className="mt-3 text-sm text-gray-600">
+                            Current URL: <span className="font-mono bg-gray-100 p-1 rounded">{station.streamUrl}</span>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
