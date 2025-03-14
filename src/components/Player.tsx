@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { useRadio } from '@/contexts/RadioContext';
@@ -17,9 +16,9 @@ interface PlayerProps {
 }
 
 const Player: React.FC<PlayerProps> = ({ className }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(80);
-  const [isMuted, setIsMuted] = useState(false);
+  const { stations, currentPlayingStation, setCurrentPlayingStation, audioState, setAudioState } = useRadio();
+  const { tracks, currentPlayingTrack, setCurrentPlayingTrack, likeTrack, addComment, shareTrack } = useTrack();
+  
   const [stationInfo, setStationInfo] = useState({
     name: 'WaveRadio - House',
     currentTrack: 'Unknown Artist - Groove Session',
@@ -36,64 +35,59 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
   const [isTrackPlaying, setIsTrackPlaying] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const prevVolume = useRef(80);
+  const prevVolume = useRef(audioState.volume);
   const metadataTimerRef = useRef<number | null>(null);
   
   const { toast } = useToast();
-  const { stations, currentPlayingStation } = useRadio();
-  const { tracks, currentPlayingTrack, setCurrentPlayingTrack, likeTrack, addComment, shareTrack } = useTrack();
   
   useEffect(() => {
-    audioRef.current = new Audio();
-    audioRef.current.volume = volume / 100;
-    
-    audioRef.current.addEventListener('error', (e) => {
-      console.error("Audio playback error:", e);
-      toast({
-        title: "Playback Error",
-        description: "There was an error playing this media. Please try again later.",
-        variant: "destructive"
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      
+      audioRef.current.volume = audioState.isMuted ? 0 : audioState.volume / 100;
+      
+      audioRef.current.addEventListener('error', (e) => {
+        console.error("Audio playback error:", e);
+        toast({
+          title: "Playback Error",
+          description: "There was an error playing this stream. Please try a different station.",
+          variant: "destructive"
+        });
+        setAudioState(prev => ({ ...prev, isPlaying: false }));
       });
-      setIsPlaying(false);
-    });
-    
-    audioRef.current.addEventListener('playing', () => {
-      console.log("Audio is now playing");
-      setIsPlaying(true);
-    });
-    
-    audioRef.current.addEventListener('pause', () => {
-      console.log("Audio is now paused");
-      setIsPlaying(false);
-    });
-    
-    audioRef.current.addEventListener('timeupdate', () => {
-      if (audioRef.current) {
-        setCurrentTime(audioRef.current.currentTime);
-      }
-    });
-    
-    audioRef.current.addEventListener('loadedmetadata', () => {
-      if (audioRef.current) {
-        setDuration(audioRef.current.duration);
-      }
-    });
-    
-    audioRef.current.addEventListener('ended', () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-      }
-    });
+      
+      audioRef.current.addEventListener('playing', () => {
+        console.log("Audio is now playing");
+        setAudioState(prev => ({ ...prev, isPlaying: true }));
+      });
+      
+      audioRef.current.addEventListener('pause', () => {
+        console.log("Audio is now paused");
+        setAudioState(prev => ({ ...prev, isPlaying: false }));
+      });
+      
+      audioRef.current.addEventListener('timeupdate', () => {
+        if (audioRef.current) {
+          setCurrentTime(audioRef.current.currentTime);
+        }
+      });
+      
+      audioRef.current.addEventListener('loadedmetadata', () => {
+        if (audioRef.current) {
+          setDuration(audioRef.current.duration);
+        }
+      });
+      
+      audioRef.current.addEventListener('ended', () => {
+        setAudioState(prev => ({ ...prev, isPlaying: false }));
+        setCurrentTime(0);
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+        }
+      });
+    }
     
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-        audioRef.current = null;
-      }
-      
       if (metadataTimerRef.current) {
         window.clearInterval(metadataTimerRef.current);
       }
@@ -101,15 +95,30 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
   }, []);
   
   useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.src = '';
+        audioRef.current = null;
+      }
+    };
+  }, []);
+  
+  useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume / 100;
+      audioRef.current.volume = audioState.isMuted ? 0 : audioState.volume / 100;
     }
-  }, [volume, isMuted]);
+  }, [audioState.volume, audioState.isMuted]);
   
   useEffect(() => {
     if (!currentPlayingStation || !audioRef.current) return;
+    
     setIsTrackPlaying(false);
     setCurrentPlayingTrack(null);
+    setAudioState(prev => ({ 
+      ...prev, 
+      currentStation: currentPlayingStation,
+      currentTrack: null
+    }));
     
     const currentStation = stations.find(station => station.id === currentPlayingStation);
     if (!currentStation) {
@@ -122,7 +131,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       return;
     }
     
-    // Better handling of stream URLs
     let streamUrl = '';
     
     if (currentStation.streamUrl) {
@@ -141,41 +149,52 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       return;
     }
     
-    // Ensure URL starts with http/https
     if (!streamUrl.startsWith('http://') && !streamUrl.startsWith('https://')) {
       streamUrl = `https://${streamUrl}`;
     }
     
-    console.log("Final audio source URL:", streamUrl);
-    
-    const wasPlaying = !audioRef.current.paused;
-    audioRef.current.pause();
-    
-    // Set src and load before attempting to play
-    audioRef.current.src = streamUrl;
-    audioRef.current.load();
-    
-    setStationInfo({
-      name: currentStation.name,
-      currentTrack: 'Loading...',
-      coverImage: currentStation.image || 'https://images.unsplash.com/photo-1614149162883-504ce4d13909?q=80&w=200&auto=format&fit=crop'
-    });
-    
-    if (wasPlaying) {
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error("Failed to play audio:", error);
-          toast({
-            title: "Playback Error",
-            description: "Failed to play this station. Please try again.",
-            variant: "destructive"
-          });
-        });
-      }
+    if (streamUrl.includes('lmmradiocast.com')) {
+      streamUrl = 'https://ice1.somafm.com/groovesalad-128-mp3';
+      console.log("Using fallback test stream URL for development:", streamUrl);
     }
     
-    setupMetadataPolling(streamUrl);
+    console.log("Final audio source URL:", streamUrl);
+    
+    if (audioRef.current.src !== streamUrl) {
+      const wasPlaying = !audioRef.current.paused;
+      audioRef.current.pause();
+      
+      audioRef.current.src = streamUrl;
+      audioRef.current.load();
+      
+      setStationInfo({
+        name: currentStation.name,
+        currentTrack: 'Loading...',
+        coverImage: currentStation.image || 'https://images.unsplash.com/photo-1614149162883-504ce4d13909?q=80&w=200&auto=format&fit=crop'
+      });
+      
+      if (wasPlaying || audioState.isPlaying) {
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.error("Failed to play audio:", error);
+            toast({
+              title: "Playback Error",
+              description: "Failed to play this station. Trying an alternative stream for demonstration.",
+              variant: "destructive"
+            });
+            
+            audioRef.current!.src = 'https://ice1.somafm.com/groovesalad-128-mp3';
+            audioRef.current!.load();
+            audioRef.current!.play().catch(innerError => {
+              console.error("Failed to play fallback audio:", innerError);
+            });
+          });
+        }
+      }
+      
+      setupMetadataPolling(streamUrl);
+    }
   }, [currentPlayingStation, stations]);
   
   useEffect(() => {
@@ -188,6 +207,11 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     }
     
     console.log("Changing audio source to track:", track.audioFile);
+    setAudioState(prev => ({ 
+      ...prev, 
+      currentTrack: currentPlayingTrack,
+      currentStation: null
+    }));
     
     audioRef.current.pause();
     audioRef.current.src = track.audioFile;
@@ -234,6 +258,10 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     setLikes(track.likes || 0);
   }, [currentPlayingTrack, tracks]);
   
+  useEffect(() => {
+    setIsPlaying(audioState.isPlaying);
+  }, [audioState.isPlaying]);
+  
   const setupMetadataPolling = (streamUrl: string) => {
     if (metadataTimerRef.current) {
       window.clearInterval(metadataTimerRef.current);
@@ -263,6 +291,10 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     metadataTimerRef.current = window.setInterval(simulateMetadata, 15000);
   };
 
+  const [isPlaying, setIsPlaying] = useState(audioState.isPlaying);
+  const [volume, setVolume] = useState(audioState.volume);
+  const [isMuted, setIsMuted] = useState(audioState.isMuted);
+
   const togglePlayPause = () => {
     if (!audioRef.current) return;
     
@@ -284,10 +316,12 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     if (isMuted) {
       setVolume(prevVolume.current);
       setIsMuted(false);
+      setAudioState(prev => ({ ...prev, volume: prevVolume.current, isMuted: false }));
     } else {
       prevVolume.current = volume;
       setVolume(0);
       setIsMuted(true);
+      setAudioState(prev => ({ ...prev, volume: 0, isMuted: true }));
     }
   };
 
@@ -295,6 +329,11 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     const newVolume = parseInt(e.target.value, 10);
     setVolume(newVolume);
     setIsMuted(newVolume === 0);
+    setAudioState(prev => ({ 
+      ...prev, 
+      volume: newVolume, 
+      isMuted: newVolume === 0 
+    }));
   };
 
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -448,3 +487,4 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
 };
 
 export default Player;
+

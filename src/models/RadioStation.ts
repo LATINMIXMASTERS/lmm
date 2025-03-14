@@ -34,3 +34,11 @@ export interface FileUpload {
   file: File;
   dataUrl: string;
 }
+
+export interface AudioState {
+  isPlaying: boolean;
+  volume: number;
+  isMuted: boolean;
+  currentTrack: string | null;
+  currentStation: string | null;
+}

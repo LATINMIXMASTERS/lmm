@@ -1,7 +1,8 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { RadioStation, BookingSlot, FileUpload } from '@/models/RadioStation';
+import { RadioStation, BookingSlot, FileUpload, AudioState } from '@/models/RadioStation';
 import { isAfter, isBefore, format, isToday } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 interface RadioContextType {
   stations: RadioStation[];
@@ -21,6 +22,8 @@ interface RadioContextType {
   setCurrentPlayingStation: (stationId: string | null) => void;
   hasBookingConflict: (stationId: string, startTime: Date, endTime: Date, excludeBookingId?: string) => boolean;
   getBookingsForToday: (stationId: string) => BookingSlot[];
+  audioState: AudioState;
+  setAudioState: React.Dispatch<React.SetStateAction<AudioState>>;
 }
 
 const RadioContext = createContext<RadioContextType | undefined>(undefined);
@@ -121,9 +124,19 @@ const initialStations: RadioStation[] = [
 ];
 
 export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { toast } = useToast();
   const [stations, setStations] = useState<RadioStation[]>([]);
   const [bookings, setBookings] = useState<BookingSlot[]>([]);
   const [currentPlayingStation, setCurrentPlayingStation] = useState<string | null>(null);
+  
+  // New state for persistent audio
+  const [audioState, setAudioState] = useState<AudioState>({
+    isPlaying: false,
+    volume: 80,
+    isMuted: false,
+    currentTrack: null,
+    currentStation: null
+  });
 
   // Initialize stations and bookings from localStorage
   useEffect(() => {
@@ -346,7 +359,34 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const uploadStationImage = async (stationId: string, file: File): Promise<void> => {
-    if (!file) return;
+    if (!file) {
+      toast({
+        title: "Upload Error",
+        description: "No file was selected for upload",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Check if the file is an image
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Upload Error",
+        description: "The selected file is not an image",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Check if the file size is reasonable (less than 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Upload Error",
+        description: "The image file is too large (max 5MB)",
+        variant: "destructive"
+      });
+      return;
+    }
     
     return new Promise((resolve, reject) => {
       try {
@@ -366,18 +406,33 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           setStations(updatedStations);
           localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
           
+          toast({
+            title: "Image Uploaded",
+            description: "Station cover image has been updated successfully"
+          });
+          
           console.log(`Uploaded image for station ${stationId}`);
           resolve();
         };
         
         reader.onerror = () => {
           console.error("Error reading file");
+          toast({
+            title: "Upload Error",
+            description: "Failed to read the image file",
+            variant: "destructive"
+          });
           reject(new Error("Failed to read file"));
         };
         
         reader.readAsDataURL(file);
       } catch (error) {
         console.error("Error uploading image:", error);
+        toast({
+          title: "Upload Error",
+          description: "An unexpected error occurred during upload",
+          variant: "destructive"
+        });
         reject(error);
       }
     });
@@ -401,7 +456,9 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       currentPlayingStation,
       setCurrentPlayingStation,
       hasBookingConflict,
-      getBookingsForToday
+      getBookingsForToday,
+      audioState,
+      setAudioState
     }}>
       {children}
     </RadioContext.Provider>
