@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { User as UserIcon, Calendar, Clock, HeadphonesIcon, Radio, Edit, Trash2, Globe, Music, Share2 } from 'lucide-react';
@@ -9,8 +10,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import GenreTabs from '@/components/GenreTabs';
+import { Track } from '@/models/Track';
 
 const HostProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
