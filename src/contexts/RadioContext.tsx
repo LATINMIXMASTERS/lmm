@@ -14,6 +14,7 @@ interface RadioContextType {
   updateBooking: (bookingId: string, updatedBooking: Partial<BookingSlot>) => BookingSlot | null;
   updateStreamDetails: (stationId: string, streamDetails: { url: string; port: string; password: string; }) => void;
   updateStreamUrl: (stationId: string, streamUrl: string) => void;
+  updateStationImage: (stationId: string, imageUrl: string) => void;
   currentPlayingStation: string | null;
   setCurrentPlayingStation: (stationId: string | null) => void;
   hasBookingConflict: (stationId: string, startTime: Date, endTime: Date, excludeBookingId?: string) => boolean;
@@ -326,6 +327,22 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     console.log(`Updated player stream URL for station ${stationId}:`, formattedUrl);
   };
 
+  const updateStationImage = (stationId: string, imageUrl: string) => {
+    if (!imageUrl.trim()) return;
+    
+    const updatedStations = stations.map(station => {
+      if (station.id === stationId) {
+        return { ...station, image: imageUrl };
+      }
+      return station;
+    });
+    
+    setStations(updatedStations);
+    localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+    
+    console.log(`Updated station image for station ${stationId}:`, imageUrl);
+  };
+
   return (
     <RadioContext.Provider value={{
       stations,
@@ -339,6 +356,7 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       updateBooking,
       updateStreamDetails,
       updateStreamUrl,
+      updateStationImage,
       currentPlayingStation,
       setCurrentPlayingStation,
       hasBookingConflict,

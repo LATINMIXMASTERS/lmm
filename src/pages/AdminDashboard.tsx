@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,7 +29,8 @@ import {
   Search,
   Volume2,
   Mic,
-  Music
+  Music,
+  ImageIcon
 } from "lucide-react";
 import { format, formatDistance } from "date-fns";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -49,7 +49,14 @@ const AdminDashboard: React.FC = () => {
     editUser, 
     deleteUser 
   } = useAuth();
-  const { stations, bookings, updateStreamDetails, approveBooking, updateStreamUrl } = useRadio();
+  const { 
+    stations, 
+    bookings, 
+    updateStreamDetails, 
+    approveBooking, 
+    updateStreamUrl,
+    updateStationImage 
+  } = useRadio();
   const { toast } = useToast();
   
   const [stationSettings, setStationSettings] = useState<Record<string, {
@@ -64,6 +71,7 @@ const AdminDashboard: React.FC = () => {
   const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(null);
   
   const [streamUrls, setStreamUrls] = useState<Record<string, string>>({});
+  const [stationImages, setStationImages] = useState<Record<string, string>>({});
   
   useEffect(() => {
     if (!isAuthenticated || !user?.isAdmin) {
@@ -77,6 +85,7 @@ const AdminDashboard: React.FC = () => {
     
     const initialSettings: Record<string, {url: string; port: string; password: string}> = {};
     const initialStreamUrls: Record<string, string> = {};
+    const initialStationImages: Record<string, string> = {};
     
     stations.forEach(station => {
       initialSettings[station.id] = {
@@ -86,10 +95,12 @@ const AdminDashboard: React.FC = () => {
       };
       
       initialStreamUrls[station.id] = station.streamUrl || '';
+      initialStationImages[station.id] = station.image || '';
     });
     
     setStationSettings(initialSettings);
     setStreamUrls(initialStreamUrls);
+    setStationImages(initialStationImages);
   }, [isAuthenticated, user, navigate, toast, stations]);
   
   const handleSettingChange = (stationId: string, field: 'url' | 'port' | 'password', value: string) => {
@@ -215,6 +226,33 @@ const AdminDashboard: React.FC = () => {
       description: "The listener streaming URL has been updated successfully."
     });
   };
+
+  const handleStationImageChange = (stationId: string, imageUrl: string) => {
+    setStationImages(prev => ({
+      ...prev,
+      [stationId]: imageUrl
+    }));
+  };
+
+  const handleSaveStationImage = (stationId: string) => {
+    const imageUrl = stationImages[stationId];
+    
+    if (!imageUrl) {
+      toast({
+        title: "Validation Error",
+        description: "Image URL is required.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    updateStationImage(stationId, imageUrl);
+    
+    toast({
+      title: "Station Image Updated",
+      description: "The station cover image has been updated successfully."
+    });
+  };
   
   return (
     <MainLayout>
@@ -233,6 +271,10 @@ const AdminDashboard: React.FC = () => {
             <TabsTrigger value="streaming" className="flex items-center">
               <Volume2 className="w-4 h-4 mr-2" />
               Player Stream URLs
+            </TabsTrigger>
+            <TabsTrigger value="station-images" className="flex items-center">
+              <ImageIcon className="w-4 h-4 mr-2" />
+              Station Images
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center">
               <Users className="w-4 h-4 mr-2" />
@@ -397,6 +439,84 @@ const AdminDashboard: React.FC = () => {
                             Current URL: <span className="font-mono bg-gray-100 p-1 rounded">{station.streamUrl}</span>
                           </div>
                         )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="station-images">
+            <div className="grid grid-cols-1 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <ImageIcon className="w-5 h-5 mr-2 text-blue" />
+                    Station Cover Images
+                  </CardTitle>
+                  <CardDescription>
+                    Update the cover images for each radio station
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-blue-50 rounded-md p-3 mb-6 flex items-start">
+                    <ImageIcon className="w-5 h-5 text-blue mr-2 mt-0.5" />
+                    <div className="text-sm text-blue-800">
+                      These images will be displayed on the stations page and in the player when the station is playing.
+                      <br/>
+                      <strong>Note:</strong> For best results, use high-quality images with a 16:9 aspect ratio.
+                    </div>
+                  </div>
+                
+                  <div className="space-y-6">
+                    {stations.map((station) => (
+                      <div key={station.id} className="p-4 border rounded-md">
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="font-medium text-lg">{station.name}</h3>
+                          <span className="text-sm text-gray-500">{station.genre}</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                          <div>
+                            <Label htmlFor={`station-image-${station.id}`} className="mb-2 block">
+                              Cover Image URL
+                            </Label>
+                            <div className="flex gap-2">
+                              <Input
+                                id={`station-image-${station.id}`}
+                                value={stationImages[station.id] || ''}
+                                onChange={(e) => handleStationImageChange(station.id, e.target.value)}
+                                placeholder="https://example.com/image.jpg"
+                                className="w-full"
+                              />
+                              <Button 
+                                onClick={() => handleSaveStationImage(station.id)}
+                                className="bg-blue hover:bg-blue-dark whitespace-nowrap"
+                              >
+                                <ImageIcon className="w-4 h-4 mr-2" />
+                                Save Image
+                              </Button>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">Enter a URL for the station cover image</p>
+                          </div>
+                          
+                          <div className="bg-gray-100 rounded-md p-4 flex justify-center">
+                            <div className="aspect-video w-full max-w-[300px] rounded overflow-hidden border">
+                              {stationImages[station.id] ? (
+                                <img 
+                                  src={stationImages[station.id]} 
+                                  alt={`${station.name} cover`}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                                  <ImageIcon className="w-12 h-12 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>

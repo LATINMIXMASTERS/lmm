@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { useRadio } from '@/contexts/RadioContext';
@@ -121,12 +122,15 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       return;
     }
     
+    // Better handling of stream URLs
     let streamUrl = '';
     
     if (currentStation.streamUrl) {
       streamUrl = currentStation.streamUrl;
+      console.log("Using station streamUrl:", streamUrl);
     } else if (currentStation.streamDetails?.url) {
       streamUrl = currentStation.streamDetails.url;
+      console.log("Using station streamDetails.url:", streamUrl);
     } else {
       console.error("No stream URL found for station:", currentPlayingStation);
       toast({
@@ -137,33 +141,38 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
       return;
     }
     
-    if (!streamUrl.startsWith('http')) {
+    // Ensure URL starts with http/https
+    if (!streamUrl.startsWith('http://') && !streamUrl.startsWith('https://')) {
       streamUrl = `https://${streamUrl}`;
     }
     
-    console.log("Changing audio source to station:", streamUrl);
+    console.log("Final audio source URL:", streamUrl);
     
     const wasPlaying = !audioRef.current.paused;
     audioRef.current.pause();
     
+    // Set src and load before attempting to play
     audioRef.current.src = streamUrl;
+    audioRef.current.load();
     
     setStationInfo({
       name: currentStation.name,
       currentTrack: 'Loading...',
-      coverImage: currentStation.image
+      coverImage: currentStation.image || 'https://images.unsplash.com/photo-1614149162883-504ce4d13909?q=80&w=200&auto=format&fit=crop'
     });
     
     if (wasPlaying) {
-      audioRef.current.load();
-      audioRef.current.play().catch(error => {
-        console.error("Failed to play audio:", error);
-        toast({
-          title: "Playback Error",
-          description: "Failed to play this station. Please try again.",
-          variant: "destructive"
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error("Failed to play audio:", error);
+          toast({
+            title: "Playback Error",
+            description: "Failed to play this station. Please try again.",
+            variant: "destructive"
+          });
         });
-      });
+      }
     }
     
     setupMetadataPolling(streamUrl);

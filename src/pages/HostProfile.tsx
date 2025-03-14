@@ -1,7 +1,7 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { User as UserIcon, Calendar, Clock, HeadphonesIcon, Radio, Edit, Trash2 } from 'lucide-react';
+import { User as UserIcon, Calendar, Clock, HeadphonesIcon, Radio, Edit, Trash2, Globe, Music, Share2 } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTrack } from '@/contexts/TrackContext';
@@ -11,6 +11,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { GenreTabs } from '@/components/GenreTabs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,19 +27,25 @@ import { Track } from '@/models/Track';
 const HostProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user, users } = useAuth();
-  const { tracks, getTracksByUser, deleteTrack, canEditTrack } = useTrack();
+  const { tracks, genres, getTracksByUser, deleteTrack, canEditTrack, likeTrack, addComment, shareTrack } = useTrack();
   const { stations, setCurrentPlayingStation } = useRadio();
   const navigate = useNavigate();
   const { toast } = useToast();
   
   const [trackToDelete, setTrackToDelete] = useState<Track | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedTabGenre, setSelectedTabGenre] = useState('all');
+  const [currentPlayingTrack, setCurrentPlayingTrack] = useState<string | null>(null);
+  const [newComments, setNewComments] = useState<Record<string, string>>({});
   
   // Find host user
   const hostUser = users.find(u => u.id === userId && u.isRadioHost);
   
   // Get host's tracks and shows
   const userTracks = hostUser ? getTracksByUser(hostUser.id) : [];
+  const filteredTracks = userTracks.filter(track => 
+    selectedTabGenre === 'all' || track.genre === selectedTabGenre
+  );
   
   // Filter stations where this host is featured
   const hostStations = stations.filter(station => 
@@ -71,6 +78,10 @@ const HostProfile: React.FC = () => {
     });
   };
 
+  const handlePlayTrack = (trackId: string) => {
+    setCurrentPlayingTrack(trackId);
+  };
+
   const handleEditTrack = (trackId: string) => {
     navigate(`/edit-track/${trackId}`);
   };
@@ -92,6 +103,61 @@ const HostProfile: React.FC = () => {
     }
     setIsDeleteDialogOpen(false);
     setTrackToDelete(null);
+  };
+  
+  // Handle like/share functions
+  const handleLikeTrack = (trackId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    likeTrack(trackId);
+    toast({
+      title: "Track liked",
+      description: "This track has been added to your favorites",
+    });
+  };
+
+  const handleShareTrack = (trackId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    shareTrack(trackId);
+    toast({
+      title: "Share link copied",
+      description: "Track link has been copied to clipboard",
+    });
+  };
+
+  const handleCommentChange = (trackId: string, value: string) => {
+    setNewComments(prev => ({
+      ...prev,
+      [trackId]: value
+    }));
+  };
+
+  const handleSubmitComment = (trackId: string, e: React.FormEvent) => {
+    e.preventDefault();
+    const comment = newComments[trackId];
+    if (!comment?.trim()) return;
+    
+    addComment(trackId, {
+      userId: user?.id || 'anonymous',
+      username: user?.username || 'Guest',
+      text: comment
+    });
+    
+    setNewComments(prev => ({
+      ...prev,
+      [trackId]: ''
+    }));
+    
+    toast({
+      title: "Comment added",
+      description: "Your comment has been posted",
+    });
+  };
+
+  const formatDuration = (seconds?: number) => {
+    if (!seconds) return '0:00';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
   
   // Check if current user can manage this track (admin or track owner)
@@ -222,57 +288,26 @@ const HostProfile: React.FC = () => {
               </div>
               
               {userTracks.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {userTracks.map(track => (
-                    <Card key={track.id} className="overflow-hidden">
-                      <div className="aspect-video relative">
-                        <img 
-                          src={track.coverImage} 
-                          alt={track.title} 
-                          className="object-cover w-full h-full"
-                        />
-                        <div className="absolute bottom-0 right-0 p-2 flex gap-1">
-                          {canManageTrack(track) && (
-                            <>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={() => handleEditTrack(track.id)}
-                                className="h-8 w-8 bg-white/70 hover:bg-white text-blue"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={() => handleDeleteTrack(track)}
-                                className="h-8 w-8 bg-white/70 hover:bg-white text-red-500"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <CardHeader>
-                        <CardTitle>{track.title}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{track.genre}</p>
-                      </CardHeader>
-                      <CardFooter>
-                        <Button 
-                          onClick={() => navigate(`/mixes?track=${track.id}`)}
-                          className="w-full"
-                        >
-                          <HeadphonesIcon className="mr-2 h-4 w-4" />
-                          Listen Now
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
+                <GenreTabs
+                  genres={genres}
+                  tracks={userTracks}
+                  filteredTracks={filteredTracks}
+                  selectedTabGenre={selectedTabGenre}
+                  setSelectedTabGenre={setSelectedTabGenre}
+                  currentPlayingTrack={currentPlayingTrack}
+                  handlePlayTrack={handlePlayTrack}
+                  handleLikeTrack={handleLikeTrack}
+                  handleShareTrack={handleShareTrack}
+                  newComments={newComments}
+                  handleCommentChange={handleCommentChange}
+                  handleSubmitComment={handleSubmitComment}
+                  formatDuration={formatDuration}
+                  renderTrackActions={renderTrackActions}
+                />
               ) : (
                 <Card>
                   <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Music className="h-16 w-16 text-muted-foreground mb-4" />
                     <p className="text-muted-foreground mb-4">This DJ hasn't uploaded any mixes yet.</p>
                   </CardContent>
                 </Card>
@@ -320,6 +355,7 @@ const HostProfile: React.FC = () => {
               ) : (
                 <Card>
                   <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Radio className="h-16 w-16 text-muted-foreground mb-4" />
                     <p className="text-muted-foreground">This DJ doesn't have any upcoming radio shows.</p>
                   </CardContent>
                 </Card>
