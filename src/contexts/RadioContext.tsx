@@ -1,5 +1,6 @@
+
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { RadioStation, BookingSlot } from '@/models/RadioStation';
+import { RadioStation, BookingSlot, FileUpload } from '@/models/RadioStation';
 import { isAfter, isBefore, format, isToday } from 'date-fns';
 
 interface RadioContextType {
@@ -15,6 +16,7 @@ interface RadioContextType {
   updateStreamDetails: (stationId: string, streamDetails: { url: string; port: string; password: string; }) => void;
   updateStreamUrl: (stationId: string, streamUrl: string) => void;
   updateStationImage: (stationId: string, imageUrl: string) => void;
+  uploadStationImage: (stationId: string, file: File) => Promise<void>;
   currentPlayingStation: string | null;
   setCurrentPlayingStation: (stationId: string | null) => void;
   hasBookingConflict: (stationId: string, startTime: Date, endTime: Date, excludeBookingId?: string) => boolean;
@@ -343,6 +345,44 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     console.log(`Updated station image for station ${stationId}:`, imageUrl);
   };
 
+  const uploadStationImage = async (stationId: string, file: File): Promise<void> => {
+    if (!file) return;
+    
+    return new Promise((resolve, reject) => {
+      try {
+        // Read the file and convert to data URL
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target?.result as string;
+          
+          // Update the station with the data URL
+          const updatedStations = stations.map(station => {
+            if (station.id === stationId) {
+              return { ...station, image: dataUrl };
+            }
+            return station;
+          });
+          
+          setStations(updatedStations);
+          localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+          
+          console.log(`Uploaded image for station ${stationId}`);
+          resolve();
+        };
+        
+        reader.onerror = () => {
+          console.error("Error reading file");
+          reject(new Error("Failed to read file"));
+        };
+        
+        reader.readAsDataURL(file);
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        reject(error);
+      }
+    });
+  };
+
   return (
     <RadioContext.Provider value={{
       stations,
@@ -357,6 +397,7 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       updateStreamDetails,
       updateStreamUrl,
       updateStationImage,
+      uploadStationImage,
       currentPlayingStation,
       setCurrentPlayingStation,
       hasBookingConflict,

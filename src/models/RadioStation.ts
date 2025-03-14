@@ -29,3 +29,8 @@ export interface BookingSlot {
   rejected?: boolean;
   rejectionReason?: string;
 }
+
+export interface FileUpload {
+  file: File;
+  dataUrl: string;
+}
