@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { User as UserIcon, Calendar, Clock, HeadphonesIcon, Radio, Edit, Trash2, Globe, Music, Share2 } from 'lucide-react';
@@ -12,17 +11,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import GenreTabs from '@/components/GenreTabs';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Track } from '@/models/Track';
 
 const HostProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -38,21 +26,17 @@ const HostProfile: React.FC = () => {
   const [currentPlayingTrack, setCurrentPlayingTrack] = useState<string | null>(null);
   const [newComments, setNewComments] = useState<Record<string, string>>({});
   
-  // Find host user
   const hostUser = users.find(u => u.id === userId && u.isRadioHost);
   
-  // Get host's tracks and shows
   const userTracks = hostUser ? getTracksByUser(hostUser.id) : [];
   const filteredTracks = userTracks.filter(track => 
     selectedTabGenre === 'all' || track.genre === selectedTabGenre
   );
   
-  // Filter stations where this host is featured
   const hostStations = stations.filter(station => 
     station.hosts && station.hosts.includes(hostUser?.id || '')
   );
   
-  // User not found or not a host
   if (!hostUser || !hostUser.isRadioHost) {
     return (
       <MainLayout>
@@ -105,7 +89,6 @@ const HostProfile: React.FC = () => {
     setTrackToDelete(null);
   };
   
-  // Handle like/share functions
   const handleLikeTrack = (trackId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     likeTrack(trackId);
@@ -160,13 +143,11 @@ const HostProfile: React.FC = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
   
-  // Check if current user can manage this track (admin or track owner)
   const canManageTrack = (track: Track) => {
     if (!user) return false;
     return user.isAdmin || track.uploadedBy === user.id;
   };
 
-  // Render track action buttons for edit/delete
   const renderTrackActions = (track: Track) => {
     if (!canManageTrack(track)) return null;
     
@@ -195,14 +176,10 @@ const HostProfile: React.FC = () => {
   return (
     <MainLayout>
       <div className="container py-8 md:py-12">
-        {/* Banner and Profile */}
         <div className="relative mb-8">
-          {/* Banner */}
           <div className="w-full h-48 md:h-64 bg-gradient-to-r from-blue-dark to-blue rounded-lg overflow-hidden">
-            {/* Optional background image would go here */}
           </div>
           
-          {/* Profile info */}
           <div className="absolute bottom-0 left-0 w-full transform translate-y-1/2 px-4">
             <div className="max-w-5xl mx-auto flex items-end">
               <Avatar className="h-24 w-24 md:h-32 md:w-32 border-4 border-white">
@@ -221,9 +198,7 @@ const HostProfile: React.FC = () => {
           </div>
         </div>
         
-        {/* Content */}
         <div className="max-w-5xl mx-auto pt-16">
-          {/* Host Bio */}
           <Card className="mb-8">
             <CardHeader>
               <CardTitle>About {hostUser.username}</CardTitle>
@@ -235,7 +210,6 @@ const HostProfile: React.FC = () => {
                 <p className="text-muted-foreground italic">This host hasn't added a biography yet.</p>
               )}
               
-              {/* Social Links */}
               {hostUser.socialLinks && Object.values(hostUser.socialLinks).some(link => !!link) && (
                 <div className="mt-4 flex gap-3">
                   <h3 className="font-medium">Follow on:</h3>
@@ -269,14 +243,12 @@ const HostProfile: React.FC = () => {
             </CardContent>
           </Card>
           
-          {/* Tabs for Shows and Mixes */}
           <Tabs defaultValue="mixes" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="mixes">Mixes</TabsTrigger>
               <TabsTrigger value="shows">Radio Shows</TabsTrigger>
             </TabsList>
             
-            {/* Mixes Tab */}
             <TabsContent value="mixes">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">{hostUser.username}'s Mixes</h2>
@@ -314,7 +286,6 @@ const HostProfile: React.FC = () => {
               )}
             </TabsContent>
             
-            {/* Radio Shows Tab */}
             <TabsContent value="shows">
               <h2 className="text-2xl font-bold mb-4">{hostUser.username}'s Radio Shows</h2>
               
@@ -365,7 +336,6 @@ const HostProfile: React.FC = () => {
         </div>
       </div>
       
-      {/* Delete confirmation dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

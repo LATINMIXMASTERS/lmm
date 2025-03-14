@@ -42,3 +42,16 @@ export interface AudioState {
   currentTrack: string | null;
   currentStation: string | null;
 }
+
+export interface ProfileUpdate {
+  profileImage?: string;
+  biography?: string;
+  socialLinks?: {
+    facebook?: string;
+    twitter?: string;
+    instagram?: string;
+    soundcloud?: string;
+    youtube?: string;
+  };
+}
+
