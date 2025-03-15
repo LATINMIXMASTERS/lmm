@@ -1,6 +1,8 @@
 
 import RadioContext from './RadioContext';
 import RadioProvider from './RadioProvider';
-import { RadioContextType } from './types';
+import type { RadioContextType } from './types';
 
-export { RadioProvider, RadioContext, RadioContextType };
+export { RadioProvider, RadioContext };
+export type { RadioContextType };
+
