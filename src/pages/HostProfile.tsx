@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { User as UserIcon, Music, Edit, Trash2, Share2 } from 'lucide-react';
@@ -21,7 +20,7 @@ const HostProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user, users } = useAuth();
   const { tracks, genres, getTracksByUser, deleteTrack, likeTrack, addComment, shareTrack } = useTrack();
-  const { stations, setCurrentPlayingStation } = useRadio();
+  const { stations, bookings, setCurrentPlayingStation } = useRadio();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -40,6 +39,10 @@ const HostProfile: React.FC = () => {
   
   const hostStations = stations.filter(station => 
     station.hosts && station.hosts.includes(hostUser?.id || '')
+  );
+  
+  const hostBookings = bookings.filter(booking => 
+    booking.hostId === hostUser?.id
   );
   
   if (!hostUser || !hostUser.isRadioHost) {
@@ -172,7 +175,10 @@ const HostProfile: React.FC = () => {
   return (
     <MainLayout>
       <div className="container py-8 md:py-12">
-        <HostProfileHeader hostUser={hostUser} />
+        <HostProfileHeader 
+          hostUser={hostUser} 
+          onEditProfile={user?.id === hostUser.id ? () => navigate('/host-dashboard') : undefined}
+        />
         
         <div className="max-w-5xl mx-auto">
           <Tabs defaultValue="mixes" className="w-full">
@@ -221,6 +227,7 @@ const HostProfile: React.FC = () => {
             <TabsContent value="shows">
               <RadioShowsTab 
                 hostStations={hostStations} 
+                hostBookings={hostBookings}
                 startListening={startListening} 
               />
             </TabsContent>

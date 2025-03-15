@@ -1,119 +1,328 @@
 
-import React from 'react';
-import { Calendar, CheckCircle, XCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import React, { useState } from 'react';
+import { Calendar, Trash2, AlertCircle } from 'lucide-react';
 import { useRadio } from '@/hooks/useRadioContext';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { format, isPast } from 'date-fns';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import PendingBookings from './PendingBookings';
+import { BookingSlot } from '@/models/RadioStation';
 
 const ShowBookings: React.FC = () => {
-  const { stations, bookings, approveBooking } = useRadio();
+  const { bookings, stations, approveBooking, rejectBooking, cancelBooking } = useRadio();
+  const { toast } = useToast();
   
-  const pendingBookings = bookings.filter(booking => !booking.approved);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [bookingToReject, setBookingToReject] = useState<string | null>(null);
+  const [isRejectionDialogOpen, setIsRejectionDialogOpen] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
+  const pendingBookings = bookings.filter(b => !b.approved && !b.rejected);
+  const approvedBookings = bookings.filter(b => b.approved);
+  const rejectedBookings = bookings.filter(b => b.rejected);
+  const pastBookings = bookings.filter(b => isPast(new Date(b.endTime)));
+  
+  const upcomingBookings = approvedBookings.filter(b => !isPast(new Date(b.startTime)));
+  
+  // Get station name from ID
+  const getStationName = (stationId: string) => {
+    const station = stations.find(s => s.id === stationId);
+    return station ? station.name : 'Unknown Station';
+  };
+  
+  // Handle booking approval
   const handleApproveBooking = (bookingId: string) => {
     approveBooking(bookingId);
+    toast({
+      title: "Booking approved",
+      description: "Show has been added to the schedule"
+    });
+  };
+  
+  // Open rejection dialog
+  const openRejectionDialog = (bookingId: string) => {
+    setBookingToReject(bookingId);
+    setRejectionReason('');
+    setIsRejectionDialogOpen(true);
+  };
+  
+  // Handle booking rejection
+  const handleRejectBooking = () => {
+    if (!bookingToReject) return;
+    
+    rejectBooking(bookingToReject, rejectionReason || 'Rejected by admin');
+    setIsRejectionDialogOpen(false);
+    setBookingToReject(null);
+    
+    toast({
+      title: "Booking rejected",
+      description: "The show request has been rejected"
+    });
+  };
+  
+  // Open delete dialog
+  const openDeleteDialog = (bookingId: string) => {
+    setBookingToDelete(bookingId);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  // Handle booking deletion
+  const handleDeleteBooking = () => {
+    if (!bookingToDelete) return;
+    
+    cancelBooking(bookingToDelete);
+    setIsDeleteDialogOpen(false);
+    setBookingToDelete(null);
+    
+    toast({
+      title: "Booking deleted",
+      description: "The booking has been removed from the system"
+    });
   };
   
   return (
-    <>
+    <div className="space-y-6">
+      <div className="flex items-center space-x-2">
+        <Calendar className="h-5 w-5" />
+        <h2 className="text-2xl font-bold">Show Bookings</h2>
+      </div>
+      
+      <PendingBookings 
+        pendingBookings={pendingBookings}
+        getStationName={getStationName}
+        onApprove={handleApproveBooking}
+        onReject={openRejectionDialog}
+      />
+      
       <Card>
         <CardHeader>
-          <CardTitle>Pending Approval</CardTitle>
+          <CardTitle>All Show Bookings</CardTitle>
           <CardDescription>
-            Review and approve show booking requests from radio hosts
+            Manage approved, rejected, and past show bookings
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {pendingBookings.length > 0 ? (
-            <div className="space-y-4">
-              {pendingBookings.map((booking) => {
-                const station = stations.find(s => s.id === booking.stationId);
-                return (
-                  <div key={booking.id} className="border border-yellow-200 bg-yellow-50 rounded-md p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium">{booking.title}</h3>
-                        <p className="text-sm text-gray-600 mb-1">
-                          Host: {booking.hostName} • Station: {station?.name}
-                        </p>
-                        <p className="text-sm">
-                          {format(new Date(booking.startTime), "MMMM d, yyyy - h:mm a")} to {format(new Date(booking.endTime), "h:mm a")}
-                        </p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-red-500 border-red-200 hover:bg-red-50"
-                        >
-                          <XCircle className="w-4 h-4 mr-1" />
-                          Reject
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          className="bg-green-500 hover:bg-green-600"
-                          onClick={() => handleApproveBooking(booking.id)}
-                        >
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          Approve
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>No pending booking requests at this time.</p>
-            </div>
-          )}
+          <Tabs defaultValue="upcoming">
+            <TabsList>
+              <TabsTrigger value="upcoming">Upcoming Shows</TabsTrigger>
+              <TabsTrigger value="past">Past Shows</TabsTrigger>
+              <TabsTrigger value="rejected">Rejected</TabsTrigger>
+            </TabsList>
+            
+            {/* Upcoming Shows Tab */}
+            <TabsContent value="upcoming">
+              {upcomingBookings.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No upcoming shows scheduled.</p>
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Station</TableHead>
+                        <TableHead>Host</TableHead>
+                        <TableHead>Show Title</TableHead>
+                        <TableHead>Date & Time</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {upcomingBookings.map(booking => (
+                        <TableRow key={booking.id}>
+                          <TableCell>{getStationName(booking.stationId)}</TableCell>
+                          <TableCell>{booking.hostName}</TableCell>
+                          <TableCell>{booking.title}</TableCell>
+                          <TableCell>
+                            {format(new Date(booking.startTime), 'MMM d, yyyy - h:mm a')} to {format(new Date(booking.endTime), 'h:mm a')}
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => openDeleteDialog(booking.id)}
+                              className="h-8 w-8 text-red-500"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+            
+            {/* Past Shows Tab */}
+            <TabsContent value="past">
+              {pastBookings.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No past shows found.</p>
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Station</TableHead>
+                        <TableHead>Host</TableHead>
+                        <TableHead>Show Title</TableHead>
+                        <TableHead>Date & Time</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pastBookings.map(booking => (
+                        <TableRow key={booking.id} className="text-muted-foreground">
+                          <TableCell>{getStationName(booking.stationId)}</TableCell>
+                          <TableCell>{booking.hostName}</TableCell>
+                          <TableCell>{booking.title}</TableCell>
+                          <TableCell>
+                            {format(new Date(booking.startTime), 'MMM d, yyyy - h:mm a')} to {format(new Date(booking.endTime), 'h:mm a')}
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => openDeleteDialog(booking.id)}
+                              className="h-8 w-8 text-red-500"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+            
+            {/* Rejected Shows Tab */}
+            <TabsContent value="rejected">
+              {rejectedBookings.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No rejected show requests.</p>
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Station</TableHead>
+                        <TableHead>Host</TableHead>
+                        <TableHead>Show Title</TableHead>
+                        <TableHead>Date & Time</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rejectedBookings.map(booking => (
+                        <TableRow key={booking.id}>
+                          <TableCell>{getStationName(booking.stationId)}</TableCell>
+                          <TableCell>{booking.hostName}</TableCell>
+                          <TableCell>{booking.title}</TableCell>
+                          <TableCell>
+                            {format(new Date(booking.startTime), 'MMM d, yyyy - h:mm a')} to {format(new Date(booking.endTime), 'h:mm a')}
+                          </TableCell>
+                          <TableCell className="text-red-500">
+                            {booking.rejectionReason || "No reason provided"}
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => openDeleteDialog(booking.id)}
+                              className="h-8 w-8 text-red-500"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
       
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Approved Shows</CardTitle>
-          <CardDescription>
-            All upcoming approved radio shows
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {bookings.filter(b => b.approved).length > 0 ? (
-            <div className="space-y-3">
-              {bookings
-                .filter(b => b.approved)
-                .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-                .map((booking) => {
-                  const station = stations.find(s => s.id === booking.stationId);
-                  return (
-                    <div key={booking.id} className="border border-green-200 bg-green-50 rounded-md p-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium">{booking.title}</h3>
-                          <p className="text-sm text-gray-600 mb-1">
-                            Host: {booking.hostName} • Station: {station?.name}
-                          </p>
-                          <p className="text-sm">
-                            {format(new Date(booking.startTime), "MMMM d, yyyy - h:mm a")} to {format(new Date(booking.endTime), "h:mm a")}
-                          </p>
-                        </div>
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>No approved shows yet.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </>
+      {/* Rejection Dialog */}
+      <Dialog open={isRejectionDialogOpen} onOpenChange={setIsRejectionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Show Booking</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this show booking request.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="my-4">
+            <Input
+              placeholder="Reason for rejection"
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+            />
+          </div>
+          
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={handleRejectBooking}>
+              Reject Booking
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Booking</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this booking? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={handleDeleteBooking}>
+              Delete Booking
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

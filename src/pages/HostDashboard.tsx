@@ -21,7 +21,7 @@ import StatisticsPanel from '@/components/host-dashboard/StatisticsPanel';
 const HostDashboard: React.FC = () => {
   const { user, updateProfile } = useAuth();
   const { tracks, getTracksByUser, deleteTrack } = useTrack();
-  const { stations, bookings } = useRadio();
+  const { stations, bookings, cancelBooking } = useRadio();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [editingProfile, setEditingProfile] = useState(false);
@@ -59,6 +59,14 @@ const HostDashboard: React.FC = () => {
         });
       }
     }
+  };
+
+  const handleDeleteBooking = (bookingId: string) => {
+    cancelBooking(bookingId);
+    toast({
+      title: "Booking deleted",
+      description: "The booking has been removed",
+    });
   };
 
   const handleEditTrack = (trackId: string) => {
@@ -160,6 +168,7 @@ const HostDashboard: React.FC = () => {
                       rejectedBookings={rejectedBookings}
                       getStationName={getStationNameById}
                       formatDate={formatDate}
+                      onDeleteBooking={handleDeleteBooking}
                     />
                   </TabsContent>
                   
