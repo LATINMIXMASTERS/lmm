@@ -38,12 +38,13 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           isMuted={isMuted}
           toggleMute={toggleMute}
           handleVolumeChange={handleVolumeChange}
+          showLabel={true}
         />
       </div>
       
       <button
         onClick={togglePlayPause}
-        className="w-12 h-12 rounded-full bg-blue text-white flex items-center justify-center hover:bg-blue-dark transition-colors duration-300 shadow-sm"
+        className="w-12 h-12 rounded-full bg-gold text-black flex items-center justify-center hover:bg-gold-dark transition-colors duration-300 shadow-sm"
         aria-label={isPlaying ? "Pause" : "Play"}
       >
         {isPlaying ? (
@@ -62,7 +63,8 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
             max={duration}
             value={currentTime}
             onChange={handleProgressChange}
-            className="h-1 w-24 accent-blue"
+            className="h-1 w-24 accent-gold"
+            style={{ accentColor: '#FFD700' }}
           />
           <span className="text-xs text-gray-500">{formatDuration(duration)}</span>
         </div>

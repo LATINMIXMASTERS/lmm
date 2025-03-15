@@ -17,15 +17,15 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onEditProfile }) => {
 
   return (
     <div className="w-full md:w-64 flex-shrink-0">
-      <Card>
+      <Card className="bg-gradient-to-b from-white to-gold/5 border-gold/20">
         <CardContent className="p-4">
           <div className="flex flex-col items-center mb-4 mt-2">
-            <Avatar className="h-20 w-20 mb-4">
+            <Avatar className="h-20 w-20 mb-4 ring-2 ring-gold/50">
               <AvatarImage 
                 src={user.profileImage || `https://api.dicebear.com/7.x/personas/svg?seed=${user.username}`} 
                 alt={user.username} 
               />
-              <AvatarFallback>{user.username.substring(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="bg-gold text-black">{user.username.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <h2 className="font-semibold text-xl">{user.username}</h2>
             <p className="text-sm text-muted-foreground">Radio Host</p>
@@ -34,7 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onEditProfile }) => {
           <div className="space-y-1 mt-6">
             <Button 
               variant="ghost" 
-              className="w-full justify-start" 
+              className="w-full justify-start hover:bg-gold/10 hover:text-gold-dark" 
               onClick={() => navigate('/upload-track')}
             >
               <Upload className="mr-2 h-4 w-4" />
@@ -42,7 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onEditProfile }) => {
             </Button>
             <Button 
               variant="ghost" 
-              className="w-full justify-start"
+              className="w-full justify-start hover:bg-gold/10 hover:text-gold-dark" 
               onClick={onEditProfile}
             >
               <Settings className="mr-2 h-4 w-4" />
@@ -50,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onEditProfile }) => {
             </Button>
             <Button 
               variant="ghost" 
-              className="w-full justify-start"
+              className="w-full justify-start hover:bg-gold/10 hover:text-gold-dark" 
               onClick={() => navigate(`/host/${user.id}`)}
             >
               <Users className="mr-2 h-4 w-4" />

@@ -24,7 +24,7 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
     <div className={cn("flex items-center space-x-2", className)}>
       <button
         onClick={toggleMute}
-        className="text-gray-500 hover:text-black transition-colors duration-300"
+        className="text-gray-500 hover:text-gold transition-colors duration-300"
         aria-label={isMuted ? "Unmute" : "Mute"}
       >
         {isMuted || volume === 0 ? (
@@ -44,8 +44,9 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
           max="100"
           value={volume}
           onChange={handleVolumeChange}
-          className="w-24 accent-blue"
+          className="w-24 accent-gold"
           aria-label="Volume control"
+          style={{ accentColor: '#FFD700' }}
         />
       </div>
     </div>

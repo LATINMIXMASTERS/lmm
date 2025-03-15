@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProfileEditorProps {
   user: User;
@@ -14,6 +15,7 @@ interface ProfileEditorProps {
 }
 
 const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onSave }) => {
+  const { toast } = useToast();
   const [profileData, setProfileData] = useState<Partial<User>>({
     profileImage: user.profileImage || `https://api.dicebear.com/7.x/personas/svg?seed=${user.username}`,
     biography: user.biography || '',
@@ -54,21 +56,34 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onSave }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(profileData);
+    try {
+      onSave(profileData);
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been successfully updated.",
+      });
+    } catch (error) {
+      console.error("Profile update error:", error);
+      toast({
+        title: "Update failed",
+        description: "There was a problem updating your profile. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
-    <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader>
-        <CardTitle>Edit Profile</CardTitle>
+    <Card className="w-full max-w-3xl mx-auto border-gold/20 shadow-lg">
+      <CardHeader className="bg-gradient-to-r from-gold/10 to-transparent">
+        <CardTitle className="text-xl font-bold">Edit Profile</CardTitle>
         <CardDescription>Update your profile information and social media links</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 pt-6">
           <div className="flex flex-col items-center gap-4 sm:flex-row">
-            <Avatar className="h-24 w-24">
+            <Avatar className="h-24 w-24 ring-2 ring-gold/50">
               <AvatarImage src={profileData.profileImage} alt={user.username} />
-              <AvatarFallback>{user.username.substring(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="bg-gold text-black">{user.username.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <Label htmlFor="profileImage">Profile Image URL</Label>
@@ -78,7 +93,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onSave }) => {
                 value={profileData.profileImage}
                 onChange={handleInputChange}
                 placeholder="Enter image URL"
-                className="mt-1"
+                className="mt-1 focus-visible:ring-gold/50"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Paste a URL to your profile image or use the default generated avatar
@@ -94,12 +109,12 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onSave }) => {
               value={profileData.biography}
               onChange={handleInputChange}
               placeholder="Tell us about yourself..."
-              className="mt-1 min-h-[120px]"
+              className="mt-1 min-h-[120px] focus-visible:ring-gold/50"
             />
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Social Media Links</h3>
+            <h3 className="text-lg font-medium text-gold-dark">Social Media Links</h3>
             
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
@@ -110,7 +125,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onSave }) => {
                   value={profileData.socialLinks?.facebook}
                   onChange={handleInputChange}
                   placeholder="https://facebook.com/username"
-                  className="mt-1"
+                  className="mt-1 focus-visible:ring-gold/50"
                 />
               </div>
               
@@ -122,7 +137,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onSave }) => {
                   value={profileData.socialLinks?.twitter}
                   onChange={handleInputChange}
                   placeholder="https://twitter.com/username"
-                  className="mt-1"
+                  className="mt-1 focus-visible:ring-gold/50"
                 />
               </div>
               
@@ -134,7 +149,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onSave }) => {
                   value={profileData.socialLinks?.instagram}
                   onChange={handleInputChange}
                   placeholder="https://instagram.com/username"
-                  className="mt-1"
+                  className="mt-1 focus-visible:ring-gold/50"
                 />
               </div>
               
@@ -146,7 +161,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onSave }) => {
                   value={profileData.socialLinks?.soundcloud}
                   onChange={handleInputChange}
                   placeholder="https://soundcloud.com/username"
-                  className="mt-1"
+                  className="mt-1 focus-visible:ring-gold/50"
                 />
               </div>
               
@@ -158,14 +173,14 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ user, onSave }) => {
                   value={profileData.socialLinks?.youtube}
                   onChange={handleInputChange}
                   placeholder="https://youtube.com/channel/channelId"
-                  className="mt-1"
+                  className="mt-1 focus-visible:ring-gold/50"
                 />
               </div>
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-end">
-          <Button type="submit">Save Changes</Button>
+        <CardFooter className="flex justify-end border-t border-gold/10 pt-4">
+          <Button type="submit" className="bg-gold hover:bg-gold-dark text-black">Save Changes</Button>
         </CardFooter>
       </form>
     </Card>

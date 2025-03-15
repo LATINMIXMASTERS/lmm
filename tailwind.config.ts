@@ -78,6 +78,17 @@ export default {
         black: {
           DEFAULT: '#1A1A1A',
           pure: '#000000'
+        },
+        // LATINMIXMASTERS colors
+        gold: {
+          light: '#FFE066',
+          DEFAULT: '#FFD700',
+          dark: '#E6C200'
+        },
+        red: {
+          light: '#FF6B6B',
+          DEFAULT: '#EA384C',
+          dark: '#D01C30'
         }
 			},
 			borderRadius: {

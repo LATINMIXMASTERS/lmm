@@ -22,7 +22,7 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
   return (
     <div 
       className={cn(
-        "relative overflow-hidden bg-gradient-to-br from-blue to-blue-dark text-white",
+        "relative overflow-hidden bg-gradient-to-br from-red to-red-dark text-white",
         "min-h-[85vh] flex items-center justify-center rounded-xl",
         className
       )}
@@ -34,6 +34,22 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
       
       {/* Content container */}
       <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-8 text-center">
+        {/* Logo */}
+        <div 
+          className={cn(
+            "mx-auto w-64 md:w-80 lg:w-96 mb-8",
+            "opacity-0",
+            isVisible && "animate-slide-down"
+          )}
+          style={{ animationDelay: "0.1s" }}
+        >
+          <img 
+            src="/lovable-uploads/61ed3370-b60c-4751-a25f-fa9826619cbe.png" 
+            alt="LATINMIXMASTERS Logo"
+            className="w-full"
+          />
+        </div>
+        
         {/* Main title */}
         <h1 
           className={cn(
@@ -41,9 +57,9 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
             "opacity-0",
             isVisible && "animate-slide-down"
           )}
-          style={{ animationDelay: "0.2s" }}
+          style={{ animationDelay: "0.3s" }}
         >
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-gold-light to-gold-dark">
             LATINMIXMASTERS
           </span>
         </h1>
@@ -51,11 +67,11 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
         {/* Subtitle */}
         <p 
           className={cn(
-            "text-xl md:text-2xl text-blue-50/90 max-w-3xl mx-auto mb-10",
+            "text-xl md:text-2xl text-gold-light max-w-3xl mx-auto mb-10",
             "opacity-0",
             isVisible && "animate-slide-down"
           )}
-          style={{ animationDelay: "0.4s" }}
+          style={{ animationDelay: "0.5s" }}
         >
           INTERNATIONAL DJ CREW
         </p>
@@ -67,11 +83,11 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
             "opacity-0",
             isVisible && "animate-slide-down"
           )}
-          style={{ animationDelay: "0.6s" }}
+          style={{ animationDelay: "0.7s" }}
         >
           <Link
             to="/stations"
-            className="px-8 py-4 bg-white text-blue rounded-full font-medium flex items-center gap-2 hover:bg-blue-50 transition-colors duration-300 shadow-md"
+            className="px-8 py-4 bg-gold text-black rounded-full font-medium flex items-center gap-2 hover:bg-gold-dark transition-colors duration-300 shadow-md"
           >
             <Radio className="w-5 h-5" />
             Browse Stations
@@ -79,7 +95,7 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
           
           <Link
             to="/mixes"
-            className="px-8 py-4 bg-transparent border-2 border-white/30 backdrop-blur-sm text-white rounded-full font-medium flex items-center gap-2 hover:bg-white/10 transition-colors duration-300"
+            className="px-8 py-4 bg-transparent border-2 border-gold/30 backdrop-blur-sm text-gold rounded-full font-medium flex items-center gap-2 hover:bg-gold/10 transition-colors duration-300"
           >
             <Music className="w-5 h-5" />
             Mixes
@@ -93,16 +109,16 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
             "opacity-0",
             isVisible && "animate-slide-down"
           )}
-          style={{ animationDelay: "0.8s" }}
+          style={{ animationDelay: "0.9s" }}
         >
           {[
             { label: "Radio Stations", value: "7+" },
             { label: "DJs", value: "20+" },
             { label: "Active Listeners", value: "1M+" }
           ].map((stat, index) => (
-            <div key={index} className="backdrop-blur-md bg-white/10 rounded-xl p-6 border border-white/20">
-              <div className="text-3xl sm:text-4xl font-bold">{stat.value}</div>
-              <div className="text-blue-50/90 text-sm sm:text-base">{stat.label}</div>
+            <div key={index} className="backdrop-blur-md bg-gold/10 rounded-xl p-6 border border-gold/20">
+              <div className="text-3xl sm:text-4xl font-bold text-gold">{stat.value}</div>
+              <div className="text-gold-light/90 text-sm sm:text-base">{stat.label}</div>
             </div>
           ))}
         </div>
