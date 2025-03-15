@@ -1,6 +1,6 @@
 
 import { useContext } from 'react';
-import RadioContext from '@/contexts/RadioContext';
+import { RadioContext } from '@/contexts/radio';
 
 export const useRadio = () => {
   const context = useContext(RadioContext);
