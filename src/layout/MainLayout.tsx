@@ -1,9 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Player from '@/components/Player';
 import Footer from '@/components/Footer';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { LayoutDashboard } from 'lucide-react';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -14,6 +17,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [displayLocation, setDisplayLocation] = useState(location);
   const [transitionStage, setTransitionStage] = useState('fadeIn');
+  const { user } = useAuth();
   
   useEffect(() => {
     if (location !== displayLocation) {
@@ -44,6 +48,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           transitionStage === 'fadeIn' ? 'opacity-100' : 'opacity-0'
         }`}
       >
+        {user && user.isRadioHost && location.pathname !== '/host-dashboard' && (
+          <div className="fixed bottom-24 right-4 z-50">
+            <Button 
+              asChild 
+              variant="default" 
+              className="rounded-full shadow-lg p-3 h-12 w-12"
+            >
+              <Link to="/host-dashboard">
+                <LayoutDashboard className="h-5 w-5" />
+              </Link>
+            </Button>
+          </div>
+        )}
         {children}
       </main>
       
