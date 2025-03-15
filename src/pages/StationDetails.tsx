@@ -11,12 +11,13 @@ import { useToast } from '@/hooks/use-toast';
 
 const StationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { stations, currentPlayingStation, setCurrentPlayingStation } = useRadio();
+  const { stations, currentPlayingStation, setCurrentPlayingStation, getBookingsForStation } = useRadio();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
   const [station, setStation] = useState<any>(null);
+  const [stationBookings, setStationBookings] = useState<any[]>([]);
   const isPlaying = currentPlayingStation === id;
 
   useEffect(() => {
@@ -24,6 +25,9 @@ const StationDetails: React.FC = () => {
       const foundStation = stations.find(s => s.id === id);
       if (foundStation) {
         setStation(foundStation);
+        // Get this station's bookings
+        const bookings = getBookingsForStation(id);
+        setStationBookings(bookings.filter(b => b.approved && !b.rejected));
       } else {
         navigate('/stations');
         toast({
@@ -33,7 +37,7 @@ const StationDetails: React.FC = () => {
         });
       }
     }
-  }, [id, stations, navigate, toast]);
+  }, [id, stations, getBookingsForStation, navigate, toast]);
 
   if (!station) {
     return null;
@@ -127,6 +131,50 @@ const StationDetails: React.FC = () => {
                   <div className="flex items-center gap-2 text-gray-600">
                     <Clock className="w-4 h-4" />
                     <span>{station.broadcastTime}</span>
+                  </div>
+                </div>
+              )}
+              
+              {station.streamDetails && (
+                <div className="mt-4">
+                  <h3 className="text-lg font-semibold mb-2">Stream Information</h3>
+                  <div className="p-3 bg-muted rounded-md">
+                    <div className="grid grid-cols-1 gap-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Server:</span>
+                        <span>{station.streamDetails.url}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Port:</span>
+                        <span>{station.streamDetails.port}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Use this information to connect your broadcasting software to the station.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Show upcoming bookings/shows calendar */}
+              {stationBookings.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-2">Upcoming Shows</h3>
+                  <div className="space-y-2">
+                    {stationBookings.map((booking) => (
+                      <div key={booking.id} className="p-3 bg-accent/30 rounded-md">
+                        <h4 className="font-medium">{booking.title}</h4>
+                        <div className="flex items-center text-sm text-muted-foreground mt-1">
+                          <Clock className="w-3 h-3 mr-1" />
+                          <span>
+                            {new Date(booking.startTime).toLocaleDateString()} at {new Date(booking.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            {' - '}
+                            {new Date(booking.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </span>
+                        </div>
+                        <p className="text-xs mt-1">Host: {booking.hostName}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

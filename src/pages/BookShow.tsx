@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar as CalendarIcon, Clock, Radio } from 'lucide-react';
@@ -133,19 +134,26 @@ const BookShow: React.FC = () => {
       return;
     }
     
+    // Hosts with verified accounts can book without approval
+    const isVerifiedHost = user?.isVerified === true || user?.role === 'admin' || user?.role === 'host';
+    
     addBooking({
       stationId: station.id,
       hostId: user?.id || '',
-      hostName: user?.displayName || user?.username || 'Anonymous',
+      hostName: user?.username || 'Anonymous',
       title: showTitle,
       startTime: startDateTime.toISOString(),
       endTime: endDateTime.toISOString(),
-      approved: false
+      approved: isVerifiedHost // Auto-approve for verified hosts
     });
     
+    const approvalMessage = isVerifiedHost 
+      ? "Your show has been booked successfully!"
+      : "Your booking request has been submitted for approval";
+    
     toast({
-      title: "Request Submitted",
-      description: "Your booking request has been submitted for approval",
+      title: isVerifiedHost ? "Show Booked" : "Request Submitted",
+      description: approvalMessage,
     });
     navigate('/stations');
   };
@@ -294,11 +302,21 @@ const BookShow: React.FC = () => {
                   </div>
                 )}
                 
+                {station.streamDetails && (
+                  <div className="mt-4 p-3 bg-muted rounded-md">
+                    <h3 className="text-sm font-medium mb-2">Shoutcast Stream Info:</h3>
+                    <div className="text-xs space-y-1">
+                      <p>Server: {station.streamDetails.url}</p>
+                      <p>Port: {station.streamDetails.port}</p>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="mt-4 text-sm">
                   <p>Before booking, please note:</p>
                   <ul className="list-disc pl-5 mt-2 space-y-1 text-muted-foreground">
-                    <li>Your booking request will need admin approval</li>
-                    <li>You'll receive a notification when approved</li>
+                    <li>Verified hosts can book shows instantly</li>
+                    <li>Time slots are 1-4 hours in duration</li>
                     <li>Please be ready 15 minutes before your slot</li>
                   </ul>
                 </div>

@@ -1,4 +1,3 @@
-
 import { BookingSlot } from '@/models/RadioStation';
 import { hasBookingConflict } from '@/utils/radioUtils';
 
@@ -22,7 +21,7 @@ export const createBooking = (
     new Date(bookingData.endTime)
   );
   
-  // Auto-approve if no conflicts and user is admin, otherwise pending approval
+  // Auto-approve if explicitly set to approved or no conflicts
   const autoApprove = bookingData.approved || !hasConflict;
   
   const newBooking: BookingSlot = {
