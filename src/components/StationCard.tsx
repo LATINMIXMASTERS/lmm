@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Play, Pause, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRadio } from '@/hooks/useRadioContext';
@@ -24,6 +24,7 @@ const StationCard: React.FC<StationCardProps> = ({
 }) => {
   const { setCurrentPlayingStation } = useRadio();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handlePlayClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -36,7 +37,7 @@ const StationCard: React.FC<StationCardProps> = ({
       if (isPlaying) {
         setCurrentPlayingStation(null);
       } else {
-        if (station?.streamDetails?.url) {
+        if (station?.streamUrl) {
           setCurrentPlayingStation(station.id);
           toast({
             title: "Now Playing",
@@ -53,12 +54,16 @@ const StationCard: React.FC<StationCardProps> = ({
     }
   };
 
+  const handleCardClick = () => {
+    navigate(`/stations/${station.id}`);
+  };
+
   return (
-    <Link
-      to={`/stations/${station.id}`}
+    <div
+      onClick={handleCardClick}
       className={cn(
         "bg-white rounded-lg overflow-hidden border border-gray-light hover:shadow-md transition-all duration-300",
-        "flex flex-col h-full",
+        "flex flex-col h-full cursor-pointer",
         className
       )}
       style={style}
@@ -107,7 +112,7 @@ const StationCard: React.FC<StationCardProps> = ({
           <span>{station.listeners} listeners</span>
         </div>
       </div>
-    </Link>
+    </div>
   );
 };
 

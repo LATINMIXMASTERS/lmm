@@ -23,6 +23,7 @@ import UserProfile from "./pages/UserProfile";
 import HostProfile from "./pages/HostProfile";
 import HostDashboard from "./pages/HostDashboard";
 import DJs from "./pages/DJs";
+import GoLive from "./pages/GoLive";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
                 <Route path="/host/:userId" element={<HostProfile />} />
                 <Route path="/host-dashboard" element={<HostDashboard />} />
                 <Route path="/djs" element={<DJs />} />
+                <Route path="/go-live" element={<GoLive />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

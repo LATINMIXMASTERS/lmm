@@ -25,15 +25,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       setTransitionStage('fadeOut');
       
       const timeoutId = setTimeout(() => {
+        window.scrollTo(0, 0); // Scroll to top on page change
         setDisplayLocation(location);
         setTransitionStage('fadeIn');
         
         const fadeInTimeoutId = setTimeout(() => {
           setIsTransitioning(false);
-        }, 500);
+        }, 300);
         
         return () => clearTimeout(fadeInTimeoutId);
-      }, 300);
+      }, 200);
       
       return () => clearTimeout(timeoutId);
     }
@@ -44,7 +45,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       <Navbar />
       
       <main 
-        className={`flex-grow px-4 md:px-8 pt-16 pb-24 transition-opacity duration-500 ease-in-out ${
+        className={`flex-grow px-4 md:px-8 pt-16 pb-32 transition-opacity duration-300 ease-in-out ${
           transitionStage === 'fadeIn' ? 'opacity-100' : 'opacity-0'
         }`}
       >
