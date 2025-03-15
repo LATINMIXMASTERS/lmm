@@ -35,7 +35,7 @@ export const initialStations: RadioStation[] = [
     listeners: 120,
     isLive: false,
     streamDetails: {
-      url: 'https://lmmradiocast.com/lmmradio',
+      url: 'https://lmmradiocast.com',
       port: '8000',
       password: 'demo123'
     },
@@ -52,7 +52,7 @@ export const initialStations: RadioStation[] = [
     listeners: 85,
     isLive: false,
     streamDetails: {
-      url: 'https://lmmradiocast.com/bachataradio',
+      url: 'https://lmmradiocast.com',
       port: '8000',
       password: 'demo123'
     },
@@ -69,7 +69,7 @@ export const initialStations: RadioStation[] = [
     listeners: 210,
     isLive: false,
     streamDetails: {
-      url: 'https://lmmradiocast.com/reggaetonradio',
+      url: 'https://lmmradiocast.com',
       port: '8000',
       password: 'demo123'
     },

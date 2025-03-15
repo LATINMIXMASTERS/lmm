@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Play, Pause, Calendar, Clock, Radio, Users } from 'lucide-react';
+import { Play, Pause, Calendar, Clock, Radio, Users, Lock } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRadio } from '@/hooks/useRadioContext';
@@ -19,6 +19,9 @@ const StationDetails: React.FC = () => {
   const [station, setStation] = useState<any>(null);
   const [stationBookings, setStationBookings] = useState<any[]>([]);
   const isPlaying = currentPlayingStation === id;
+  
+  // Check if user is admin or host (privileged users)
+  const isPrivilegedUser = user?.isAdmin || user?.isRadioHost;
 
   useEffect(() => {
     if (id) {
@@ -104,7 +107,8 @@ const StationDetails: React.FC = () => {
                 )}
               </Button>
               
-              {user && (
+              {/* Only show Book a Show button to privileged users */}
+              {isPrivilegedUser && (
                 <Button 
                   onClick={handleBookShow}
                   variant="outline"
@@ -135,7 +139,8 @@ const StationDetails: React.FC = () => {
                 </div>
               )}
               
-              {station.streamDetails && (
+              {/* Only show stream details to privileged users */}
+              {isPrivilegedUser && station.streamDetails && (
                 <div className="mt-4">
                   <h3 className="text-lg font-semibold mb-2">Stream Information</h3>
                   <div className="p-3 bg-muted rounded-md">
@@ -148,9 +153,16 @@ const StationDetails: React.FC = () => {
                         <span className="font-medium">Port:</span>
                         <span>{station.streamDetails.port}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Use this information to connect your broadcasting software to the station.
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Password:</span>
+                        <span>{station.streamDetails.password}</span>
+                      </div>
+                      <div className="flex items-center text-amber-600 mt-1">
+                        <Lock className="w-3 h-3 mr-1" />
+                        <p className="text-xs">
+                          This information is only visible to hosts and admins.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

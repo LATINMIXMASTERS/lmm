@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar as CalendarIcon, Clock, Radio } from 'lucide-react';
@@ -40,6 +41,9 @@ const BookShow: React.FC = () => {
   const [duration, setDuration] = useState('1');
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   
+  // Check if user is admin or host (privileged users)
+  const isPrivilegedUser = isAuthenticated && (user?.isAdmin || user?.isRadioHost);
+  
   const timeSlots = Array.from({ length: 24 }).map((_, i) => {
     const hour = i.toString().padStart(2, '0');
     return `${hour}:00`;
@@ -48,8 +52,19 @@ const BookShow: React.FC = () => {
   const durationOptions = ['1', '2', '3', '4'];
 
   useEffect(() => {
+    // Redirect if not authenticated or not a host/admin
     if (!isAuthenticated) {
       navigate('/login');
+      return;
+    }
+    
+    if (!isPrivilegedUser) {
+      navigate('/stations');
+      toast({
+        title: "Access Denied",
+        description: "Only hosts and admins can book shows",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -68,7 +83,7 @@ const BookShow: React.FC = () => {
     } else {
       navigate('/stations');
     }
-  }, [stationId, stations, isAuthenticated, navigate, toast]);
+  }, [stationId, stations, isAuthenticated, isPrivilegedUser, navigate, toast]);
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -157,7 +172,7 @@ const BookShow: React.FC = () => {
     navigate('/stations');
   };
 
-  if (!station) {
+  if (!station || !isPrivilegedUser) {
     return null;
   }
 
