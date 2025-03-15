@@ -15,6 +15,7 @@ export interface Track {
   waveformData?: number[]; // Array of amplitude data for waveform display
   comments?: Comment[];
   playCount?: number; // Track play count
+  plays?: number; // Add plays property for compatibility
   description?: string; // Add description field
 }
 

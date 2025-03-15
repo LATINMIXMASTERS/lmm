@@ -27,7 +27,7 @@ import { format } from 'date-fns';
 import ProfileEditor from '@/components/ProfileEditor';
 
 const HostDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const { tracks, getTracksByUser, deleteTrack } = useTrack();
   const { stations, bookings } = useRadio();
   const navigate = useNavigate();
@@ -75,7 +75,7 @@ const HostDashboard: React.FC = () => {
 
   const handleSaveProfile = (userData: any) => {
     if (user) {
-      user.updateProfile(userData);
+      updateProfile(userData);
       setEditingProfile(false);
       toast({
         title: "Profile updated",
@@ -225,7 +225,7 @@ const HostDashboard: React.FC = () => {
                                   <TableCell className="font-medium">{track.title}</TableCell>
                                   <TableCell>{track.genre}</TableCell>
                                   <TableCell>{format(new Date(track.uploadDate), 'MMM d, yyyy')}</TableCell>
-                                  <TableCell>{track.plays || 0}</TableCell>
+                                  <TableCell>{track.plays || track.playCount || 0}</TableCell>
                                   <TableCell>{track.likes}</TableCell>
                                   <TableCell>
                                     <div className="flex gap-2">
@@ -451,7 +451,7 @@ const HostDashboard: React.FC = () => {
                             <CardContent className="pt-6">
                               <div className="text-center">
                                 <BarChart2 className="h-8 w-8 mx-auto text-primary mb-2" />
-                                <h3 className="text-2xl font-bold">{userTracks.reduce((sum, track) => sum + (track.plays || 0), 0)}</h3>
+                                <h3 className="text-2xl font-bold">{userTracks.reduce((sum, track) => sum + (track.plays || track.playCount || 0), 0)}</h3>
                                 <p className="text-sm text-muted-foreground">Total Plays</p>
                               </div>
                             </CardContent>
@@ -489,12 +489,12 @@ const HostDashboard: React.FC = () => {
                             </TableHeader>
                             <TableBody>
                               {userTracks
-                                .sort((a, b) => (b.plays || 0) - (a.plays || 0))
+                                .sort((a, b) => (b.plays || b.playCount || 0) - (a.plays || a.playCount || 0))
                                 .slice(0, 5)
                                 .map(track => (
                                   <TableRow key={track.id}>
                                     <TableCell className="font-medium">{track.title}</TableCell>
-                                    <TableCell>{track.plays || 0}</TableCell>
+                                    <TableCell>{track.plays || track.playCount || 0}</TableCell>
                                     <TableCell>{track.likes}</TableCell>
                                     <TableCell>{track.comments?.length || 0}</TableCell>
                                   </TableRow>
