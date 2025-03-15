@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar as CalendarIcon, Clock, Radio } from 'lucide-react';
@@ -41,13 +40,11 @@ const BookShow: React.FC = () => {
   const [duration, setDuration] = useState('1');
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   
-  // Generate available time slots
   const timeSlots = Array.from({ length: 24 }).map((_, i) => {
     const hour = i.toString().padStart(2, '0');
     return `${hour}:00`;
   });
   
-  // Generate duration options (1-4 hours)
   const durationOptions = ['1', '2', '3', '4'];
 
   useEffect(() => {
@@ -127,7 +124,6 @@ const BookShow: React.FC = () => {
       return;
     }
     
-    // Check for booking conflicts
     if (hasBookingConflict(station.id, startDateTime, endDateTime)) {
       toast({
         title: "Time slot unavailable",
@@ -137,16 +133,14 @@ const BookShow: React.FC = () => {
       return;
     }
     
-    // Create the booking
     addBooking({
       stationId: station.id,
-      userId: user?.id || '',
+      hostId: user?.id || '',
+      hostName: user?.displayName || user?.username || 'Anonymous',
       title: showTitle,
-      description: description,
       startTime: startDateTime.toISOString(),
       endTime: endDateTime.toISOString(),
-      approved: false,
-      rejected: false
+      approved: false
     });
     
     toast({
