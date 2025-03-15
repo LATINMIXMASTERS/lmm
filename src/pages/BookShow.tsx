@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar as CalendarIcon, Clock, Radio } from 'lucide-react';
@@ -135,7 +134,7 @@ const BookShow: React.FC = () => {
     }
     
     // Hosts with verified accounts can book without approval
-    const isVerifiedHost = user?.isVerified === true || user?.role === 'admin' || user?.role === 'host';
+    const isVerifiedHost = user?.isAdmin === true || user?.isRadioHost === true;
     
     addBooking({
       stationId: station.id,

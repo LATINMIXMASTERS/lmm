@@ -1,3 +1,4 @@
+
 import { BookingSlot } from '@/models/RadioStation';
 import { hasBookingConflict } from '@/utils/radioUtils';
 
@@ -21,13 +22,12 @@ export const createBooking = (
     new Date(bookingData.endTime)
   );
   
-  // Auto-approve if explicitly set to approved or no conflicts
-  const autoApprove = bookingData.approved || !hasConflict;
-  
+  // Respect the approved value from the input - this lets verified hosts auto-approve
+  // Only automatically reject if there's a conflict
   const newBooking: BookingSlot = {
     ...bookingData,
     id: bookingId,
-    approved: autoApprove,
+    approved: bookingData.approved === true ? true : !hasConflict,
     rejected: hasConflict ? true : false,
     rejectionReason: hasConflict ? 'Conflicting time slot with an existing booking' : undefined
   };
