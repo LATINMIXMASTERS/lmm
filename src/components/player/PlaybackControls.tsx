@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDuration } from '@/utils/formatTime';
+import VolumeControl from './VolumeControl';
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
@@ -32,26 +32,12 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
 }) => {
   return (
     <div className="flex items-center space-x-6">
-      <div className="hidden md:flex items-center space-x-2">
-        <button
-          onClick={toggleMute}
-          className="text-gray hover:text-black transition-colors duration-300"
-          aria-label={isMuted ? "Unmute" : "Mute"}
-        >
-          {isMuted || volume === 0 ? (
-            <VolumeX className="w-5 h-5" />
-          ) : (
-            <Volume2 className="w-5 h-5" />
-          )}
-        </button>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={volume}
-          onChange={handleVolumeChange}
-          className="w-24 accent-blue"
-          aria-label="Volume control"
+      <div className="hidden md:block">
+        <VolumeControl
+          volume={volume}
+          isMuted={isMuted}
+          toggleMute={toggleMute}
+          handleVolumeChange={handleVolumeChange}
         />
       </div>
       
