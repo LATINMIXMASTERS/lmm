@@ -75,9 +75,7 @@ const RadioShowsTab: React.FC<RadioShowsTabProps> = ({
               <Card key={booking.id} className="border-gold/20">
                 <div className="p-4">
                   <h3 className="text-xl font-bold mb-2">{booking.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {booking.description}
-                  </p>
+                  {/* Removed the description line since it doesn't exist in BookingSlot type */}
                   <div className="flex items-center gap-2 text-sm mb-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span>{format(new Date(booking.startTime), 'MMM d, yyyy')}</span>
