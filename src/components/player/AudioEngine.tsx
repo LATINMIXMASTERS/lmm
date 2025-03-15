@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, MutableRefObject } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRadio } from '@/hooks/useRadioContext';
@@ -159,11 +158,6 @@ const AudioEngine: React.FC<AudioEngineProps> = ({
     
     if (!streamUrl.startsWith('http://') && !streamUrl.startsWith('https://')) {
       streamUrl = `https://${streamUrl}`;
-    }
-    
-    if (streamUrl.includes('lmmradiocast.com')) {
-      streamUrl = 'https://ice1.somafm.com/groovesalad-128-mp3';
-      console.log("Using fallback test stream URL for development:", streamUrl);
     }
     
     console.log("Final audio source URL:", streamUrl);
