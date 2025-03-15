@@ -1,6 +1,7 @@
-import React from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Radio, Settings } from 'lucide-react';
+import { Radio, Settings } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRadio } from '@/hooks/useRadioContext';
@@ -23,7 +24,7 @@ import {
   Trash,
   UserPen,
   Ban,
-  User,
+  User as UserIcon,
   ShieldOff,
   Search,
   Volume2,
