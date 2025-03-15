@@ -1,8 +1,18 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+
+import React, { createContext, useReducer, useEffect, ReactNode } from 'react';
 import { Track, Genre, Comment } from '@/models/Track';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from './AuthContext';
-import { useRadio } from './RadioContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRadio } from '@/contexts/RadioContext';
+import { trackReducer, initialTrackState, initialGenres } from '@/contexts/track/trackReducer';
+import { 
+  generateWaveformData, 
+  getTracksByGenre, 
+  getTracksByUser, 
+  getGenreById, 
+  canEditTrack,
+  copyToClipboard
+} from '@/utils/trackUtils';
 
 interface TrackContextType {
   tracks: Track[];
@@ -25,32 +35,8 @@ interface TrackContextType {
 
 const TrackContext = createContext<TrackContextType | undefined>(undefined);
 
-// Some sample genres to start with
-const initialGenres: Genre[] = [
-  {
-    id: '1',
-    name: 'Reggaeton',
-    createdBy: 'admin',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    name: 'Bachata',
-    createdBy: 'admin',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '3',
-    name: 'Salsa',
-    createdBy: 'admin',
-    createdAt: new Date().toISOString()
-  }
-];
-
 export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [genres, setGenres] = useState<Genre[]>([]);
-  const [currentPlayingTrack, setCurrentPlayingTrack] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(trackReducer, initialTrackState);
   const { toast } = useToast();
   const { user } = useAuth();
   const { setCurrentPlayingStation } = useRadio();
@@ -59,29 +45,24 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   useEffect(() => {
     const savedTracks = localStorage.getItem('latinmixmasters_tracks');
     if (savedTracks) {
-      setTracks(JSON.parse(savedTracks));
+      dispatch({ type: 'SET_TRACKS', payload: JSON.parse(savedTracks) });
     }
     
     const savedGenres = localStorage.getItem('latinmixmasters_genres');
     if (savedGenres) {
-      setGenres(JSON.parse(savedGenres));
+      dispatch({ type: 'SET_GENRES', payload: JSON.parse(savedGenres) });
     } else {
-      setGenres(initialGenres);
+      dispatch({ type: 'SET_GENRES', payload: initialGenres });
       localStorage.setItem('latinmixmasters_genres', JSON.stringify(initialGenres));
     }
   }, []);
 
   // When a track is selected for playing, stop station streams
   useEffect(() => {
-    if (currentPlayingTrack) {
+    if (state.currentPlayingTrack) {
       setCurrentPlayingStation(null);
     }
-  }, [currentPlayingTrack, setCurrentPlayingStation]);
-
-  // Generate mock waveform data for visualization
-  const generateWaveformData = () => {
-    return Array.from({ length: 40 }, () => Math.floor(Math.random() * 95) + 5);
-  };
+  }, [state.currentPlayingTrack, setCurrentPlayingStation]);
 
   // Add a new track
   const addTrack = (trackData: Omit<Track, 'id' | 'likes' | 'uploadDate'>) => {
@@ -104,9 +85,8 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       duration: Math.floor(Math.random() * 300) + 180
     };
     
-    const updatedTracks = [...tracks, newTrack];
-    setTracks(updatedTracks);
-    localStorage.setItem('latinmixmasters_tracks', JSON.stringify(updatedTracks));
+    dispatch({ type: 'ADD_TRACK', payload: newTrack });
+    localStorage.setItem('latinmixmasters_tracks', JSON.stringify([...state.tracks, newTrack]));
     
     toast({
       title: "Track uploaded",
@@ -127,7 +107,7 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return false;
     }
 
-    const track = tracks.find(t => t.id === trackId);
+    const track = state.tracks.find(t => t.id === trackId);
     if (!track) {
       toast({
         title: "Track not found",
@@ -147,14 +127,9 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return false;
     }
 
-    const updatedTracks = tracks.filter(t => t.id !== trackId);
-    setTracks(updatedTracks);
+    dispatch({ type: 'DELETE_TRACK', payload: trackId });
+    const updatedTracks = state.tracks.filter(t => t.id !== trackId);
     localStorage.setItem('latinmixmasters_tracks', JSON.stringify(updatedTracks));
-    
-    // If this track was playing, stop it
-    if (currentPlayingTrack === trackId) {
-      setCurrentPlayingTrack(null);
-    }
     
     toast({
       title: "Track deleted",
@@ -175,8 +150,8 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return false;
     }
 
-    const trackIndex = tracks.findIndex(t => t.id === trackId);
-    if (trackIndex === -1) {
+    const track = state.tracks.find(t => t.id === trackId);
+    if (!track) {
       toast({
         title: "Track not found",
         description: "The track you're trying to update doesn't exist",
@@ -184,8 +159,6 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       });
       return false;
     }
-
-    const track = tracks[trackIndex];
     
     // Check if user is admin or track uploader
     if (!user.isAdmin && track.uploadedBy !== user.id) {
@@ -197,19 +170,17 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return false;
     }
 
-    // Create updated track, preserving id and other essential properties
-    const updatedTrack = {
-      ...track,
-      ...trackData,
-      id: track.id, // Ensure ID cannot be changed
-      uploadDate: track.uploadDate, // Preserve original upload date
-      uploadedBy: track.uploadedBy, // Preserve original uploader
-    };
-
-    const updatedTracks = [...tracks];
-    updatedTracks[trackIndex] = updatedTrack;
+    dispatch({ 
+      type: 'UPDATE_TRACK', 
+      payload: { trackId, trackData } 
+    });
     
-    setTracks(updatedTracks);
+    const updatedTracks = state.tracks.map(t => 
+      t.id === trackId 
+        ? { ...t, ...trackData, id: t.id, uploadDate: t.uploadDate, uploadedBy: t.uploadedBy }
+        : t
+    );
+    
     localStorage.setItem('latinmixmasters_tracks', JSON.stringify(updatedTracks));
     
     toast({
@@ -218,16 +189,6 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     });
     
     return true;
-  };
-
-  // Helper function to check if user can edit a track
-  const canEditTrack = (trackId: string): boolean => {
-    if (!user) return false;
-    
-    const track = tracks.find(t => t.id === trackId);
-    if (!track) return false;
-    
-    return user.isAdmin || track.uploadedBy === user.id;
   };
 
   // Add a new genre
@@ -241,7 +202,7 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       throw new Error("Authentication required");
     }
 
-    if (genres.some(g => g.name.toLowerCase() === genreName.toLowerCase())) {
+    if (state.genres.some(g => g.name.toLowerCase() === genreName.toLowerCase())) {
       toast({
         title: "Genre exists",
         description: "This genre already exists",
@@ -257,9 +218,8 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       createdAt: new Date().toISOString()
     };
     
-    const updatedGenres = [...genres, newGenre];
-    setGenres(updatedGenres);
-    localStorage.setItem('latinmixmasters_genres', JSON.stringify(updatedGenres));
+    dispatch({ type: 'ADD_GENRE', payload: newGenre });
+    localStorage.setItem('latinmixmasters_genres', JSON.stringify([...state.genres, newGenre]));
     
     toast({
       title: "Genre added",
@@ -269,60 +229,9 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return newGenre;
   };
 
-  // Get tracks by genre
-  const getTracksByGenre = (genreId: string) => {
-    const genre = genres.find(g => g.id === genreId);
-    if (!genre) return [];
-    
-    return tracks.filter(track => track.genre === genre.name);
-  };
-
-  // Get tracks by user
-  const getTracksByUser = (userId: string) => {
-    return tracks.filter(track => track.uploadedBy === userId);
-  };
-
-  // Like a track
-  const likeTrack = (trackId: string) => {
-    const updatedTracks = tracks.map(track => 
-      track.id === trackId ? { ...track, likes: track.likes + 1 } : track
-    );
-    
-    setTracks(updatedTracks);
-    localStorage.setItem('latinmixmasters_tracks', JSON.stringify(updatedTracks));
-  };
-
-  // Add comment to a track
-  const addComment = (trackId: string, commentData: Omit<Comment, 'id' | 'date'>) => {
-    const newComment: Comment = {
-      ...commentData,
-      id: Math.random().toString(36).substring(2, 11),
-      date: new Date().toISOString()
-    };
-    
-    const updatedTracks = tracks.map(track => {
-      if (track.id === trackId) {
-        const comments = track.comments || [];
-        return {
-          ...track,
-          comments: [...comments, newComment]
-        };
-      }
-      return track;
-    });
-    
-    setTracks(updatedTracks);
-    localStorage.setItem('latinmixmasters_tracks', JSON.stringify(updatedTracks));
-  };
-
-  // Get genre by ID
-  const getGenreById = (id: string) => {
-    return genres.find(genre => genre.id === id);
-  };
-
   // Share track functionality
   const shareTrack = (trackId: string) => {
-    const track = tracks.find(t => t.id === trackId);
+    const track = state.tracks.find(t => t.id === trackId);
     if (!track) return;
     
     const shareUrl = `${window.location.origin}/mixes?track=${trackId}`;
@@ -334,58 +243,96 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         url: shareUrl,
       }).catch((error) => {
         console.log('Error sharing', error);
-        copyToClipboard(shareUrl);
+        copyToClipboard(shareUrl)
+          .then(() => {
+            toast({
+              title: "Link copied!",
+              description: "Share link copied to clipboard",
+            });
+          })
+          .catch(() => {
+            toast({
+              title: "Failed to copy",
+              description: "Could not copy the link to clipboard",
+              variant: "destructive"
+            });
+          });
       });
     } else {
-      copyToClipboard(shareUrl);
+      copyToClipboard(shareUrl)
+        .then(() => {
+          toast({
+            title: "Link copied!",
+            description: "Share link copied to clipboard",
+          });
+        })
+        .catch(() => {
+          toast({
+            title: "Failed to copy",
+            description: "Could not copy the link to clipboard",
+            variant: "destructive"
+          });
+        });
     }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      toast({
-        title: "Link copied!",
-        description: "Share link copied to clipboard",
-      });
-    }).catch(() => {
-      toast({
-        title: "Failed to copy",
-        description: "Could not copy the link to clipboard",
-        variant: "destructive"
-      });
-    });
   };
 
   return (
     <TrackContext.Provider value={{
-      tracks,
-      genres,
+      tracks: state.tracks,
+      genres: state.genres,
       addTrack,
       deleteTrack,
       updateTrack,
       addGenre,
-      getTracksByGenre,
-      getTracksByUser,
-      likeTrack,
-      addComment,
-      getGenreById,
-      currentPlayingTrack,
-      setCurrentPlayingTrack,
+      getTracksByGenre: (genreId: string) => getTracksByGenre(state.tracks, state.genres, genreId),
+      getTracksByUser: (userId: string) => getTracksByUser(state.tracks, userId),
+      likeTrack: (trackId: string) => {
+        dispatch({ type: 'LIKE_TRACK', payload: trackId });
+        const updatedTracks = state.tracks.map(track => 
+          track.id === trackId ? { ...track, likes: track.likes + 1 } : track
+        );
+        localStorage.setItem('latinmixmasters_tracks', JSON.stringify(updatedTracks));
+      },
+      addComment: (trackId: string, commentData: Omit<Comment, 'id' | 'date'>) => {
+        const newComment: Comment = {
+          ...commentData,
+          id: Math.random().toString(36).substring(2, 11),
+          date: new Date().toISOString()
+        };
+        
+        dispatch({ 
+          type: 'ADD_COMMENT', 
+          payload: { 
+            trackId, 
+            comment: newComment 
+          } 
+        });
+        
+        const updatedTracks = state.tracks.map(track => {
+          if (track.id === trackId) {
+            const comments = track.comments || [];
+            return {
+              ...track,
+              comments: [...comments, newComment]
+            };
+          }
+          return track;
+        });
+        
+        localStorage.setItem('latinmixmasters_tracks', JSON.stringify(updatedTracks));
+      },
+      getGenreById: (id: string) => getGenreById(state.genres, id),
+      currentPlayingTrack: state.currentPlayingTrack,
+      setCurrentPlayingTrack: (trackId: string | null) => {
+        dispatch({ type: 'SET_CURRENT_PLAYING_TRACK', payload: trackId });
+      },
       generateWaveformData,
       shareTrack,
-      canEditTrack
+      canEditTrack: (trackId: string) => canEditTrack(state.tracks, user?.id, user?.isAdmin || false, trackId)
     }}>
       {children}
     </TrackContext.Provider>
   );
-};
-
-export const useTrack = () => {
-  const context = useContext(TrackContext);
-  if (context === undefined) {
-    throw new Error('useTrack must be used within a TrackProvider');
-  }
-  return context;
 };
 
 export default TrackContext;
