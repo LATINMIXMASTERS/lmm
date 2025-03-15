@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { PlusCircle, Tag, Trash2 } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTrack } from '@/contexts/TrackContext';
+import { useTrack } from '@/hooks/useTrackContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Music, Save } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTrack } from '@/contexts/TrackContext';
+import { useTrack } from '@/hooks/useTrackContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 const EditTrack: React.FC = () => {
   const { trackId } = useParams<{ trackId: string }>();
@@ -35,7 +34,6 @@ const EditTrack: React.FC = () => {
     coverImage: ''
   });
   
-  // Find the track by ID
   useEffect(() => {
     if (!trackId) return;
     
@@ -50,7 +48,6 @@ const EditTrack: React.FC = () => {
       return;
     }
     
-    // Check if user has permission to edit
     if (!canEditTrack(trackId)) {
       toast({
         title: "Permission denied",
@@ -61,7 +58,6 @@ const EditTrack: React.FC = () => {
       return;
     }
     
-    // Initialize form with track data
     setTrackData({
       title: track.title || '',
       description: track.description || '',
@@ -127,6 +123,7 @@ const EditTrack: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle>Track Details</CardTitle>
+              <CardDescription>Update your track information</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">

@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { User as UserIcon, HeartIcon, MessageSquare, Link as LinkIcon, Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTrack } from '@/contexts/TrackContext';
+import { useTrack } from '@/hooks/useTrackContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';

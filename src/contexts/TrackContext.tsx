@@ -1,9 +1,8 @@
-
 import React, { createContext, useReducer, useEffect, ReactNode } from 'react';
 import { Track, Genre, Comment } from '@/models/Track';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRadio } from '@/contexts/RadioContext';
+import { useRadio } from '@/hooks/useRadioContext';
 import { trackReducer, initialTrackState, initialGenres } from '@/contexts/track/trackReducer';
 import { 
   generateWaveformData, 
@@ -41,7 +40,6 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const { user } = useAuth();
   const { setCurrentPlayingStation } = useRadio();
 
-  // Initialize from localStorage
   useEffect(() => {
     const savedTracks = localStorage.getItem('latinmixmasters_tracks');
     if (savedTracks) {
@@ -57,14 +55,12 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, []);
 
-  // When a track is selected for playing, stop station streams
   useEffect(() => {
     if (state.currentPlayingTrack) {
       setCurrentPlayingStation(null);
     }
   }, [state.currentPlayingTrack, setCurrentPlayingStation]);
 
-  // Add a new track
   const addTrack = (trackData: Omit<Track, 'id' | 'likes' | 'uploadDate'>) => {
     if (trackData.fileSize > 262144000) {
       toast({
@@ -96,7 +92,6 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return newTrack;
   };
 
-  // Delete a track - only if user is admin or the uploader
   const deleteTrack = (trackId: string): boolean => {
     if (!user) {
       toast({
@@ -117,7 +112,6 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return false;
     }
 
-    // Check if user is admin or track uploader
     if (!user.isAdmin && track.uploadedBy !== user.id) {
       toast({
         title: "Permission denied",
@@ -139,7 +133,6 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return true;
   };
 
-  // Update a track - only if user is admin or the uploader
   const updateTrack = (trackId: string, trackData: Partial<Track>): boolean => {
     if (!user) {
       toast({
@@ -160,7 +153,6 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return false;
     }
     
-    // Check if user is admin or track uploader
     if (!user.isAdmin && track.uploadedBy !== user.id) {
       toast({
         title: "Permission denied",
@@ -191,7 +183,6 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return true;
   };
 
-  // Add a new genre
   const addGenre = (genreName: string) => {
     if (!user) {
       toast({
@@ -229,7 +220,6 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return newGenre;
   };
 
-  // Share track functionality
   const shareTrack = (trackId: string) => {
     const track = state.tracks.find(t => t.id === trackId);
     if (!track) return;

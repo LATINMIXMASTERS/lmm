@@ -9,3 +9,5 @@ export const useTrack = () => {
   }
   return context;
 };
+
+export default useTrack;

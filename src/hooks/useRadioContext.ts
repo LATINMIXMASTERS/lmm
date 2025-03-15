@@ -9,3 +9,5 @@ export const useRadio = () => {
   }
   return context;
 };
+
+export default useRadio;

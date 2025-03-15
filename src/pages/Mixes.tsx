@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Music, Upload, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTrack } from '@/contexts/TrackContext';
+import { useTrack } from '@/hooks/useTrackContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import GenreTabs from '@/components/GenreTabs';

@@ -1,17 +1,16 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { useRadio } from "@/contexts/RadioContext";
-import { useToast } from "@/hooks/use-toast";
-import MainLayout from "@/layout/MainLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { User, Radio, Settings } from 'lucide-react';
+import MainLayout from '@/layout/MainLayout';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRadio } from '@/hooks/useRadioContext';
+import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
-  Radio, 
-  Settings, 
   Calendar, 
   CheckCircle, 
   XCircle, 
@@ -59,7 +58,7 @@ const AdminDashboard: React.FC = () => {
     approveBooking, 
     updateStreamUrl,
     updateStationImage,
-    uploadStationImage
+    uploadStationImage 
   } = useRadio();
   const { toast } = useToast();
   
@@ -990,4 +989,3 @@ const AdminDashboard: React.FC = () => {
 };
 
 export default AdminDashboard;
-

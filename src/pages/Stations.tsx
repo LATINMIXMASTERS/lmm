@@ -1,94 +1,77 @@
-
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Radio, Search, Filter } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
-import { useRadio } from '@/contexts/RadioContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useRadio } from '@/hooks/useRadioContext';
+import StationCard from '@/components/StationCard';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { RadioStation } from '@/models/RadioStation';
-
-interface StationCardProps {
-  station: RadioStation;
-}
-
-const StationCard: React.FC<StationCardProps> = ({ station }) => (
-  <Card className="overflow-hidden">
-    <div className="aspect-video relative">
-      <img
-        src={station.image}
-        alt={station.name}
-        className="object-cover w-full h-full"
-      />
-    </div>
-    <CardHeader>
-      <CardTitle>{station.name}</CardTitle>
-      <CardDescription>{station.genre}</CardDescription>
-    </CardHeader>
-    <CardContent>
-      {station.description}
-    </CardContent>
-  </Card>
-);
+import { Button } from '@/components/ui/button';
 
 const Stations: React.FC = () => {
-  const { stations } = useRadio();
-  const { users } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filteredStations, setFilteredStations] = useState<RadioStation[]>(stations);
+  const { stations, currentPlayingStation, setCurrentPlayingStation } = useRadio();
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterGenre, setFilterGenre] = useState('All');
 
-  useEffect(() => {
-    const filtered = stations.filter(station =>
-      station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      station.genre.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredStations(filtered);
-  }, [searchQuery, stations]);
+  const handleStationClick = (stationId: string) => {
+    navigate(`/stations/${stationId}`);
+  };
+
+  const handlePlayToggle = (stationId: string) => {
+    if (currentPlayingStation === stationId) {
+      setCurrentPlayingStation(null);
+    } else {
+      setCurrentPlayingStation(stationId);
+    }
+  };
+
+  const filteredStations = stations.filter(station => {
+    const searchMatch = station.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const genreMatch = filterGenre === 'All' || station.genre === filterGenre;
+    return searchMatch && genreMatch;
+  });
+
+  const genres = ['All', ...new Set(stations.map(station => station.genre))];
 
   return (
     <MainLayout>
       <div className="container py-8 md:py-12">
-        <div className="max-w-3xl mx-auto mb-8">
-          <div className="grid gap-2">
-            <Label htmlFor="search">Search Stations</Label>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">Radio Stations</h1>
+            <p className="text-gray-600 mb-4">Listen to live radio from around the world</p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
             <Input
-              type="search"
-              id="search"
-              placeholder="Search by name or genre..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              type="text"
+              placeholder="Search stations..."
+              className="flex-1 min-w-[200px]"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
+            <select
+              className="bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue focus:border-blue-300 text-sm"
+              value={filterGenre}
+              onChange={(e) => setFilterGenre(e.target.value)}
+            >
+              {genres.map(genre => (
+                <option key={genre} value={genre}>{genre}</option>
+              ))}
+            </select>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredStations.map(station => (
-            <div key={station.id} className="mb-8">
-              <Link to={`/stations/${station.id}`} className="block hover:opacity-90 transition-opacity">
-                <StationCard station={station} />
-              </Link>
-              
-              {/* Add host information with links */}
-              {station.hosts && station.hosts.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-sm text-muted-foreground">Hosted by:</p>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {station.hosts.map(hostId => {
-                      const hostUser = users.find(u => u.id === hostId);
-                      return hostUser ? (
-                        <Link 
-                          key={hostId} 
-                          to={`/host/${hostId}`}
-                          className="text-sm text-blue hover:underline"
-                        >
-                          {hostUser.username}
-                        </Link>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
+            <StationCard
+              key={station.id}
+              station={station}
+              isPlaying={currentPlayingStation === station.id}
+              onPlayToggle={handlePlayToggle}
+            />
           ))}
         </div>
       </div>

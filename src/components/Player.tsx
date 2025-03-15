@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
-import { useRadio } from '@/contexts/RadioContext';
-import { useTrack } from '@/contexts/TrackContext';
+import { useRadio } from '@/hooks/useRadioContext';
+import { useTrack } from '@/hooks/useTrackContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';

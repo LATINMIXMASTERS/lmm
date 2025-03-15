@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Play, Pause, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useRadio } from '@/contexts/RadioContext';
+import { useRadio } from '@/hooks/useRadioContext';
 import { RadioStation } from '@/models/RadioStation';
 import { useToast } from '@/hooks/use-toast';
 
