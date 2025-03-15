@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Radio, Settings } from 'lucide-react';
@@ -729,7 +728,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">
-                    <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <UserIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
                     <p>No pending user approvals at this time.</p>
                   </div>
                 )}
@@ -868,7 +867,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">
-                    <User className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <UserIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
                     <p>No users found matching your search.</p>
                   </div>
                 )}
