@@ -10,10 +10,13 @@ const Logo: React.FC = () => {
       to="/"
       className="flex items-center space-x-2 group"
     >
-      <div className="w-10 h-10 bg-gold rounded-full flex items-center justify-center text-white transition-transform duration-400 group-hover:scale-110">
-        <Music className="w-5 h-5" />
+      <div className="w-auto h-10 flex items-center justify-center">
+        <img 
+          src="/lovable-uploads/42fbeaeb-8383-46a5-99ec-9eade511c5a3.png" 
+          alt="LATINMIXMASTERS Logo" 
+          className="h-10 transition-transform duration-400 group-hover:scale-110"
+        />
       </div>
-      <span className="text-xl font-medium">LATINMIXMASTERS</span>
     </Link>
   );
 };

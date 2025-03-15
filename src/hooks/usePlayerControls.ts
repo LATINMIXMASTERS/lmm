@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useTrack } from '@/hooks/useTrackContext';
@@ -10,7 +9,7 @@ export const usePlayerControls = () => {
   
   // State for player UI
   const [stationInfo, setStationInfo] = useState({
-    name: 'WaveRadio - House',
+    name: 'LATINMIXMASTERS - House',
     currentTrack: 'Unknown Artist - Groove Session',
     coverImage: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=200&auto=format&fit=crop'
   });

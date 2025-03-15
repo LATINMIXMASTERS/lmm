@@ -44,7 +44,7 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
           style={{ animationDelay: "0.1s" }}
         >
           <img 
-            src="/lovable-uploads/61ed3370-b60c-4751-a25f-fa9826619cbe.png" 
+            src="/lovable-uploads/42fbeaeb-8383-46a5-99ec-9eade511c5a3.png" 
             alt="LATINMIXMASTERS Logo"
             className="w-full"
           />
