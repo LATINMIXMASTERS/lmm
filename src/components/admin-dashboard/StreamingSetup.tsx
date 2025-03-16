@@ -1,14 +1,17 @@
 
-import React, { useState } from 'react';
-import { BarChart, Settings, Radio, Mic2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mic2, Radio, Info } from 'lucide-react';
 import { useRadio } from '@/hooks/useRadioContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioStation } from '@/models/RadioStation';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import StreamDetails from '@/components/station-details/StreamDetails';
+import StreamingInstructions from '@/components/station-details/StreamingInstructions';
 
 const StreamingSetup: React.FC = () => {
   const { stations, updateStreamDetails } = useRadio();
@@ -18,20 +21,28 @@ const StreamingSetup: React.FC = () => {
   const [streamUrl, setStreamUrl] = useState<string>('');
   const [streamPort, setStreamPort] = useState<string>('');
   const [streamPassword, setStreamPassword] = useState<string>('');
+  const [currentStation, setCurrentStation] = useState<RadioStation | null>(null);
   
+  // Update form when station selection changes
+  useEffect(() => {
+    const station = stations.find(s => s.id === selectedStation);
+    if (station) {
+      setCurrentStation(station);
+      if (station.streamDetails) {
+        setStreamUrl(station.streamDetails.url || '');
+        setStreamPort(station.streamDetails.port || '');
+        setStreamPassword(station.streamDetails.password || '');
+      } else {
+        setStreamUrl('');
+        setStreamPort('');
+        setStreamPassword('');
+      }
+    }
+  }, [selectedStation, stations]);
+
   // Handle station selection change
   const handleStationChange = (stationId: string) => {
     setSelectedStation(stationId);
-    const station = stations.find(s => s.id === stationId);
-    if (station && station.streamDetails) {
-      setStreamUrl(station.streamDetails.url || '');
-      setStreamPort(station.streamDetails.port || '');
-      setStreamPassword(station.streamDetails.password || '');
-    } else {
-      setStreamUrl('');
-      setStreamPort('');
-      setStreamPassword('');
-    }
   };
 
   // Handle form submission
@@ -46,7 +57,7 @@ const StreamingSetup: React.FC = () => {
     
     toast({
       title: "Stream settings updated",
-      description: "Your streaming settings have been saved."
+      description: `Streaming settings for ${currentStation?.name} have been saved.`
     });
   };
 
@@ -57,107 +68,171 @@ const StreamingSetup: React.FC = () => {
         <h2 className="text-2xl font-bold">Host Streaming Setup</h2>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Stream Configuration</CardTitle>
-          <CardDescription>
-            Configure the streaming settings for your radio stations.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <Label htmlFor="station">Select Station</Label>
-              <Select 
-                value={selectedStation} 
-                onValueChange={handleStationChange}
-              >
-                <SelectTrigger id="station">
-                  <SelectValue placeholder="Select a station" />
-                </SelectTrigger>
-                <SelectContent>
-                  {stations.map(station => (
-                    <SelectItem key={station.id} value={station.id}>
-                      {station.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="streamUrl">Stream URL</Label>
-                <Input
-                  id="streamUrl"
-                  value={streamUrl}
-                  onChange={(e) => setStreamUrl(e.target.value)}
-                  placeholder="e.g., cast.yourstreamingservice.com"
-                />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-1">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Radio Stations</CardTitle>
+              <CardDescription>
+                Select a station to configure
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="station">Select Station</Label>
+                  <Select 
+                    value={selectedStation} 
+                    onValueChange={handleStationChange}
+                  >
+                    <SelectTrigger id="station">
+                      <SelectValue placeholder="Select a station" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {stations.map(station => (
+                        <SelectItem key={station.id} value={station.id}>
+                          {station.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {currentStation && (
+                  <div className="space-y-2">
+                    <div className="rounded-md overflow-hidden">
+                      <img 
+                        src={currentStation.image} 
+                        alt={currentStation.name} 
+                        className="w-full h-32 object-cover" 
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-medium">{currentStation.name}</h4>
+                      <p className="text-sm text-gray-500">{currentStation.genre}</p>
+                    </div>
+                  </div>
+                )}
               </div>
-              
-              <div>
-                <Label htmlFor="streamPort">Port</Label>
-                <Input
-                  id="streamPort"
-                  value={streamPort}
-                  onChange={(e) => setStreamPort(e.target.value)}
-                  placeholder="e.g., 8000"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="streamPassword">Stream Password</Label>
-                <Input
-                  id="streamPassword"
-                  type="password"
-                  value={streamPassword}
-                  onChange={(e) => setStreamPassword(e.target.value)}
-                  placeholder="Your stream password"
-                />
-              </div>
-            </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="md:col-span-2">
+          <Tabs defaultValue="config">
+            <TabsList className="w-full mb-4">
+              <TabsTrigger value="config" className="flex-1">
+                Stream Configuration
+              </TabsTrigger>
+              <TabsTrigger value="details" className="flex-1">
+                Connection Details
+              </TabsTrigger>
+              <TabsTrigger value="instructions" className="flex-1">
+                How to Connect
+              </TabsTrigger>
+            </TabsList>
             
-            <Button type="submit" className="w-full md:w-auto">
-              Save Streaming Settings
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Streaming Instructions</CardTitle>
-          <CardDescription>
-            How to connect to Shoutcast using BUTT (Broadcast Using This Tool)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <h3 className="font-semibold">Instructions for BUTT (Broadcast Using This Tool)</h3>
-            <ol className="list-decimal pl-5 space-y-2">
-              <li>Download and install BUTT from <a href="https://danielnoethen.de/butt/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">https://danielnoethen.de/butt/</a></li>
-              <li>Open BUTT and go to Settings</li>
-              <li>In the "Server" tab, click "Add" to create a new server</li>
-              <li>Enter a name for your server (e.g., "LATINMIXMASTERS")</li>
-              <li>Set the server type to "Shoutcast"</li>
-              <li>Enter your stream URL in the "Address" field</li>
-              <li>Enter your port number in the "Port" field</li>
-              <li>Enter your stream password in the "Password" field</li>
-              <li>In the "Audio" tab, select your microphone or audio input device</li>
-              <li>Click "Save" to save your settings</li>
-              <li>In the main BUTT window, select your server from the dropdown menu</li>
-              <li>Click "Play" to start broadcasting to your station</li>
-            </ol>
+            <TabsContent value="config">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Stream Configuration</CardTitle>
+                  <CardDescription>
+                    Set up the streaming details for {currentStation?.name}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form id="stream-config-form" onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="streamUrl">Stream URL</Label>
+                      <Input
+                        id="streamUrl"
+                        value={streamUrl}
+                        onChange={(e) => setStreamUrl(e.target.value)}
+                        placeholder="e.g., cast.yourstreamingservice.com"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enter the URL without http:// or https://
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="streamPort">Port</Label>
+                      <Input
+                        id="streamPort"
+                        value={streamPort}
+                        onChange={(e) => setStreamPort(e.target.value)}
+                        placeholder="e.g., 8000"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="streamPassword">Stream Password</Label>
+                      <Input
+                        id="streamPassword"
+                        type="password"
+                        value={streamPassword}
+                        onChange={(e) => setStreamPassword(e.target.value)}
+                        placeholder="Your stream password"
+                      />
+                    </div>
+                  </form>
+                </CardContent>
+                <CardFooter>
+                  <Button type="submit" form="stream-config-form">
+                    Save Streaming Settings
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
             
-            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950 rounded-md">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                <strong>Tip:</strong> For the best audio quality, configure BUTT settings to use MP3 encoding with a bitrate of at least 128 kbps. For talk shows, you can use a lower bitrate (64-96 kbps), while music shows should use higher bitrates (128-320 kbps).
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            <TabsContent value="details">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Connection Details</CardTitle>
+                  <CardDescription>
+                    Current streaming configuration for {currentStation?.name}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {currentStation?.streamDetails ? (
+                    <StreamDetails
+                      url={currentStation.streamDetails.url || 'Not configured'}
+                      port={currentStation.streamDetails.port || 'Not configured'}
+                      password={currentStation.streamDetails.password || 'Not configured'}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center p-6 text-muted-foreground">
+                      <div className="text-center">
+                        <Radio className="h-8 w-8 mb-2 mx-auto" />
+                        <p>No streaming details configured for this station yet.</p>
+                        <p className="text-sm">Configure in the Stream Configuration tab.</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="instructions">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Broadcasting Instructions</CardTitle>
+                  <CardDescription>
+                    How to connect and broadcast to {currentStation?.name}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <StreamingInstructions
+                    stationName={currentStation?.name || 'your station'}
+                    streamUrl={currentStation?.streamDetails?.url}
+                    streamPort={currentStation?.streamDetails?.port}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
     </div>
   );
 };
