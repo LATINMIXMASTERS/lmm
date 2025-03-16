@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useRadio } from '@/hooks/useRadioContext';
 import Hero from '@/components/Hero';
+import StationCard from '@/components/StationCard';
 
 const Index: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -53,15 +54,6 @@ const Index: React.FC = () => {
     toast({
       title: "Now Playing",
       description: `Started playing radio station`
-    });
-  };
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
     });
   };
 
@@ -163,26 +155,12 @@ const Index: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {featuredStations.map(station => (
-              <div
+              <StationCard
                 key={station.id}
-                className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => handleStationClick(station.id)}
-              >
-                <img
-                  src={station.image}
-                  alt={station.name}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-4">
-                  <div className="inline-block px-2 py-1 bg-gold text-black text-xs rounded mb-2">{station.genre}</div>
-                  <h3 className="font-bold text-lg mb-2">{station.name}</h3>
-                  <p className="text-gray-600 text-sm">{station.description || 'Live Latin music 24/7'}</p>
-                  <button className="mt-4 bg-red hover:bg-red-dark text-white font-bold py-2 px-4 rounded-full block w-full text-center transition-colors duration-300">
-                    <Radio className="inline-block w-4 h-4 mr-2" />
-                    Listen Live
-                  </button>
-                </div>
-              </div>
+                station={station}
+                isPlaying={currentPlayingStation === station.id}
+                onPlayToggle={handleStationClick}
+              />
             ))}
           </div>
         </section>
@@ -230,7 +208,7 @@ const Index: React.FC = () => {
             lovers, and stay updated on the latest events.
           </p>
           <button
-            onClick={() => isAuthenticated ? navigate('/profile') : navigate('/login')}
+            onClick={() => navigate(isAuthenticated ? '/user-profile' : '/login')}
             className="bg-red hover:bg-red-dark text-white font-bold py-3 px-8 rounded-full text-center transition-colors duration-300"
           >
             {isAuthenticated ? 'Go to Profile' : 'Sign Up Now'}

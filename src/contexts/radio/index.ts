@@ -5,6 +5,7 @@ import type { RadioContextType } from './types';
 import { useRadioActions } from './radioActions';
 import { radioReducer, initialRadioState, initialStations } from './radioReducer';
 import { RadioAction } from './radioActionTypes';
+import { audioStateReducers } from './reducers/audioStateReducers';
 
 export { 
   RadioProvider, 
@@ -12,6 +13,7 @@ export {
   useRadioActions, 
   radioReducer, 
   initialRadioState, 
-  initialStations 
+  initialStations,
+  audioStateReducers
 };
 export type { RadioContextType, RadioAction };
