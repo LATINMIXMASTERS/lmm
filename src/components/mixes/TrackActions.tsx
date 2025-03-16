@@ -15,15 +15,23 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+/**
+ * Props for the TrackActions component
+ */
 interface TrackActionsProps {
   track: Track;
   onEdit: (trackId: string, e: React.MouseEvent) => void;
   onDelete: (trackId: string) => void;
 }
 
+/**
+ * Component that displays edit and delete action buttons for a track
+ * The delete action includes a confirmation dialog to prevent accidental deletion
+ */
 const TrackActions: React.FC<TrackActionsProps> = ({ track, onEdit, onDelete }) => {
   return (
     <div className="flex space-x-2">
+      {/* Edit track button */}
       <Button
         variant="ghost"
         size="icon"
@@ -33,6 +41,7 @@ const TrackActions: React.FC<TrackActionsProps> = ({ track, onEdit, onDelete }) 
         <Edit className="h-4 w-4" />
       </Button>
       
+      {/* Delete track button with confirmation dialog */}
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button

@@ -10,10 +10,15 @@ import { useTrackInteractions } from '@/components/mixes/useTrackInteractions';
 import { useTrackFilters } from '@/components/mixes/useTrackFilters';
 import { Track } from '@/models/Track';
 
+/**
+ * Mixes page component that displays all uploaded tracks organized by genre tabs.
+ * This component orchestrates the filtering, display, and interactions with tracks.
+ */
 const Mixes: React.FC = () => {
+  // Get track data and related state from context
   const { tracks, genres, currentPlayingTrack, setCurrentPlayingTrack } = useTrack();
   
-  // Custom hooks for track interactions and filtering
+  // Custom hooks for track interactions (play, like, comment, etc.) and filtering
   const {
     isAuthenticated,
     user,
@@ -30,6 +35,7 @@ const Mixes: React.FC = () => {
     canUserEditTrack
   } = useTrackInteractions();
   
+  // Track filtering hook for genre selection and filtering
   const {
     selectedGenre,
     filteredTracks,
@@ -37,7 +43,12 @@ const Mixes: React.FC = () => {
     setSelectedTabGenre
   } = useTrackFilters(tracks, genres, setCurrentPlayingTrack);
 
-  // Render track actions (edit, delete buttons)
+  /**
+   * Conditionally renders track action buttons (edit, delete) 
+   * based on user permissions for a specific track
+   * @param track - The track to check permissions for
+   * @returns React component with track actions or null
+   */
   const renderTrackActionsComponent = (track: Track) => {
     if (!canUserEditTrack(track.id)) return null;
     
@@ -53,6 +64,7 @@ const Mixes: React.FC = () => {
   return (
     <MainLayout>
       <div className="container py-8 md:py-12">
+        {/* Header with title and upload buttons */}
         <MixesHeader 
           isAuthenticated={isAuthenticated}
           user={user}
@@ -60,6 +72,7 @@ const Mixes: React.FC = () => {
           handleUpload={handleUpload}
         />
         
+        {/* Genre tabs with track listing */}
         <GenreTabs 
           genres={genres}
           tracks={tracks}

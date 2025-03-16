@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { User } from '@/contexts/AuthContext';
 
+/**
+ * Props for the MixesHeader component
+ */
 interface MixesHeaderProps {
   isAuthenticated: boolean;
   user: User | null;
@@ -13,6 +16,11 @@ interface MixesHeaderProps {
   handleUpload: () => void;
 }
 
+/**
+ * Component that displays the header section of the Mixes page
+ * Shows the title, description, and action buttons for uploading mixes and managing genres
+ * Action buttons are conditionally rendered based on user permissions
+ */
 const MixesHeader: React.FC<MixesHeaderProps> = ({ 
   isAuthenticated, 
   user, 
@@ -27,6 +35,7 @@ const MixesHeader: React.FC<MixesHeaderProps> = ({
       </div>
       
       <div className="flex flex-wrap gap-2">
+        {/* Only show action buttons for radio hosts and admins */}
         {isAuthenticated && (user?.isRadioHost || user?.isAdmin) && (
           <>
             <Button 

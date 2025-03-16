@@ -5,6 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Genre, Track } from '@/models/Track';
 import TrackCard from './TrackCard';
 
+/**
+ * Props for the GenreTabs component
+ */
 interface GenreTabsProps {
   genres: Genre[];
   tracks: Track[];
@@ -22,6 +25,11 @@ interface GenreTabsProps {
   renderTrackActions?: (track: Track) => React.ReactNode;
 }
 
+/**
+ * Component that displays tracks organized into tabs by genre
+ * Each tab shows a grid of tracks filtered by the selected genre
+ * Includes an "All Genres" tab to show all tracks
+ */
 const GenreTabs: React.FC<GenreTabsProps> = ({
   genres,
   tracks,
@@ -45,6 +53,7 @@ const GenreTabs: React.FC<GenreTabsProps> = ({
       onValueChange={setSelectedTabGenre}
       className="w-full mb-8"
     >
+      {/* Horizontal scrollable tabs for genre selection */}
       <TabsList className="w-full overflow-x-auto flex flex-nowrap mb-4 p-1 bg-gray-100 rounded-lg">
         <TabsTrigger value="all" className="flex-shrink-0">
           All Genres
@@ -60,15 +69,18 @@ const GenreTabs: React.FC<GenreTabsProps> = ({
         ))}
       </TabsList>
       
+      {/* "All Genres" tab content */}
       <TabsContent value="all" className="mt-0">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tracks.length === 0 ? (
+            /* Empty state when no tracks exist */
             <div className="col-span-full text-center py-16">
               <Music className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-1">No tracks found</h3>
               <p className="text-gray-500">No tracks have been uploaded yet</p>
             </div>
           ) : (
+            /* Grid of track cards */
             tracks.map(track => (
               <TrackCard
                 key={track.id}
@@ -88,16 +100,19 @@ const GenreTabs: React.FC<GenreTabsProps> = ({
         </div>
       </TabsContent>
       
+      {/* Individual genre tabs */}
       {genres.map(genre => (
         <TabsContent key={genre.id} value={genre.id} className="mt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTracks.length === 0 ? (
+              /* Empty state when no tracks exist for this genre */
               <div className="col-span-full text-center py-16">
                 <Music className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-1">No tracks found</h3>
                 <p className="text-gray-500">No tracks available for {genre.name} yet</p>
               </div>
             ) : (
+              /* Grid of track cards filtered by genre */
               filteredTracks.map(track => (
                 <TrackCard
                   key={track.id}
