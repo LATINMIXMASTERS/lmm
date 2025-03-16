@@ -2,12 +2,12 @@
 import { useContext } from 'react';
 import TrackContext from '@/contexts/TrackContext';
 
-export const useTrack = () => {
+export const useTrackContext = () => {
   const context = useContext(TrackContext);
   if (context === undefined) {
-    throw new Error('useTrack must be used within a TrackProvider');
+    throw new Error('useTrackContext must be used within a TrackProvider');
   }
   return context;
 };
 
-export default useTrack;
+export default useTrackContext;
