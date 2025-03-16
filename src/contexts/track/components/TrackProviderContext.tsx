@@ -3,6 +3,7 @@ import React from 'react';
 import { Track, Genre } from '@/models/Track';
 import { useTrackActions } from '@/contexts/track/hooks/useTrackActions';
 import { canEditTrack, generateWaveformData } from '@/utils/trackUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TrackProviderContextProps {
   state: {
@@ -20,6 +21,9 @@ const TrackProviderContext = ({
   dispatch, 
   setCurrentPlayingStation 
 }: TrackProviderContextProps) => {
+  // Get user information from AuthContext 
+  const { user } = useAuth();
+  
   // Initialize all track actions
   const trackActions = useTrackActions(state, dispatch, setCurrentPlayingStation);
   
@@ -41,9 +45,9 @@ const TrackProviderContext = ({
     const track = state.tracks.find(t => t.id === trackId);
     if (!track) return false;
     
-    // We're assuming these values would come from context or props in the actual implementation
-    const userId = trackActions.user?.id;
-    const isAdmin = trackActions.user?.isAdmin || false;
+    // Now using the user from AuthContext directly
+    const userId = user?.id;
+    const isAdmin = user?.isAdmin || false;
     
     return canEditTrack(state.tracks, userId, isAdmin, trackId);
   };
