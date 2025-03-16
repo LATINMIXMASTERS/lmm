@@ -2,7 +2,7 @@
 import React from 'react';
 import { Clock } from 'lucide-react';
 import { BookingSlot } from '@/models/RadioStation';
-import { isPast } from 'date-fns';
+import { isPast, isAfter } from 'date-fns';
 
 interface UpcomingShowsProps {
   bookings: BookingSlot[];

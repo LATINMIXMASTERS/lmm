@@ -2,6 +2,7 @@
 import { BookingSlot } from '@/models/RadioStation';
 import { createBooking, canUpdateBooking } from '@/services/bookingService';
 import { hasBookingConflict, getBookingsForStation, getBookingsForToday } from '@/utils/radioUtils';
+import { isPast } from 'date-fns';
 
 export const useBookingActions = (
   state: { bookings: BookingSlot[] }, 
@@ -16,6 +17,13 @@ export const useBookingActions = (
   };
   
   const addBookingImpl = (bookingData: Omit<BookingSlot, 'id'>) => {
+    // Validate that the booking is not in the past
+    const startTime = new Date(bookingData.startTime);
+    if (isPast(startTime)) {
+      console.error("Cannot book shows in the past");
+      return null;
+    }
+    
     const newBooking = createBooking(state.bookings, bookingData);
     
     // Update state
@@ -65,6 +73,15 @@ export const useBookingActions = (
   };
   
   const updateBookingImpl = (bookingId: string, updatedBookingData: Partial<BookingSlot>) => {
+    // Check if updating times and if they're in the past
+    if (updatedBookingData.startTime) {
+      const startTime = new Date(updatedBookingData.startTime);
+      if (isPast(startTime)) {
+        console.error("Cannot update to a time in the past");
+        return null;
+      }
+    }
+    
     if (!canUpdateBooking(state.bookings, bookingId, updatedBookingData)) {
       return null;
     }

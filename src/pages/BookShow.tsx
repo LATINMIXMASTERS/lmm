@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar as CalendarIcon, Clock, Radio } from 'lucide-react';
-import { format, addHours } from 'date-fns';
+import { format, addHours, isBefore, startOfDay } from 'date-fns';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRadio } from '@/hooks/useRadioContext';
@@ -44,12 +44,51 @@ const BookShow: React.FC = () => {
   // Check if user is admin or host (privileged users)
   const isPrivilegedUser = isAuthenticated && (user?.isAdmin || user?.isRadioHost);
   
-  const timeSlots = Array.from({ length: 24 }).map((_, i) => {
-    const hour = i.toString().padStart(2, '0');
-    return `${hour}:00`;
-  });
+  // Get current date and time for validation
+  const now = new Date();
+  const currentHour = now.getHours();
   
+  // Filter time slots to only show future times for today
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let i = 0; i < 24; i++) {
+      const hour = i.toString().padStart(2, '0');
+      slots.push(`${hour}:00`);
+    }
+    
+    // If the selected date is today, filter out past hours
+    if (showDate && isSameDay(showDate, now)) {
+      return slots.filter(slot => {
+        const slotHour = parseInt(slot.split(':')[0]);
+        return slotHour >= currentHour;
+      });
+    }
+    
+    return slots;
+  };
+  
+  const timeSlots = generateTimeSlots();
   const durationOptions = ['1', '2', '3', '4'];
+  
+  // Helper function to check if two dates are the same day
+  const isSameDay = (date1: Date, date2: Date) => {
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
+  };
+
+  // When date changes, reset time if needed
+  useEffect(() => {
+    if (showDate && isSameDay(showDate, now)) {
+      // If the currently selected time is in the past, reset it
+      const selectedHour = parseInt(startTime.split(':')[0]);
+      if (selectedHour < currentHour) {
+        setStartTime(`${currentHour.toString().padStart(2, '0')}:00`);
+      }
+    }
+  }, [showDate]);
 
   useEffect(() => {
     // Redirect if not authenticated or not a host/admin
@@ -94,6 +133,14 @@ const BookShow: React.FC = () => {
     
     if (!showDate) {
       newErrors.date = "Date is required";
+    } else {
+      // Check if the selected date is in the past
+      const selectedDate = new Date(showDate);
+      const today = startOfDay(new Date());
+      
+      if (isBefore(selectedDate, today)) {
+        newErrors.date = "Cannot book shows in the past";
+      }
     }
     
     if (!startTime) {
@@ -102,6 +149,17 @@ const BookShow: React.FC = () => {
     
     if (!duration) {
       newErrors.duration = "Duration is required";
+    }
+    
+    // Check if the selected datetime is in the past
+    if (showDate && startTime) {
+      const [hours] = startTime.split(':').map(Number);
+      const selectedDateTime = new Date(showDate);
+      selectedDateTime.setHours(hours, 0, 0, 0);
+      
+      if (isBefore(selectedDateTime, now)) {
+        newErrors.time = "Cannot book a show in the past";
+      }
     }
     
     setErrors(newErrors);
@@ -172,6 +230,11 @@ const BookShow: React.FC = () => {
     navigate('/stations');
   };
 
+  // Disable past dates in the calendar
+  const isDateDisabled = (date: Date) => {
+    return isBefore(date, startOfDay(now));
+  };
+
   if (!station || !isPrivilegedUser) {
     return null;
   }
@@ -232,6 +295,7 @@ const BookShow: React.FC = () => {
                             mode="single"
                             selected={showDate}
                             onSelect={setShowDate}
+                            disabled={isDateDisabled}
                             initialFocus
                             className="p-3 pointer-events-auto"
                           />
@@ -331,6 +395,7 @@ const BookShow: React.FC = () => {
                   <ul className="list-disc pl-5 mt-2 space-y-1 text-muted-foreground">
                     <li>Verified hosts can book shows instantly</li>
                     <li>Time slots are 1-4 hours in duration</li>
+                    <li>You cannot book shows in the past</li>
                     <li>Please be ready 15 minutes before your slot</li>
                   </ul>
                 </div>
