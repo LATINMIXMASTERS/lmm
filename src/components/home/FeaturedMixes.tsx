@@ -2,11 +2,11 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Music, ArrowRight } from 'lucide-react';
-import { useTrackContext } from '@/hooks/useTrackContext';
+import { useTrack } from '@/hooks/useTrackContext';
 
 const FeaturedMixes: React.FC = () => {
   const navigate = useNavigate();
-  const { tracks, genres } = useTrackContext();
+  const { tracks, genres } = useTrack();
   
   // Get genres that actually have tracks/mixes
   const genresWithTracks = useMemo(() => {
@@ -43,11 +43,16 @@ const FeaturedMixes: React.FC = () => {
     'Cumbia': 'bg-orange-600',
     'Dembow': 'bg-pink-600'
   };
+
+  // Navigate to the mixes page with the selected genre
+  const handleGenreClick = (genreId: string) => {
+    navigate(`/mixes?genre=${genreId}`);
+  };
   
   return (
     <section className="mb-12 md:mb-16">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl md:text-3xl font-bold">FEATURED LATIN MIXES</h2>
+        <h2 className="text-2xl md:text-3xl font-bold">FEATURED MIXES</h2>
         <button
           onClick={() => navigate('/mixes')}
           className="text-gold hover:underline flex items-center"
@@ -58,7 +63,11 @@ const FeaturedMixes: React.FC = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {genresWithTracks.map(({ name, id, sampleTrack }) => (
-          <div key={id} className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+          <div 
+            key={id} 
+            className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => handleGenreClick(id)}
+          >
             <img
               src={sampleTrack?.coverImage || "https://images.unsplash.com/photo-1516550822454-ca135c597484?q=80&w=2070&auto=format&fit=crop"}
               alt={`${name} Mix Cover`}
@@ -73,7 +82,6 @@ const FeaturedMixes: React.FC = () => {
                 Discover the best {name} tracks in this exclusive mix.
               </p>
               <button
-                onClick={() => navigate('/mixes')}
                 className="mt-4 bg-gold hover:bg-gold-dark text-black font-bold py-2 px-4 rounded-full block w-full text-center transition-colors duration-300"
               >
                 <Music className="inline-block w-4 h-4 mr-2" />
