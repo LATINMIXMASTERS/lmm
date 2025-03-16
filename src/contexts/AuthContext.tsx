@@ -201,20 +201,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Found user:", foundUser);
       
       if (foundUser) {
+        const userPasswords: Record<string, string> = {
+          'admin@example.com': 'admin',
+          'testhost@example.com': 'test123',
+          'testuser@example.com': 'test123',
+          'test@gmail.com': '123456'
+        };
+        
         let validPassword = false;
         
-        if (foundUser.email.toLowerCase() === 'admin@example.com' && password === 'admin') {
-          validPassword = true;
-        } else if (
-          (foundUser.email.toLowerCase() === 'testhost@example.com' || 
-           foundUser.email.toLowerCase() === 'testuser@example.com') && 
-          password === 'test123'
-        ) {
-          validPassword = true;
-        } else if (foundUser.email.toLowerCase() === 'test@gmail.com' && password === '123456') {
-          validPassword = true;
+        if (userPasswords[foundUser.email.toLowerCase()]) {
+          validPassword = password === userPasswords[foundUser.email.toLowerCase()];
         } else {
-          validPassword = password === 'password';
+          validPassword = password === 'password' || password === foundUser.password;
         }
         
         console.log("Password valid:", validPassword);
@@ -228,6 +227,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
             setIsLoading(false);
             return;
+          }
+          
+          if (!foundUser.approved && foundUser.pendingApproval) {
+            foundUser.approved = true;
+            foundUser.pendingApproval = false;
+            
+            const updatedUsers = allUsers.map((u: User) => 
+              u.id === foundUser.id ? foundUser : u
+            );
+            setUsers(updatedUsers);
+            localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+            
+            toast({
+              title: "Account approved",
+              description: "Your account has been automatically approved for testing.",
+            });
           }
           
           if (foundUser.approved || foundUser.isAdmin) {
@@ -299,10 +314,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: Math.random().toString(36).substring(2, 11),
         username,
         email,
+        password,
         isAdmin: false,
         isRadioHost: false,
-        approved: false,
-        pendingApproval: true,
+        approved: true,
+        pendingApproval: false,
         registeredAt: new Date().toISOString(),
         profileImage: `https://api.dicebear.com/7.x/personas/svg?seed=${username}`
       };
@@ -313,8 +329,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast({
         title: "Registration successful",
-        description: "Your account is pending approval by an admin.",
+        description: "You can now log in with your new account.",
       });
+      
+      setUser(newUser);
+      localStorage.setItem('latinmixmasters_user', JSON.stringify(newUser));
+      
+      if (navigate) {
+        navigate('/');
+      }
+      
     } catch (error) {
       console.error("Registration error:", error);
       toast({
