@@ -2,6 +2,7 @@
 import React from 'react';
 import { Track, Genre } from '@/models/Track';
 import { useTrackActions } from '@/contexts/track/hooks/useTrackActions';
+import { canEditTrack, generateWaveformData } from '@/utils/trackUtils';
 
 interface TrackProviderContextProps {
   state: {
@@ -22,11 +23,29 @@ const TrackProviderContext = ({
   // Initialize all track actions
   const trackActions = useTrackActions(state, dispatch, setCurrentPlayingStation);
   
+  // Add the missing functions required by TrackContextType
+  const getTracksByGenre = (genreId: string) => {
+    return state.tracks.filter(track => track.genre === genreId);
+  };
+  
+  const getTracksByUser = (userId: string) => {
+    return state.tracks.filter(track => track.uploadedBy === userId);
+  };
+  
+  const getGenreById = (genreId: string) => {
+    return state.genres.find(g => g.id === genreId);
+  };
+  
   // Return the context value
   return {
     tracks: state.tracks,
     genres: state.genres,
     currentPlayingTrack: state.currentPlayingTrack,
+    getTracksByGenre,
+    getTracksByUser,
+    getGenreById,
+    generateWaveformData,
+    canEditTrack,
     ...trackActions
   };
 };

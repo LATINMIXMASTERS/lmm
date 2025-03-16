@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar, Radio } from 'lucide-react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { BookingSlot } from '@/models/RadioStation';
-import { format } from 'date-fns';
+import { format, isPast } from 'date-fns';
 
 export interface Event {
   id: string;
@@ -19,11 +19,12 @@ const UpcomingEvents: React.FC = () => {
   const navigate = useNavigate();
   const { bookings, stations, getStationById } = useRadio();
   
-  // Filter to only show approved upcoming bookings
+  // Filter to only show approved upcoming bookings (not in the past)
   const upcomingBookings = bookings
     .filter(booking => 
       booking.approved && 
-      new Date(booking.startTime) > new Date()
+      new Date(booking.startTime) > new Date() && // Only future shows
+      !isPast(new Date(booking.endTime)) // Make sure the show isn't already over
     )
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
     .slice(0, 4); // Limit to 4 bookings

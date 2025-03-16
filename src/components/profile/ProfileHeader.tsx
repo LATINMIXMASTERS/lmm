@@ -1,9 +1,12 @@
 
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Youtube, Upload } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { fileToDataUrl, validateImageFile } from '@/services/imageUploadService';
 
 interface ProfileHeaderProps {
   profileUser: {
@@ -26,15 +29,82 @@ interface ProfileHeaderProps {
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profileUser, isOwnProfile, setEditMode }) => {
+  const { updateProfile } = useAuth();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleProfileImageClick = () => {
+    if (isOwnProfile && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      toast({
+        title: "Invalid file",
+        description: validation.message,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsUploading(true);
+    
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      updateProfile({ profileImage: dataUrl });
+      toast({
+        title: "Profile updated",
+        description: "Your profile image has been updated"
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload profile image",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
-      <Avatar className="h-24 w-24 md:h-32 md:w-32">
-        <AvatarImage 
-          src={profileUser.profileImage || `https://api.dicebear.com/7.x/personas/svg?seed=${profileUser.username}`} 
-          alt={profileUser.username} 
-        />
-        <AvatarFallback>{profileUser.username.substring(0, 2).toUpperCase()}</AvatarFallback>
-      </Avatar>
+      <div className="relative">
+        <Avatar className="h-24 w-24 md:h-32 md:w-32" 
+                onClick={handleProfileImageClick}
+                style={{ cursor: isOwnProfile ? 'pointer' : 'default' }}>
+          <AvatarImage 
+            src={profileUser.profileImage || `https://api.dicebear.com/7.x/personas/svg?seed=${profileUser.username}`} 
+            alt={profileUser.username} 
+          />
+          <AvatarFallback>{profileUser.username.substring(0, 2).toUpperCase()}</AvatarFallback>
+          
+          {isOwnProfile && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 hover:opacity-100 transition-opacity">
+              <Upload className="h-8 w-8 text-white" />
+            </div>
+          )}
+        </Avatar>
+        
+        {isOwnProfile && (
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept="image/*" 
+            onChange={handleImageUpload} 
+            disabled={isUploading}
+          />
+        )}
+      </div>
       
       <div className="flex-1 text-center md:text-left">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-2">

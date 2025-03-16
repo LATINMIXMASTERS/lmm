@@ -2,13 +2,19 @@
 import React from 'react';
 import { Clock } from 'lucide-react';
 import { BookingSlot } from '@/models/RadioStation';
+import { isPast } from 'date-fns';
 
 interface UpcomingShowsProps {
   bookings: BookingSlot[];
 }
 
 const UpcomingShows: React.FC<UpcomingShowsProps> = ({ bookings }) => {
-  if (bookings.length === 0) {
+  // Filter out past shows
+  const upcomingBookings = bookings.filter(booking => 
+    !isPast(new Date(booking.endTime))
+  );
+  
+  if (upcomingBookings.length === 0) {
     return null;
   }
   
@@ -16,7 +22,7 @@ const UpcomingShows: React.FC<UpcomingShowsProps> = ({ bookings }) => {
     <div className="mt-6">
       <h3 className="text-lg font-semibold mb-2">Upcoming Shows</h3>
       <div className="space-y-2">
-        {bookings.map((booking) => (
+        {upcomingBookings.map((booking) => (
           <div key={booking.id} className="p-3 bg-accent/30 rounded-md">
             <h4 className="font-medium">{booking.title}</h4>
             <div className="flex items-center text-sm text-muted-foreground mt-1">
