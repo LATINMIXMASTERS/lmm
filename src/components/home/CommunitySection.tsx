@@ -10,11 +10,9 @@ const CommunitySection: React.FC<CommunitySectionProps> = ({ isAuthenticated }) 
   const navigate = useNavigate();
   
   const handleButtonClick = () => {
-    if (isAuthenticated) {
-      navigate('/user-profile');
-    } else {
-      navigate('/login?register=true');
-    }
+    // For both authenticated and non-authenticated users, redirect to login page with register parameter
+    // This ensures users can register or log in from the same page
+    navigate('/login?register=true');
   };
   
   return (
