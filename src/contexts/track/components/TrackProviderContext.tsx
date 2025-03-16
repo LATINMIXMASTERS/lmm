@@ -36,6 +36,18 @@ const TrackProviderContext = ({
     return state.genres.find(g => g.id === genreId);
   };
   
+  // Adapt canEditTrack to match the expected signature
+  const canEditTrackWrapper = (trackId: string) => {
+    const track = state.tracks.find(t => t.id === trackId);
+    if (!track) return false;
+    
+    // We're assuming these values would come from context or props in the actual implementation
+    const userId = trackActions.user?.id;
+    const isAdmin = trackActions.user?.isAdmin || false;
+    
+    return canEditTrack(state.tracks, userId, isAdmin, trackId);
+  };
+  
   // Return the context value
   return {
     tracks: state.tracks,
@@ -45,7 +57,7 @@ const TrackProviderContext = ({
     getTracksByUser,
     getGenreById,
     generateWaveformData,
-    canEditTrack,
+    canEditTrack: canEditTrackWrapper,
     ...trackActions
   };
 };
