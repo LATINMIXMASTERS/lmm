@@ -27,7 +27,7 @@ const Mixes: React.FC = () => {
     handleDeleteTrack,
     handleCommentChange,
     handleSubmitComment,
-    renderTrackActions
+    canUserEditTrack
   } = useTrackInteractions();
   
   const {
@@ -39,7 +39,7 @@ const Mixes: React.FC = () => {
 
   // Render track actions (edit, delete buttons)
   const renderTrackActionsComponent = (track: Track) => {
-    if (!renderTrackActions(track.id)) return null;
+    if (!canUserEditTrack(track.id)) return null;
     
     return (
       <TrackActions 

@@ -127,12 +127,9 @@ export const useTrackInteractions = () => {
     });
   };
 
-  const renderTrackActions = (track: string) => {
-    const isEditable = canEditTrack(track);
-    
-    if (!isEditable) return null;
-    
-    return true;
+  // Fixed to return null instead of boolean
+  const canUserEditTrack = (trackId: string): boolean => {
+    return canEditTrack(trackId);
   };
 
   return {
@@ -149,6 +146,6 @@ export const useTrackInteractions = () => {
     handleDeleteTrack,
     handleCommentChange,
     handleSubmitComment,
-    renderTrackActions
+    canUserEditTrack
   };
 };
