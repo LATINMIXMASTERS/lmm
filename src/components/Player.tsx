@@ -1,11 +1,10 @@
-
 import React, { useRef } from 'react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useTrack } from '@/hooks/useTrackContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import usePlayerControls from '@/hooks/usePlayerControls';
-import AudioEngine from '@/components/player/AudioEngine';
+import AudioEngine from '@/components/player/audio-engine';
 import PlayerContainer from '@/components/player/PlayerContainer';
 
 interface PlayerProps {
@@ -18,11 +17,9 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
   const { currentPlayingTrack } = useTrack();
   const { toast } = useToast();
   
-  // Audio refs
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const metadataTimerRef = useRef<number | null>(null);
   
-  // Player controls hooks
   const {
     stationInfo,
     setStationInfo,
@@ -54,7 +51,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     handleProgressChange: baseHandleProgressChange
   } = usePlayerControls();
 
-  // Only render the player if something is actually playing
   const shouldShowPlayer = currentPlayingStation || currentPlayingTrack;
 
   const togglePlayPause = () => baseTogglePlayPause(audioRef);
@@ -109,14 +105,12 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     setNewComment('');
   };
 
-  // If there's no playing content, just return null - no player should be rendered
   if (!shouldShowPlayer) {
     return null;
   }
 
   return (
     <>
-      {/* Hidden audio engine component that handles audio logic */}
       <AudioEngine
         onTimeUpdate={setCurrentTime}
         onDurationChange={setDuration}
@@ -130,7 +124,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
         setLikes={setLikes}
       />
       
-      {/* Visible player UI */}
       <PlayerContainer
         stationInfo={stationInfo}
         isTrackPlaying={isTrackPlaying}
