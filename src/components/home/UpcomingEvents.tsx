@@ -20,7 +20,7 @@ const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events }) => {
   
   return (
     <section className="mb-8 md:mb-12">
-      <h2 className="text-2xl md:text-3xl font-bold mb-6">Upcoming Latin Events</h2>
+      <h2 className="text-2xl md:text-3xl font-bold mb-6">Upcoming Radio Shows</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {events.map(event => (
           <div key={event.id} className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow p-6 border border-gray-100">
