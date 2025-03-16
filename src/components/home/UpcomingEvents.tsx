@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar } from 'lucide-react';
+import { Calendar, Radio } from 'lucide-react';
 
 export interface Event {
   id: string;
@@ -9,6 +9,7 @@ export interface Event {
   date: string;
   time: string;
   location: string;
+  stationId?: string; // Adding stationId to navigate to the specific station
 }
 
 interface UpcomingEventsProps {
@@ -38,13 +39,24 @@ const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events }) => {
                 <p className="text-gray-600 text-sm mb-3">
                   {event.time} at {event.location}
                 </p>
-                <button
-                  onClick={() => navigate('/book-show')}
-                  className="bg-gold hover:bg-gold-dark text-black font-bold py-2 px-4 rounded-full text-center transition-colors duration-300 text-sm"
-                >
-                  <Calendar className="inline-block w-4 h-4 mr-1" />
-                  Book Now
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => navigate('/book-show')}
+                    className="bg-gold hover:bg-gold-dark text-black font-bold py-2 px-4 rounded-full text-center transition-colors duration-300 text-sm"
+                  >
+                    <Calendar className="inline-block w-4 h-4 mr-1" />
+                    Book Now
+                  </button>
+                  {event.stationId && (
+                    <button
+                      onClick={() => navigate(`/stations/${event.stationId}`)}
+                      className="bg-blue hover:bg-blue-dark text-white font-bold py-2 px-4 rounded-full text-center transition-colors duration-300 text-sm"
+                    >
+                      <Radio className="inline-block w-4 h-4 mr-1" />
+                      Visit Station
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
