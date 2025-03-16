@@ -1,10 +1,9 @@
-
 import React, { useReducer, useEffect, ReactNode } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRadio } from '@/hooks/useRadioContext';
 import { trackReducer, initialTrackState, initialGenres } from '@/contexts/track/trackReducer';
-import { createTrackActions } from '@/contexts/track/trackActions';
+import { createTrackActions } from '@/contexts/track/actions';
 import TrackContext from '@/contexts/track/TrackContext';
 import { generateWaveformData, getTracksByGenre, getTracksByUser, getGenreById, canEditTrack } from '@/utils/trackUtils';
 
@@ -37,7 +36,7 @@ export const TrackProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [state.currentPlayingTrack, setCurrentPlayingStation]);
 
-  // Create track action functions
+  // Create track action functions from our refactored modules
   const trackActions = createTrackActions(
     state,
     dispatch,
