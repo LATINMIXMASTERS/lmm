@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Track, Genre } from '@/models/Track';
-import { useTrackActions } from '@/contexts/track/actions';
+import { useTrackActions } from '@/contexts/track/hooks/useTrackActions';
 
 interface TrackProviderContextProps {
   state: {
