@@ -14,6 +14,8 @@ interface PlayerProps {
 
 const Player: React.FC<PlayerProps> = ({ className }) => {
   const { likeTrack, addComment, shareTrack } = useTrack();
+  const { currentPlayingStation } = useRadio();
+  const { currentPlayingTrack } = useTrack();
   const { toast } = useToast();
   
   // Audio refs
@@ -51,6 +53,9 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     handleVolumeChange,
     handleProgressChange: baseHandleProgressChange
   } = usePlayerControls();
+
+  // Only render the player if something is actually playing
+  const shouldShowPlayer = currentPlayingStation || currentPlayingTrack;
 
   const togglePlayPause = () => baseTogglePlayPause(audioRef);
   
@@ -103,6 +108,11 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     setComments([newCommentObj, ...comments]);
     setNewComment('');
   };
+
+  // If there's no playing content, just return null - no player should be rendered
+  if (!shouldShowPlayer) {
+    return null;
+  }
 
   return (
     <>
