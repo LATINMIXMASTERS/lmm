@@ -1,6 +1,13 @@
 
 import { RadioStation, BookingSlot, AudioState } from '@/models/RadioStation';
 
+export interface RadioState {
+  stations: RadioStation[];
+  bookings: BookingSlot[];
+  currentPlayingStation: string | null;
+  audioState: AudioState;
+}
+
 export interface RadioContextType {
   stations: RadioStation[];
   bookings: BookingSlot[];
