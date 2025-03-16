@@ -10,7 +10,6 @@ import FeaturedMixes from '@/components/home/FeaturedMixes';
 import LiveRadioSection from '@/components/home/LiveRadioSection';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
 import CommunitySection from '@/components/home/CommunitySection';
-import { Event } from '@/components/home/UpcomingEvents';
 
 const Index: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -19,22 +18,6 @@ const Index: React.FC = () => {
   const { toast } = useToast();
 
   const [featuredStations, setFeaturedStations] = useState(stations.slice(0, 3));
-  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([
-    {
-      id: '1',
-      title: 'Salsa Night',
-      date: '2024-08-15',
-      time: '21:00',
-      location: 'Club Havana'
-    },
-    {
-      id: '2',
-      title: 'Bachata Social',
-      date: '2024-08-22',
-      time: '20:00',
-      location: 'Dance Studio 5'
-    }
-  ]);
 
   useEffect(() => {
     if (stations.length > 0) {
@@ -77,7 +60,7 @@ const Index: React.FC = () => {
         />
 
         {/* Upcoming Events Section */}
-        <UpcomingEvents events={upcomingEvents} />
+        <UpcomingEvents />
         
         {/* About/Join Section */}
         <CommunitySection isAuthenticated={isAuthenticated} />

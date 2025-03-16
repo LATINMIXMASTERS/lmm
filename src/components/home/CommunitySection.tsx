@@ -18,10 +18,10 @@ const CommunitySection: React.FC<CommunitySectionProps> = ({ isAuthenticated }) 
         lovers, and stay updated on the latest events.
       </p>
       <button
-        onClick={() => navigate(isAuthenticated ? '/user-profile' : '/login')}
+        onClick={() => navigate(isAuthenticated ? '/user-profile' : '/login?register=true')}
         className="bg-red hover:bg-red-dark text-white font-bold py-3 px-8 rounded-full text-center transition-colors duration-300"
       >
-        {isAuthenticated ? 'Go to Profile' : 'Sign Up Now'}
+        {isAuthenticated ? 'Go to Profile' : 'Register Now'}
       </button>
     </section>
   );
