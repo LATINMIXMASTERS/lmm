@@ -66,7 +66,7 @@ const UpcomingEvents: React.FC = () => {
                 </p>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => navigate('/book-show')}
+                    onClick={() => navigate(`/book-show/${booking.stationId}`)}
                     className="bg-gold hover:bg-gold-dark text-black font-bold py-2 px-4 rounded-full text-center transition-colors duration-300 text-sm"
                   >
                     <Calendar className="inline-block w-4 h-4 mr-1" />
