@@ -1,15 +1,53 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Music, ArrowRight } from 'lucide-react';
+import { useTrackContext } from '@/hooks/useTrackContext';
 
 const FeaturedMixes: React.FC = () => {
   const navigate = useNavigate();
+  const { tracks, genres } = useTrackContext();
+  
+  // Get genres that actually have tracks/mixes
+  const genresWithTracks = useMemo(() => {
+    const genreTrackMap = new Map();
+    
+    // Count tracks for each genre
+    tracks.forEach(track => {
+      const genreName = track.genre;
+      if (!genreTrackMap.has(genreName)) {
+        genreTrackMap.set(genreName, []);
+      }
+      genreTrackMap.get(genreName).push(track);
+    });
+    
+    // Get genres with at least one track
+    return genres
+      .filter(genre => genreTrackMap.has(genre.name) && genreTrackMap.get(genre.name).length > 0)
+      .slice(0, 3) // Limit to 3 genres
+      .map(genre => ({
+        ...genre,
+        sampleTrack: genreTrackMap.get(genre.name)[0] // Get first track as sample
+      }));
+  }, [tracks, genres]);
+  
+  if (genresWithTracks.length === 0) {
+    return null;
+  }
+  
+  const genreColorMap = {
+    'Salsa': 'bg-red-600',
+    'Bachata': 'bg-purple-600',
+    'Reggaeton': 'bg-blue-600',
+    'Merengue': 'bg-green-600',
+    'Cumbia': 'bg-orange-600',
+    'Dembow': 'bg-pink-600'
+  };
   
   return (
     <section className="mb-12 md:mb-16">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl md:text-3xl font-bold">Featured Latin Mixes</h2>
+        <h2 className="text-2xl md:text-3xl font-bold">FEATURED LATIN MIXES</h2>
         <button
           onClick={() => navigate('/mixes')}
           className="text-gold hover:underline flex items-center"
@@ -19,68 +57,31 @@ const FeaturedMixes: React.FC = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Salsa Mix */}
-        <div className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-          <img
-            src="https://images.unsplash.com/photo-1516550822454-ca135c597484?q=80&w=2070&auto=format&fit=crop"
-            alt="Salsa Mix Cover"
-            className="w-full h-48 object-cover"
-          />
-          <div className="p-4">
-            <div className="inline-block px-2 py-1 bg-red-600 text-white text-xs rounded mb-2">Salsa</div>
-            <h3 className="font-bold text-lg mb-2">Salsa Classics Remix</h3>
-            <p className="text-gray-600 text-sm">A journey through timeless salsa hits reimagined.</p>
-            <button
-              onClick={() => navigate('/mixes')}
-              className="mt-4 bg-gold hover:bg-gold-dark text-black font-bold py-2 px-4 rounded-full block w-full text-center transition-colors duration-300"
-            >
-              <Music className="inline-block w-4 h-4 mr-2" />
-              Listen Now
-            </button>
+        {genresWithTracks.map(({ name, id, sampleTrack }) => (
+          <div key={id} className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+            <img
+              src={sampleTrack?.coverImage || "https://images.unsplash.com/photo-1516550822454-ca135c597484?q=80&w=2070&auto=format&fit=crop"}
+              alt={`${name} Mix Cover`}
+              className="w-full h-48 object-cover"
+            />
+            <div className="p-4">
+              <div className={`inline-block px-2 py-1 ${genreColorMap[name] || 'bg-gray-600'} text-white text-xs rounded mb-2`}>
+                {name}
+              </div>
+              <h3 className="font-bold text-lg mb-2">{name} Classics</h3>
+              <p className="text-gray-600 text-sm">
+                Discover the best {name} tracks in this exclusive mix.
+              </p>
+              <button
+                onClick={() => navigate('/mixes')}
+                className="mt-4 bg-gold hover:bg-gold-dark text-black font-bold py-2 px-4 rounded-full block w-full text-center transition-colors duration-300"
+              >
+                <Music className="inline-block w-4 h-4 mr-2" />
+                Listen Now
+              </button>
+            </div>
           </div>
-        </div>
-        
-        {/* Bachata Mix */}
-        <div className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-          <img
-            src="https://images.unsplash.com/photo-1541419403037-548046a244c4?q=80&w=2070&auto=format&fit=crop"
-            alt="Bachata Mix Cover"
-            className="w-full h-48 object-cover"
-          />
-          <div className="p-4">
-            <div className="inline-block px-2 py-1 bg-purple-600 text-white text-xs rounded mb-2">Bachata</div>
-            <h3 className="font-bold text-lg mb-2">Bachata Sensual</h3>
-            <p className="text-gray-600 text-sm">Modern bachata tracks perfect for dancing the night away.</p>
-            <button
-              onClick={() => navigate('/mixes')}
-              className="mt-4 bg-gold hover:bg-gold-dark text-black font-bold py-2 px-4 rounded-full block w-full text-center transition-colors duration-300"
-            >
-              <Music className="inline-block w-4 h-4 mr-2" />
-              Listen Now
-            </button>
-          </div>
-        </div>
-        
-        {/* Reggaeton Mix */}
-        <div className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-          <img
-            src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=2070&auto=format&fit=crop"
-            alt="Reggaeton Mix Cover"
-            className="w-full h-48 object-cover"
-          />
-          <div className="p-4">
-            <div className="inline-block px-2 py-1 bg-blue-600 text-white text-xs rounded mb-2">Reggaeton</div>
-            <h3 className="font-bold text-lg mb-2">Reggaeton Hits 2024</h3>
-            <p className="text-gray-600 text-sm">The hottest reggaeton tracks making waves this year.</p>
-            <button
-              onClick={() => navigate('/mixes')}
-              className="mt-4 bg-gold hover:bg-gold-dark text-black font-bold py-2 px-4 rounded-full block w-full text-center transition-colors duration-300"
-            >
-              <Music className="inline-block w-4 h-4 mr-2" />
-              Listen Now
-            </button>
-          </div>
-        </div>
+        ))}
       </div>
     </section>
   );
