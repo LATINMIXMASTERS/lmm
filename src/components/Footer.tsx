@@ -1,11 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Github, Twitter, Instagram, Facebook, Youtube, Linkedin } from 'lucide-react';
+import { Github, X, Instagram, Facebook, Youtube, Linkedin } from 'lucide-react';
 import { SocialLinkType, initialSocialLinks } from '@/components/admin-dashboard/SocialMediaConfig';
 
 const socialIcons = {
-  twitter: <Twitter className="w-5 h-5" />,
+  x: <X className="w-5 h-5" />,
   instagram: <Instagram className="w-5 h-5" />,
   facebook: <Facebook className="w-5 h-5" />,
   github: <Github className="w-5 h-5" />,
@@ -21,7 +21,7 @@ const Footer: React.FC = () => {
     const savedLinks = localStorage.getItem('socialLinks');
     const links = savedLinks ? JSON.parse(savedLinks) : initialSocialLinks;
     
-    // Filter to only show active links
+    // Filter to only show active links with valid URLs
     setActiveSocialLinks(links.filter((link: SocialLinkType) => link.active && link.url));
   }, []);
 

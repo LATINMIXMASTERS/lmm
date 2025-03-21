@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Radio, Search, Filter } from 'lucide-react';
@@ -24,6 +25,7 @@ const Stations: React.FC = () => {
       setCurrentPlayingStation(null);
     } else {
       setCurrentPlayingStation(stationId);
+      // Toast removed as requested
     }
   };
 

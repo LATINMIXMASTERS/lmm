@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
-import { Github, Twitter, Instagram, Facebook, Youtube, Linkedin, Save } from 'lucide-react';
+import { Github, X, Instagram, Facebook, Youtube, Linkedin, Save } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
 const socialIcons = {
-  twitter: <Twitter className="h-5 w-5" />,
+  x: <X className="h-5 w-5" />,
   instagram: <Instagram className="h-5 w-5" />,
   facebook: <Facebook className="h-5 w-5" />,
   github: <Github className="h-5 w-5" />,
@@ -23,7 +23,7 @@ export interface SocialLinkType {
 
 // Initial social links configuration
 export const initialSocialLinks: SocialLinkType[] = [
-  { platform: 'twitter', url: 'https://twitter.com/latinmixmasters', active: true },
+  { platform: 'x', url: 'https://x.com/latinmixmasters', active: true },
   { platform: 'instagram', url: 'https://instagram.com/latinmixmasters', active: true },
   { platform: 'facebook', url: 'https://facebook.com/latinmixmasters', active: true },
   { platform: 'youtube', url: 'https://youtube.com/latinmixmasters', active: false },

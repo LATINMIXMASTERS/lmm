@@ -39,10 +39,7 @@ const StationCard: React.FC<StationCardProps> = ({
       } else {
         if (station?.streamUrl) {
           setCurrentPlayingStation(station.id);
-          toast({
-            title: "Now Playing",
-            description: `${station.name} - Shoutcast stream started`
-          });
+          // Toast notification removed as requested
         } else {
           toast({
             title: "Stream Not Available",

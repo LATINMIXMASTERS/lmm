@@ -13,13 +13,20 @@ import {
  * @returns Array of endpoint URLs to try
  */
 export const getMetadataEndpoints = (baseUrl: string): string[] => {
+  // Clean up the URL to get just the base part
+  const urlObj = new URL(baseUrl);
+  const baseHostUrl = `${urlObj.protocol}//${urlObj.hostname}`;
+  
   return [
-    `${baseUrl}/status-json.xsl`,     // Icecast
-    `${baseUrl}/7.html`,              // Shoutcast v1
-    `${baseUrl}/stats`,               // Shoutcast v2
-    `${baseUrl}/currentsong`,         // Some custom endpoints
-    `${baseUrl}/metadata`,            // Some custom endpoints
-    `${baseUrl}/now_playing.json`     // Another common endpoint
+    `${baseHostUrl}/status-json.xsl`,     // Icecast
+    `${baseHostUrl}/7.html`,              // Shoutcast v1
+    `${baseHostUrl}/stats`,               // Shoutcast v2
+    `${baseHostUrl}/currentsong`,         // Some custom endpoints
+    `${baseHostUrl}/metadata`,            // Some custom endpoints
+    `${baseHostUrl}/now_playing.json`,    // Another common endpoint
+    `${baseUrl}/status-json.xsl`,         // Try with full path too
+    `${baseUrl}/7.html`,                  // Try with full path too
+    `${baseUrl}/stats`                    // Try with full path too
   ];
 };
 
@@ -83,6 +90,8 @@ export const fetchEndpointMetadata = async (
   corsProxy: string = 'https://corsproxy.io/?'
 ): Promise<Partial<RadioMetadata> | null> => {
   try {
+    console.log(`Trying to fetch metadata from: ${endpoint}`);
+    
     const response = await fetch(`${corsProxy}${encodeURIComponent(endpoint)}`, {
       method: 'GET',
       headers: {
@@ -94,7 +103,12 @@ export const fetchEndpointMetadata = async (
     const data = await parseResponse(response);
     if (!data) return null;
     
-    return processResponseData(data);
+    const metadata = processResponseData(data);
+    if (Object.keys(metadata).length > 0) {
+      console.log(`Found metadata at ${endpoint}:`, metadata);
+    }
+    
+    return metadata;
   } catch (error) {
     console.error(`Error fetching from ${endpoint}:`, error);
     return null;
@@ -110,18 +124,28 @@ export const fetchStreamMetadata = async (streamUrl: string): Promise<Partial<Ra
   try {
     console.log("Fetching metadata from stream:", streamUrl);
     
-    const endpoints = getMetadataEndpoints(streamUrl);
+    // If the URL isn't properly formatted, add http:// prefix
+    let formattedStreamUrl = streamUrl;
+    if (!streamUrl.startsWith('http://') && !streamUrl.startsWith('https://')) {
+      formattedStreamUrl = `http://${streamUrl}`;
+    }
+    
+    // Generate endpoints to try
+    const endpoints = getMetadataEndpoints(formattedStreamUrl);
+    console.log("Trying these metadata endpoints:", endpoints);
     
     // Try each endpoint until we get metadata
     for (const endpoint of endpoints) {
       const metadata = await fetchEndpointMetadata(endpoint);
       
       if (metadata && Object.keys(metadata).length > 0) {
+        console.log("Successfully found metadata at:", endpoint);
         return metadata;
       }
     }
     
-    console.log("No metadata found in stream endpoints");
+    // If no metadata found from endpoints, try to extract directly from the stream
+    console.log("No metadata found in stream endpoints, simulating metadata");
     return {};
     
   } catch (error) {

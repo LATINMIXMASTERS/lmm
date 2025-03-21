@@ -37,10 +37,7 @@ const Index: React.FC = () => {
     }
 
     setCurrentPlayingStation(stationId);
-    toast({
-      title: "Now Playing",
-      description: `Started playing radio station`
-    });
+    // Toast removed as requested
   };
 
   return (

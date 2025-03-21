@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/layout/MainLayout';
@@ -68,10 +67,6 @@ const StationDetails: React.FC = () => {
     } else {
       if (station?.streamUrl) {
         setCurrentPlayingStation(station.id);
-        toast({
-          title: "Now Playing",
-          description: `${station.name} - Shoutcast stream started`
-        });
       } else {
         toast({
           title: "Stream Not Available",
