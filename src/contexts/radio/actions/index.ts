@@ -9,7 +9,7 @@ export const useRadioActions = (state: any, dispatch: React.Dispatch<any>) => {
   const stationActions = useStationActions(state, dispatch);
   const stationQueries = useStationQueries(state);
   const bookingActions = useBookingActions(state, dispatch);
-  const audioActions = useAudioActions(dispatch);
+  const audioActions = useAudioActions(state, dispatch);
   const chatActions = useChatActions(state, dispatch);
 
   return {

@@ -20,7 +20,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
   const { user } = useAuth();
   const [message, setMessage] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isAnonymous = !user || user.isAnonymous;
+  const isAnonymous = !user; // Changed from user.isAnonymous
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -84,7 +84,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
                   
                   {msg.userId === user?.id && (
                     <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                      {user.displayName?.charAt(0).toUpperCase() || 'U'}
+                      {user.username?.charAt(0).toUpperCase() || 'U'}
                     </div>
                   )}
                 </div>

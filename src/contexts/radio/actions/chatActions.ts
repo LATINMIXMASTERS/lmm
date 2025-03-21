@@ -32,7 +32,7 @@ export const useChatActions = (
       id: uuidv4(),
       stationId,
       userId: user.id,
-      username: user.displayName || 'Anonymous',
+      username: user.username || 'Anonymous',
       message: message.trim(),
       timestamp: new Date().toISOString()
     };
