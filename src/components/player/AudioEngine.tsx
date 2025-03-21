@@ -2,6 +2,7 @@ import React, { useRef, useEffect, MutableRefObject } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useTrack } from '@/hooks/useTrackContext';
+import { setupMetadataPolling } from './audio-engine/metadata';
 
 interface AudioEngineProps {
   onTimeUpdate: (currentTime: number) => void;
@@ -195,7 +196,7 @@ const AudioEngine: React.FC<AudioEngineProps> = ({
         }
       }
       
-      setupMetadataPolling(streamUrl);
+      setupMetadataPolling(streamUrl, metadataTimerRef, setStationInfo, currentStation.id);
     }
   }, [currentPlayingStation, stations]);
   
@@ -260,35 +261,6 @@ const AudioEngine: React.FC<AudioEngineProps> = ({
     
     setLikes(track.likes || 0);
   }, [currentPlayingTrack, tracks]);
-  
-  const setupMetadataPolling = (streamUrl: string) => {
-    if (metadataTimerRef.current) {
-      window.clearInterval(metadataTimerRef.current);
-    }
-    
-    const simulateMetadata = () => {
-      const tracks = [
-        "DJ Lobo - Bachata Mix 2025",
-        "Marc Anthony - Vivir Mi Vida",
-        "Bad Bunny - Tití Me Preguntó",
-        "Romeo Santos - Propuesta Indecente",
-        "Daddy Yankee - Gasolina (Club Mix)",
-        "Luis Fonsi - Despacito (Radio Edit)",
-        "Aventura - Obsesión",
-        "Rauw Alejandro - Todo de Ti"
-      ];
-      
-      const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
-      setStationInfo(prev => ({
-        ...prev,
-        currentTrack: randomTrack
-      }));
-    };
-    
-    simulateMetadata();
-    
-    metadataTimerRef.current = window.setInterval(simulateMetadata, 15000);
-  };
   
   return null; // This is just a logic component, no UI
 };
