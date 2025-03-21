@@ -9,7 +9,6 @@ import { RadioProvider } from "./contexts/RadioContext";
 import { TrackProvider } from "./contexts/TrackContext";
 import Index from "./pages/Index";
 import Stations from "./pages/Stations";
-import AboutPage from "./pages/About";
 import Login from "./pages/Login";
 import BookShow from "./pages/BookShow";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -24,6 +23,9 @@ import HostProfile from "./pages/HostProfile";
 import HostDashboard from "./pages/HostDashboard";
 import DJs from "./pages/DJs";
 import GoLive from "./pages/GoLive";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import CookiePolicy from "./pages/CookiePolicy";
 
 const queryClient = new QueryClient();
 
@@ -40,7 +42,6 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/stations" element={<Stations />} />
                 <Route path="/stations/:id" element={<StationDetails />} />
-                <Route path="/about" element={<AboutPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/book-show/:stationId" element={<BookShow />} />
                 <Route path="/admin" element={<AdminDashboard />} />
@@ -53,6 +54,9 @@ const App = () => (
                 <Route path="/host-dashboard" element={<HostDashboard />} />
                 <Route path="/djs" element={<DJs />} />
                 <Route path="/go-live" element={<GoLive />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/terms-of-service" element={<TermsOfService />} />
+                <Route path="/cookie-policy" element={<CookiePolicy />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

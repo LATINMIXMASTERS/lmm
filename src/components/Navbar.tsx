@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Radio, Music, Info, Home } from 'lucide-react';
+import { Radio, Music, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import Logo from './navbar/Logo';
@@ -19,8 +19,7 @@ const Navbar: React.FC = () => {
   const navLinks: NavLink[] = [
     { name: 'Home', path: '/', icon: <Home className="w-4 h-4" /> },
     { name: 'Stations', path: '/stations', icon: <Radio className="w-4 h-4" /> },
-    { name: 'Mixes', path: '/mixes', icon: <Music className="w-4 h-4" /> },
-    { name: 'About', path: '/about', icon: <Info className="w-4 h-4" /> }
+    { name: 'Mixes', path: '/mixes', icon: <Music className="w-4 h-4" /> }
   ];
 
   useEffect(() => {

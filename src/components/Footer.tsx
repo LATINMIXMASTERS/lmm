@@ -38,8 +38,8 @@ const Footer: React.FC = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/about" className="text-gray-dark hover:text-gold transition-colors duration-300">
-                    About Us
+                  <Link to="/djs" className="text-gray-dark hover:text-gold transition-colors duration-300">
+                    DJs
                   </Link>
                 </li>
               </ul>
@@ -48,17 +48,17 @@ const Footer: React.FC = () => {
               <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">Legal</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link to="#" className="text-gray-dark hover:text-gold transition-colors duration-300">
+                  <Link to="/privacy-policy" className="text-gray-dark hover:text-gold transition-colors duration-300">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link to="#" className="text-gray-dark hover:text-gold transition-colors duration-300">
+                  <Link to="/terms-of-service" className="text-gray-dark hover:text-gold transition-colors duration-300">
                     Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link to="#" className="text-gray-dark hover:text-gold transition-colors duration-300">
+                  <Link to="/cookie-policy" className="text-gray-dark hover:text-gold transition-colors duration-300">
                     Cookie Policy
                   </Link>
                 </li>
@@ -97,7 +97,7 @@ const Footer: React.FC = () => {
 
         {/* Copyright */}
         <div className="mt-10 pt-8 border-t border-gray-light flex flex-col md:flex-row justify-between items-center">
-          <p className="text-sm text-gray">&copy; {new Date().getFullYear()} LATINMIXMASTERS. All rights reserved.</p>
+          <p className="text-sm text-gray">&copy; {new Date().getFullYear()} LATINMIXMASTERS LLC. All rights reserved.</p>
           <p className="text-sm text-gray mt-4 md:mt-0">INTERNATIONAL DJ CREW</p>
         </div>
       </div>
