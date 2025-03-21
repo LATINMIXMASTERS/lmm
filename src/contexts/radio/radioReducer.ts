@@ -24,6 +24,12 @@ export const radioReducer = (state: RadioState, action: RadioAction): RadioState
     case 'UPDATE_STATION_IMAGE':
       return stationReducers.updateStationImage(state, action);
     
+    case 'UPDATE_STATION_S3_IMAGE':
+      return stationReducers.updateStationS3Image(state, action);
+      
+    case 'UPDATE_STATION_METADATA':
+      return stationReducers.updateStationMetadata(state, action);
+    
     case 'SET_STATION_LIVE_STATUS':
       return chatReducers.setStationLiveStatus(state, action);
     

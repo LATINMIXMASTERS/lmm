@@ -1,5 +1,5 @@
 
-import { RadioStation, BookingSlot, AudioState, ChatMessage } from '@/models/RadioStation';
+import { RadioStation, BookingSlot, AudioState, ChatMessage, RadioMetadata } from '@/models/RadioStation';
 
 export interface RadioState {
   stations: RadioStation[];
@@ -23,6 +23,8 @@ export interface RadioContextType {
   updateStreamUrl: (stationId: string, streamUrl: string) => void;
   updateStationImage: (stationId: string, imageUrl: string) => void;
   uploadStationImage: (stationId: string, file: File) => Promise<void>;
+  updateStationS3Image: (stationId: string, s3ImageUrl: string) => void;
+  updateStationMetadata: (stationId: string, metadata: RadioMetadata) => void;
   currentPlayingStation: string | null;
   setCurrentPlayingStation: (stationId: string | null) => void;
   hasBookingConflict: (stationId: string, startTime: Date, endTime: Date, excludeBookingId?: string) => boolean;

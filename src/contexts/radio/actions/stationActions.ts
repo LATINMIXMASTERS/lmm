@@ -1,36 +1,26 @@
 
+import { RadioState } from '../types';
+import { RadioStation, FileUpload } from '@/models/RadioStation';
 import { useToast } from '@/hooks/use-toast';
-import { RadioStation } from '@/models/RadioStation';
-import { formatStreamUrl } from '@/utils/radioUtils';
-import { validateImageFile, fileToDataUrl } from '@/services/imageUploadService';
 
 export const useStationActions = (
-  state: { stations: RadioStation[] }, 
+  state: RadioState, 
   dispatch: React.Dispatch<any>
 ) => {
   const { toast } = useToast();
 
-  const updateStreamDetailsImpl = (stationId: string, streamDetails: { url: string; port: string; password: string; }) => {
+  const updateStreamDetailsImpl = (
+    stationId: string, 
+    streamDetails: { url: string; port: string; password: string }
+  ) => {
     dispatch({ 
       type: 'UPDATE_STREAM_DETAILS', 
       payload: { stationId, streamDetails } 
     });
     
-    const updatedStations = state.stations.map(station => 
-      station.id === stationId ? { 
-        ...station, 
-        streamDetails: { 
-          ...streamDetails, 
-          url: formatStreamUrl(streamDetails.url) 
-        }
-      } : station
-    );
-    
-    localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
-    
-    console.log(`Updated stream details for station ${stationId}:`, { 
-      ...streamDetails, 
-      url: formatStreamUrl(streamDetails.url) 
+    toast({
+      title: "Stream details updated",
+      description: "The streaming configuration has been saved."
     });
   };
   
@@ -40,80 +30,90 @@ export const useStationActions = (
       payload: { stationId, streamUrl } 
     });
     
-    const updatedStations = state.stations.map(station => {
-      if (station.id === stationId) {
-        return { 
-          ...station, 
-          streamUrl: formatStreamUrl(streamUrl) 
-        };
-      }
-      return station;
+    toast({
+      title: "Stream URL updated",
+      description: "The streaming URL has been updated."
     });
-    
-    localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
-    
-    console.log(`Updated player stream URL for station ${stationId}:`, formatStreamUrl(streamUrl));
   };
   
   const updateStationImageImpl = (stationId: string, imageUrl: string) => {
-    if (!imageUrl.trim()) return;
-    
     dispatch({ 
       type: 'UPDATE_STATION_IMAGE', 
       payload: { stationId, imageUrl } 
     });
     
-    const updatedStations = state.stations.map(station => {
-      if (station.id === stationId) {
-        return { ...station, image: imageUrl };
-      }
-      return station;
+    toast({
+      title: "Station image updated",
+      description: "The station image has been updated."
     });
-    
-    localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
-    
-    console.log(`Updated station image for station ${stationId}:`, imageUrl);
   };
   
   const uploadStationImageImpl = async (stationId: string, file: File): Promise<void> => {
-    const validation = validateImageFile(file);
-    
-    if (!validation.valid) {
-      toast({
-        title: "Upload Error",
-        description: validation.message,
-        variant: "destructive"
-      });
-      return;
-    }
-    
     try {
-      const dataUrl = await fileToDataUrl(file);
+      // For demo, we're just creating a data URL - in a real app, upload to S3 or similar
+      const reader = new FileReader();
       
-      // Update the station with the data URL
-      updateStationImageImpl(stationId, dataUrl);
-      
-      toast({
-        title: "Image Uploaded",
-        description: "Station cover image has been updated successfully"
+      const promise = new Promise<string>((resolve, reject) => {
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            resolve(e.target.result as string);
+          } else {
+            reject(new Error('Failed to read file'));
+          }
+        };
+        reader.onerror = () => reject(reader.error);
       });
       
-      console.log(`Uploaded image for station ${stationId}`);
+      reader.readAsDataURL(file);
+      const dataUrl = await promise;
+      
+      dispatch({ 
+        type: 'UPDATE_STATION_IMAGE', 
+        payload: { stationId, imageUrl: dataUrl } 
+      });
+      
+      toast({
+        title: "Image uploaded",
+        description: "The station image has been uploaded successfully."
+      });
     } catch (error) {
       console.error("Error uploading image:", error);
       toast({
-        title: "Upload Error",
-        description: "An unexpected error occurred during upload",
+        title: "Upload failed",
+        description: "There was an error uploading the image. Please try again.",
         variant: "destructive"
       });
-      throw error;
     }
+  };
+  
+  const updateStationS3ImageImpl = (stationId: string, s3ImageUrl: string) => {
+    dispatch({ 
+      type: 'UPDATE_STATION_S3_IMAGE', 
+      payload: { stationId, s3ImageUrl } 
+    });
+    
+    toast({
+      title: "Station S3 image updated",
+      description: "The station S3 image reference has been updated."
+    });
+  };
+  
+  const updateStationMetadataImpl = (stationId: string, metadata: any) => {
+    dispatch({ 
+      type: 'UPDATE_STATION_METADATA', 
+      payload: { stationId, metadata } 
+    });
+    
+    // Don't show a toast for metadata updates - happens too frequently
+    console.log(`Updated metadata for station ${stationId}:`, metadata);
   };
 
   return {
     updateStreamDetails: updateStreamDetailsImpl,
     updateStreamUrl: updateStreamUrlImpl,
     updateStationImage: updateStationImageImpl,
-    uploadStationImage: uploadStationImageImpl
+    uploadStationImage: uploadStationImageImpl,
+    updateStationS3Image: updateStationS3ImageImpl,
+    updateStationMetadata: updateStationMetadataImpl
   };
 };

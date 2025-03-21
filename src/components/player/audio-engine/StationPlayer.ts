@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { RadioStation, RadioMetadata } from '@/models/RadioStation';
 import { useToast } from '@/hooks/use-toast';
-import { setupMetadataPolling } from './metadataUtils';
+import { setupMetadataPolling, extractStreamUrl } from './metadataUtils';
 
 interface StationPlayerProps {
   currentPlayingStation: string | null;
@@ -74,10 +74,8 @@ export const useStationPlayer = ({
       return;
     }
     
-    if (!streamUrl.startsWith('http://') && !streamUrl.startsWith('https://')) {
-      streamUrl = `https://${streamUrl}`;
-    }
-    
+    // Ensure the stream URL has the correct format
+    streamUrl = extractStreamUrl(streamUrl);
     console.log("Final audio source URL:", streamUrl);
     
     if (audioRef.current.src !== streamUrl) {
@@ -87,10 +85,13 @@ export const useStationPlayer = ({
       audioRef.current.src = streamUrl;
       audioRef.current.load();
       
+      // Initialize with current station data, including any existing metadata
       setStationInfo({
         name: currentStation.name,
-        currentTrack: 'Loading...',
-        coverImage: currentStation.image || 'https://images.unsplash.com/photo-1614149162883-504ce4d13909?q=80&w=200&auto=format&fit=crop',
+        currentTrack: currentStation.currentMetadata?.title 
+          ? `${currentStation.currentMetadata.artist || ''} - ${currentStation.currentMetadata.title}`
+          : 'Loading...',
+        coverImage: currentStation.s3Image || currentStation.image || 'https://images.unsplash.com/photo-1614149162883-504ce4d13909?q=80&w=200&auto=format&fit=crop',
         metadata: currentStation.currentMetadata
       });
       
@@ -114,7 +115,8 @@ export const useStationPlayer = ({
         }
       }
       
-      setupMetadataPolling(streamUrl, metadataTimerRef, setStationInfo);
+      // Set up metadata polling with the station ID for central updates
+      setupMetadataPolling(streamUrl, metadataTimerRef, setStationInfo, currentStation.id);
     }
   }, [currentPlayingStation, stations]);
 };
