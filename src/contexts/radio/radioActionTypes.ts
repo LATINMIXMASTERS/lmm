@@ -17,4 +17,5 @@ export type RadioAction =
   | { type: 'SET_AUDIO_STATE'; payload: AudioState }
   | { type: 'ADD_CHAT_MESSAGE'; payload: ChatMessage }
   | { type: 'SET_CHAT_MESSAGES'; payload: Record<string, ChatMessage[]> }
-  | { type: 'SET_STATION_LIVE_STATUS'; payload: { stationId: string, isLive: boolean } };
+  | { type: 'SET_STATION_LIVE_STATUS'; payload: { stationId: string, isLive: boolean, chatEnabled: boolean } }
+  | { type: 'TOGGLE_CHAT_ENABLED'; payload: { stationId: string, enabled: boolean } };

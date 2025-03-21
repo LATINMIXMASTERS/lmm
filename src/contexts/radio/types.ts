@@ -33,5 +33,6 @@ export interface RadioContextType {
   chatMessages: Record<string, ChatMessage[]>;
   getChatMessagesForStation: (stationId: string) => ChatMessage[];
   sendChatMessage: (stationId: string, message: string) => void;
-  setStationLiveStatus: (stationId: string, isLive: boolean) => void;
+  setStationLiveStatus: (stationId: string, isLive: boolean, enableChat?: boolean) => void;
+  toggleChatEnabled: (stationId: string, enabled: boolean) => void;
 }

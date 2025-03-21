@@ -39,7 +39,26 @@ export const chatReducers = {
       ...state,
       stations: state.stations.map(station => {
         if (station.id === action.payload.stationId) {
-          return { ...station, isLive: action.payload.isLive };
+          return { 
+            ...station, 
+            isLive: action.payload.isLive,
+            chatEnabled: action.payload.chatEnabled 
+          };
+        }
+        return station;
+      })
+    };
+  },
+  
+  toggleChatEnabled: (
+    state: RadioState,
+    action: Extract<RadioAction, { type: 'TOGGLE_CHAT_ENABLED' }>
+  ): RadioState => {
+    return {
+      ...state,
+      stations: state.stations.map(station => {
+        if (station.id === action.payload.stationId) {
+          return { ...station, chatEnabled: action.payload.enabled };
         }
         return station;
       })

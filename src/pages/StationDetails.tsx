@@ -6,6 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRadio } from '@/hooks/useRadioContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import StationHeader from '@/components/station-details/StationHeader';
 import StationControls from '@/components/station-details/StationControls';
 import StationDescription from '@/components/station-details/StationDescription';
@@ -23,7 +25,8 @@ const StationDetails: React.FC = () => {
     getBookingsForStation,
     getChatMessagesForStation,
     sendChatMessage,
-    setStationLiveStatus
+    setStationLiveStatus,
+    toggleChatEnabled
   } = useRadio();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -86,7 +89,22 @@ const StationDetails: React.FC = () => {
   // For demo/testing purposes, admin users can toggle live status
   const handleToggleLiveStatus = () => {
     if (isPrivilegedUser) {
-      setStationLiveStatus(station.id, !station.isLive);
+      setStationLiveStatus(station.id, !station.isLive, station.chatEnabled || false);
+    }
+  };
+  
+  // Toggle chat functionality for live stations
+  const handleToggleChat = () => {
+    if (isPrivilegedUser) {
+      if (station.isLive) {
+        toggleChatEnabled(station.id, !station.chatEnabled);
+      } else {
+        toast({
+          title: "Station Not Live",
+          description: "You need to set the station to live before enabling chat.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -141,25 +159,62 @@ const StationDetails: React.FC = () => {
                 />
               )}
               
-              {/* Admin toggle for live status (for demo purposes) */}
+              {/* Live status and chat controls for admins/hosts */}
               {isPrivilegedUser && (
-                <div className="mb-6 mt-4">
-                  <button
-                    onClick={handleToggleLiveStatus}
-                    className={`px-4 py-2 rounded-md ${
-                      station.isLive ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
-                    } text-white transition-colors`}
-                  >
-                    {station.isLive ? 'End Live Session' : 'Start Live Session'}
-                  </button>
-                  <p className="text-sm text-gray-500 mt-1">
-                    This button is for demonstration purposes - in production, live status would be determined by actual streaming activity.
+                <div className="mb-6 mt-4 space-y-4">
+                  <div className="flex flex-col gap-4 p-4 border rounded-md bg-gray-50">
+                    <h3 className="text-lg font-medium">Broadcast Controls</h3>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Switch 
+                          checked={station.isLive} 
+                          onCheckedChange={handleToggleLiveStatus} 
+                          id="live-status"
+                        />
+                        <label htmlFor="live-status" className="cursor-pointer">
+                          {station.isLive ? 
+                            <Badge variant="destructive" className="animate-pulse">LIVE</Badge> : 
+                            'Go Live'}
+                        </label>
+                      </div>
+                      
+                      <div className="text-sm text-gray-500">
+                        Station is currently {station.isLive ? 'broadcasting live' : 'offline'}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Switch 
+                          checked={station.chatEnabled || false} 
+                          onCheckedChange={handleToggleChat}
+                          disabled={!station.isLive}
+                          id="chat-status"
+                        />
+                        <label htmlFor="chat-status" className={`cursor-pointer ${!station.isLive ? 'text-gray-400' : ''}`}>
+                          {station.chatEnabled ? 
+                            <Badge className="bg-green-500">Chat Enabled</Badge> : 
+                            'Enable Chat'}
+                        </label>
+                      </div>
+                      
+                      <div className="text-sm text-gray-500">
+                        {!station.isLive ? 
+                          'Set station to live first' : 
+                          (station.chatEnabled ? 'Chat is active' : 'Chat is disabled')}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-gray-500">
+                    These controls are for demonstration purposes - in production, live status would be determined by actual streaming activity.
                   </p>
                 </div>
               )}
               
-              {/* Show chatroom when station is live */}
-              {station.isLive && (
+              {/* Show chatroom when station is live and chat is enabled */}
+              {station.isLive && station.chatEnabled && (
                 <div className="mb-8">
                   <ChatRoom 
                     stationId={station.id}

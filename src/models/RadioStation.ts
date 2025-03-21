@@ -7,6 +7,7 @@ export interface RadioStation {
   image: string;
   listeners: number;
   isLive?: boolean;
+  chatEnabled?: boolean;
   streamUrl?: string;
   broadcastTime?: string;
   hosts?: string[];

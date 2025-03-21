@@ -60,15 +60,15 @@ export const useChatActions = (
     console.log(`Sent chat message to station ${stationId}:`, newMessage);
   };
 
-  const setStationLiveStatusImpl = (stationId: string, isLive: boolean): void => {
+  const setStationLiveStatusImpl = (stationId: string, isLive: boolean, enableChat: boolean = false): void => {
     dispatch({
       type: 'SET_STATION_LIVE_STATUS',
-      payload: { stationId, isLive }
+      payload: { stationId, isLive, chatEnabled: enableChat }
     });
 
     const updatedStations = state.stations.map(station => {
       if (station.id === stationId) {
-        return { ...station, isLive };
+        return { ...station, isLive, chatEnabled: enableChat };
       }
       return station;
     });
@@ -77,16 +77,39 @@ export const useChatActions = (
     
     // Notify users when a station goes live
     if (isLive) {
+      const stationName = state.stations.find(s => s.id === stationId)?.name || 'A station';
       toast({
         title: "Station is Live!",
-        description: `${state.stations.find(s => s.id === stationId)?.name || 'A station'} is now broadcasting live.`
+        description: `${stationName} is now broadcasting live${enableChat ? ' with chat enabled' : ''}.`
       });
     }
+  };
+
+  const toggleChatEnabledImpl = (stationId: string, enabled: boolean): void => {
+    dispatch({
+      type: 'TOGGLE_CHAT_ENABLED',
+      payload: { stationId, enabled }
+    });
+
+    const updatedStations = state.stations.map(station => {
+      if (station.id === stationId) {
+        return { ...station, chatEnabled: enabled };
+      }
+      return station;
+    });
+    
+    localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+    
+    toast({
+      title: enabled ? "Chat Enabled" : "Chat Disabled",
+      description: `Chat has been ${enabled ? 'enabled' : 'disabled'} for this station.`
+    });
   };
 
   return {
     getChatMessagesForStation: getChatMessagesForStationImpl,
     sendChatMessage: sendChatMessageImpl,
-    setStationLiveStatus: setStationLiveStatusImpl
+    setStationLiveStatus: setStationLiveStatusImpl,
+    toggleChatEnabled: toggleChatEnabledImpl
   };
 };

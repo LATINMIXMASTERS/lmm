@@ -27,6 +27,9 @@ export const radioReducer = (state: RadioState, action: RadioAction): RadioState
     case 'SET_STATION_LIVE_STATUS':
       return chatReducers.setStationLiveStatus(state, action);
     
+    case 'TOGGLE_CHAT_ENABLED':
+      return chatReducers.toggleChatEnabled(state, action);
+    
     // Booking reducers
     case 'SET_BOOKINGS':
       return bookingReducers.setBookings(state, action);

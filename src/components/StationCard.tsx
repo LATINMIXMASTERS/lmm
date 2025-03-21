@@ -98,7 +98,7 @@ const StationCard: React.FC<StationCardProps> = ({
         {station.isLive && (
           <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-0.5 rounded text-xs font-medium flex items-center">
             <span className="w-1.5 h-1.5 bg-white rounded-full mr-1 animate-pulse"></span>
-            LIVE CHAT
+            {station.chatEnabled ? 'LIVE CHAT' : 'LIVE'}
           </div>
         )}
       </div>
