@@ -1,6 +1,6 @@
 
 import { useEffect } from 'react';
-import { RadioStation } from '@/models/RadioStation';
+import { RadioStation, RadioMetadata } from '@/models/RadioStation';
 import { useToast } from '@/hooks/use-toast';
 import { setupMetadataPolling } from './metadataUtils';
 
@@ -13,6 +13,7 @@ interface StationPlayerProps {
     name: string;
     currentTrack: string;
     coverImage: string;
+    metadata?: RadioMetadata;
   }>>;
   setIsTrackPlaying: React.Dispatch<React.SetStateAction<boolean>>;
   setCurrentPlayingTrack: (trackId: string | null) => void;
@@ -89,7 +90,8 @@ export const useStationPlayer = ({
       setStationInfo({
         name: currentStation.name,
         currentTrack: 'Loading...',
-        coverImage: currentStation.image || 'https://images.unsplash.com/photo-1614149162883-504ce4d13909?q=80&w=200&auto=format&fit=crop'
+        coverImage: currentStation.image || 'https://images.unsplash.com/photo-1614149162883-504ce4d13909?q=80&w=200&auto=format&fit=crop',
+        metadata: currentStation.currentMetadata
       });
       
       if (wasPlaying || audioState.isPlaying) {

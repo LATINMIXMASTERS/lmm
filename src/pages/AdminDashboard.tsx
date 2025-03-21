@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Mic, Volume2, ImageIcon, Users, Calendar as CalendarIcon } from 'lucide-react';
+import { Shield, Mic, Volume2, ImageIcon, Users, Calendar as CalendarIcon, DatabaseBackup } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +13,7 @@ import PlayerStreamUrls from '@/components/admin-dashboard/PlayerStreamUrls';
 import StationImages from '@/components/admin-dashboard/StationImages';
 import UserManagement from '@/components/admin-dashboard/UserManagement';
 import ShowBookings from '@/components/admin-dashboard/ShowBookings';
+import S3ConfigurationPanel from '@/components/admin-dashboard/S3StorageConfig';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -55,6 +56,10 @@ const AdminDashboard: React.FC = () => {
               <ImageIcon className="w-4 h-4 mr-2" />
               Station Images
             </TabsTrigger>
+            <TabsTrigger value="s3-storage" className="flex items-center">
+              <DatabaseBackup className="w-4 h-4 mr-2" />
+              S3 Storage
+            </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center">
               <Users className="w-4 h-4 mr-2" />
               Manage Users
@@ -85,6 +90,10 @@ const AdminDashboard: React.FC = () => {
           
           <TabsContent value="station-images">
             <StationImages />
+          </TabsContent>
+          
+          <TabsContent value="s3-storage">
+            <S3ConfigurationPanel />
           </TabsContent>
           
           <TabsContent value="users">

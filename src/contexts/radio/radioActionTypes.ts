@@ -1,5 +1,5 @@
 
-import { RadioStation, BookingSlot, AudioState, ChatMessage } from '@/models/RadioStation';
+import { RadioStation, BookingSlot, AudioState, ChatMessage, RadioMetadata } from '@/models/RadioStation';
 
 // Action types for the radio reducer
 export type RadioAction = 
@@ -18,4 +18,6 @@ export type RadioAction =
   | { type: 'ADD_CHAT_MESSAGE'; payload: ChatMessage }
   | { type: 'SET_CHAT_MESSAGES'; payload: Record<string, ChatMessage[]> }
   | { type: 'SET_STATION_LIVE_STATUS'; payload: { stationId: string, isLive: boolean, chatEnabled: boolean } }
-  | { type: 'TOGGLE_CHAT_ENABLED'; payload: { stationId: string, enabled: boolean } };
+  | { type: 'TOGGLE_CHAT_ENABLED'; payload: { stationId: string, enabled: boolean } }
+  | { type: 'UPDATE_STATION_METADATA'; payload: { stationId: string, metadata: RadioMetadata } }
+  | { type: 'UPDATE_STATION_S3_IMAGE'; payload: { stationId: string, s3ImageUrl: string } };
