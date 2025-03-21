@@ -1,9 +1,30 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Github, Twitter, Instagram } from 'lucide-react';
+import { Github, Twitter, Instagram, Facebook, Youtube, Linkedin } from 'lucide-react';
+import { SocialLinkType, initialSocialLinks } from '@/components/admin-dashboard/SocialMediaConfig';
+
+const socialIcons = {
+  twitter: <Twitter className="w-5 h-5" />,
+  instagram: <Instagram className="w-5 h-5" />,
+  facebook: <Facebook className="w-5 h-5" />,
+  github: <Github className="w-5 h-5" />,
+  youtube: <Youtube className="w-5 h-5" />,
+  linkedin: <Linkedin className="w-5 h-5" />
+};
 
 const Footer: React.FC = () => {
+  const [activeSocialLinks, setActiveSocialLinks] = useState<SocialLinkType[]>([]);
+
+  useEffect(() => {
+    // Get social links from localStorage or use the initial ones
+    const savedLinks = localStorage.getItem('socialLinks');
+    const links = savedLinks ? JSON.parse(savedLinks) : initialSocialLinks;
+    
+    // Filter to only show active links
+    setActiveSocialLinks(links.filter((link: SocialLinkType) => link.active && link.url));
+  }, []);
+
   return (
     <footer className="bg-gray-lightest border-t border-gray-light py-10 px-4 md:px-8 mt-auto relative z-10">
       <div className="max-w-7xl mx-auto">
@@ -68,30 +89,25 @@ const Footer: React.FC = () => {
 
           {/* Social and newsletter */}
           <div className="md:col-span-1">
-            <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">Connect With Us</h3>
-            <div className="flex space-x-4 mb-6">
-              <a
-                href="#"
-                className="text-gray-dark hover:text-gold transition-colors duration-300"
-                aria-label="GitHub"
-              >
-                <Github className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="text-gray-dark hover:text-gold transition-colors duration-300"
-                aria-label="Twitter"
-              >
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="text-gray-dark hover:text-gold transition-colors duration-300"
-                aria-label="Instagram"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-            </div>
+            {activeSocialLinks.length > 0 && (
+              <>
+                <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">Connect With Us</h3>
+                <div className="flex space-x-4 mb-6">
+                  {activeSocialLinks.map((link, index) => (
+                    <a
+                      key={index}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-dark hover:text-gold transition-colors duration-300"
+                      aria-label={link.platform}
+                    >
+                      {socialIcons[link.platform as keyof typeof socialIcons]}
+                    </a>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 

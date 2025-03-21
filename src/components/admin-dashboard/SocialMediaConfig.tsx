@@ -15,22 +15,32 @@ const socialIcons = {
   linkedin: <Linkedin className="h-5 w-5" />
 };
 
-interface SocialLinkType {
+export interface SocialLinkType {
   platform: string;
   url: string;
   active: boolean;
 }
 
+// Initial social links configuration
+export const initialSocialLinks: SocialLinkType[] = [
+  { platform: 'twitter', url: 'https://twitter.com/latinmixmasters', active: true },
+  { platform: 'instagram', url: 'https://instagram.com/latinmixmasters', active: true },
+  { platform: 'facebook', url: 'https://facebook.com/latinmixmasters', active: true },
+  { platform: 'youtube', url: 'https://youtube.com/latinmixmasters', active: false },
+  { platform: 'github', url: '', active: false },
+  { platform: 'linkedin', url: '', active: false }
+];
+
+// This would normally be a context or a global state
+// For simplicity we're using localStorage
+const getSavedSocialLinks = (): SocialLinkType[] => {
+  const saved = localStorage.getItem('socialLinks');
+  return saved ? JSON.parse(saved) : initialSocialLinks;
+};
+
 const SocialMediaConfig: React.FC = () => {
   const { toast } = useToast();
-  const [socialLinks, setSocialLinks] = useState<SocialLinkType[]>([
-    { platform: 'twitter', url: 'https://twitter.com/latinmixmasters', active: true },
-    { platform: 'instagram', url: 'https://instagram.com/latinmixmasters', active: true },
-    { platform: 'facebook', url: 'https://facebook.com/latinmixmasters', active: true },
-    { platform: 'youtube', url: 'https://youtube.com/latinmixmasters', active: false },
-    { platform: 'github', url: '', active: false },
-    { platform: 'linkedin', url: '', active: false }
-  ]);
+  const [socialLinks, setSocialLinks] = useState<SocialLinkType[]>(getSavedSocialLinks());
 
   const handleUrlChange = (index: number, newUrl: string) => {
     const newLinks = [...socialLinks];
@@ -45,8 +55,10 @@ const SocialMediaConfig: React.FC = () => {
   };
 
   const saveSocialLinks = () => {
-    // Here you would save to your backend/database
-    // For now we'll just show a toast
+    // Save to localStorage for this demo
+    localStorage.setItem('socialLinks', JSON.stringify(socialLinks));
+    
+    // Here you would save to your backend/database in a real app
     toast({
       title: "Social media links updated",
       description: "Your changes have been saved successfully.",
