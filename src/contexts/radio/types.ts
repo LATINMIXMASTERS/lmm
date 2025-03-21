@@ -1,11 +1,12 @@
 
-import { RadioStation, BookingSlot, AudioState } from '@/models/RadioStation';
+import { RadioStation, BookingSlot, AudioState, ChatMessage } from '@/models/RadioStation';
 
 export interface RadioState {
   stations: RadioStation[];
   bookings: BookingSlot[];
   currentPlayingStation: string | null;
   audioState: AudioState;
+  chatMessages: Record<string, ChatMessage[]>; // Indexed by stationId
 }
 
 export interface RadioContextType {
@@ -28,4 +29,9 @@ export interface RadioContextType {
   getBookingsForToday: (stationId: string) => BookingSlot[];
   audioState: AudioState;
   setAudioState: React.Dispatch<React.SetStateAction<AudioState>>;
+  // Chat related methods
+  chatMessages: Record<string, ChatMessage[]>;
+  getChatMessagesForStation: (stationId: string) => ChatMessage[];
+  sendChatMessage: (stationId: string, message: string) => void;
+  setStationLiveStatus: (stationId: string, isLive: boolean) => void;
 }

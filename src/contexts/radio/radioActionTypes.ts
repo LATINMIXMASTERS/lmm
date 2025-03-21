@@ -1,5 +1,5 @@
 
-import { RadioStation, BookingSlot, AudioState } from '@/models/RadioStation';
+import { RadioStation, BookingSlot, AudioState, ChatMessage } from '@/models/RadioStation';
 
 // Action types for the radio reducer
 export type RadioAction = 
@@ -14,4 +14,7 @@ export type RadioAction =
   | { type: 'UPDATE_STREAM_URL'; payload: { stationId: string, streamUrl: string } }
   | { type: 'UPDATE_STATION_IMAGE'; payload: { stationId: string, imageUrl: string } }
   | { type: 'SET_CURRENT_PLAYING_STATION'; payload: string | null }
-  | { type: 'SET_AUDIO_STATE'; payload: AudioState };
+  | { type: 'SET_AUDIO_STATE'; payload: AudioState }
+  | { type: 'ADD_CHAT_MESSAGE'; payload: ChatMessage }
+  | { type: 'SET_CHAT_MESSAGES'; payload: Record<string, ChatMessage[]> }
+  | { type: 'SET_STATION_LIVE_STATUS'; payload: { stationId: string, isLive: boolean } };

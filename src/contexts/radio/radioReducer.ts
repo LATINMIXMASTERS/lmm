@@ -5,6 +5,7 @@ import { initialRadioState, initialStations } from './initialState';
 import { stationReducers } from './reducers/stationReducers';
 import { bookingReducers } from './reducers/bookingReducers';
 import { audioStateReducers } from './reducers/audioStateReducers';
+import { chatReducers } from './reducers/chatReducers';
 
 export { initialRadioState, initialStations };
 
@@ -22,6 +23,9 @@ export const radioReducer = (state: RadioState, action: RadioAction): RadioState
     
     case 'UPDATE_STATION_IMAGE':
       return stationReducers.updateStationImage(state, action);
+    
+    case 'SET_STATION_LIVE_STATUS':
+      return chatReducers.setStationLiveStatus(state, action);
     
     // Booking reducers
     case 'SET_BOOKINGS':
@@ -48,6 +52,13 @@ export const radioReducer = (state: RadioState, action: RadioAction): RadioState
     
     case 'SET_AUDIO_STATE':
       return audioStateReducers.setAudioState(state, action);
+    
+    // Chat reducers
+    case 'ADD_CHAT_MESSAGE':
+      return chatReducers.addChatMessage(state, action);
+    
+    case 'SET_CHAT_MESSAGES':
+      return chatReducers.setChatMessages(state, action);
     
     default:
       return state;

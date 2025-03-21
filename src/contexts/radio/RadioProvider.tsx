@@ -27,6 +27,14 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } else {
       localStorage.setItem('latinmixmasters_bookings', JSON.stringify([]));
     }
+
+    // Load chat messages from localStorage
+    const savedChatMessages = localStorage.getItem('latinmixmasters_chat_messages');
+    if (savedChatMessages) {
+      dispatch({ type: 'SET_CHAT_MESSAGES', payload: JSON.parse(savedChatMessages) });
+    } else {
+      localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify({}));
+    }
   }, []);
 
   return (
@@ -35,6 +43,7 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       bookings: state.bookings,
       currentPlayingStation: state.currentPlayingStation,
       audioState: state.audioState,
+      chatMessages: state.chatMessages,
       ...actions
     }}>
       {children}

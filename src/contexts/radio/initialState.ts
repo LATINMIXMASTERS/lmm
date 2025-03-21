@@ -110,5 +110,6 @@ export const initialRadioState: RadioState = {
   stations: [],
   bookings: [],
   currentPlayingStation: null,
-  audioState: initialAudioState
+  audioState: initialAudioState,
+  chatMessages: {}
 };

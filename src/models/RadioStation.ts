@@ -30,6 +30,15 @@ export interface BookingSlot {
   rejectionReason?: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  stationId: string;
+  userId: string;
+  username: string;
+  message: string;
+  timestamp: string | Date;
+}
+
 export interface FileUpload {
   file: File;
   dataUrl: string;
@@ -54,4 +63,3 @@ export interface ProfileUpdate {
     youtube?: string;
   };
 }
-

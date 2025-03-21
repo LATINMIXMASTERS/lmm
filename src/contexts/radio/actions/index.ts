@@ -1,25 +1,22 @@
 
-import { RadioState } from '../types';
 import { useStationActions } from './stationActions';
+import { useStationQueries } from './stationQueries';
 import { useBookingActions } from './bookingActions';
 import { useAudioActions } from './audioActions';
-import { useStationQueries } from './stationQueries';
+import { useChatActions } from './chatActions';
 
-export const useRadioActions = (
-  state: RadioState,
-  dispatch: React.Dispatch<any>
-) => {
-  // Initialize all action hooks
+export const useRadioActions = (state: any, dispatch: React.Dispatch<any>) => {
   const stationActions = useStationActions(state, dispatch);
-  const bookingActions = useBookingActions(state, dispatch);
-  const audioActions = useAudioActions(state, dispatch);
   const stationQueries = useStationQueries(state);
+  const bookingActions = useBookingActions(state, dispatch);
+  const audioActions = useAudioActions(dispatch);
+  const chatActions = useChatActions(state, dispatch);
 
-  // Combine all actions into a single object
   return {
     ...stationActions,
+    ...stationQueries,
     ...bookingActions,
     ...audioActions,
-    ...stationQueries
+    ...chatActions
   };
 };

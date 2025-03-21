@@ -12,10 +12,19 @@ import StationDescription from '@/components/station-details/StationDescription'
 import StreamDetails from '@/components/station-details/StreamDetails';
 import StreamingInstructions from '@/components/station-details/StreamingInstructions';
 import UpcomingShows from '@/components/station-details/UpcomingShows';
+import ChatRoom from '@/components/station-details/ChatRoom';
 
 const StationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { stations, currentPlayingStation, setCurrentPlayingStation, getBookingsForStation } = useRadio();
+  const { 
+    stations, 
+    currentPlayingStation, 
+    setCurrentPlayingStation, 
+    getBookingsForStation,
+    getChatMessagesForStation,
+    sendChatMessage,
+    setStationLiveStatus
+  } = useRadio();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -74,6 +83,21 @@ const StationDetails: React.FC = () => {
     navigate(`/book-show/${station.id}`);
   };
 
+  // For demo/testing purposes, admin users can toggle live status
+  const handleToggleLiveStatus = () => {
+    if (isPrivilegedUser) {
+      setStationLiveStatus(station.id, !station.isLive);
+    }
+  };
+
+  // Get chat messages for this station
+  const chatMessages = getChatMessagesForStation(station.id);
+
+  // Handler for sending chat messages
+  const handleSendMessage = (message: string) => {
+    sendChatMessage(station.id, message);
+  };
+
   return (
     <MainLayout>
       <div className="container py-8 md:py-12">
@@ -115,6 +139,34 @@ const StationDetails: React.FC = () => {
                   streamUrl={station.streamDetails?.url}
                   streamPort={station.streamDetails?.port}
                 />
+              )}
+              
+              {/* Admin toggle for live status (for demo purposes) */}
+              {isPrivilegedUser && (
+                <div className="mb-6 mt-4">
+                  <button
+                    onClick={handleToggleLiveStatus}
+                    className={`px-4 py-2 rounded-md ${
+                      station.isLive ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
+                    } text-white transition-colors`}
+                  >
+                    {station.isLive ? 'End Live Session' : 'Start Live Session'}
+                  </button>
+                  <p className="text-sm text-gray-500 mt-1">
+                    This button is for demonstration purposes - in production, live status would be determined by actual streaming activity.
+                  </p>
+                </div>
+              )}
+              
+              {/* Show chatroom when station is live */}
+              {station.isLive && (
+                <div className="mb-8">
+                  <ChatRoom 
+                    stationId={station.id}
+                    messages={chatMessages}
+                    onSendMessage={handleSendMessage}
+                  />
+                </div>
               )}
               
               {/* Show upcoming bookings/shows calendar */}
