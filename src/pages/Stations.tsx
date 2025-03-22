@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 const Stations: React.FC = () => {
-  const { stations, currentPlayingStation, setCurrentPlayingStation } = useRadio();
+  const { stations, currentPlayingStation, setCurrentPlayingStation, setAudioState } = useRadio();
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,9 +23,11 @@ const Stations: React.FC = () => {
   const handlePlayToggle = (stationId: string) => {
     if (currentPlayingStation === stationId) {
       setCurrentPlayingStation(null);
+      setAudioState(prev => ({ ...prev, isPlaying: false }));
     } else {
       setCurrentPlayingStation(stationId);
-      // Toast removed as requested
+      // Ensure audio state is updated to playing immediately
+      setAudioState(prev => ({ ...prev, isPlaying: true }));
     }
   };
 

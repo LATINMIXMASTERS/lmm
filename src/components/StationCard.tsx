@@ -23,7 +23,7 @@ const StationCard: React.FC<StationCardProps> = ({
   className,
   style 
 }) => {
-  const { setCurrentPlayingStation } = useRadio();
+  const { setCurrentPlayingStation, setAudioState } = useRadio();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -37,9 +37,12 @@ const StationCard: React.FC<StationCardProps> = ({
       // Direct control for when onPlayToggle is not provided
       if (isPlaying) {
         setCurrentPlayingStation(null);
+        setAudioState(prev => ({ ...prev, isPlaying: false }));
       } else {
         if (station?.streamUrl) {
           setCurrentPlayingStation(station.id);
+          // Force audio to play state immediately
+          setAudioState(prev => ({ ...prev, isPlaying: true }));
         } else {
           toast({
             title: "Stream Not Available",

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { RadioStation } from '@/models/RadioStation';
 import StationCard from '@/components/StationCard';
+import { useRadio } from '@/hooks/useRadioContext';
 
 interface LiveRadioSectionProps {
   stations: RadioStation[];
@@ -17,6 +18,13 @@ const LiveRadioSection: React.FC<LiveRadioSectionProps> = ({
   onStationClick 
 }) => {
   const navigate = useNavigate();
+  const { setAudioState } = useRadio();
+  
+  // Enhance onStationClick to also update audioState to playing
+  const handleStationClick = (stationId: string) => {
+    onStationClick(stationId);
+    setAudioState(prev => ({ ...prev, isPlaying: true }));
+  };
   
   return (
     <section className="mb-12 md:mb-16">
@@ -36,7 +44,7 @@ const LiveRadioSection: React.FC<LiveRadioSectionProps> = ({
             key={station.id}
             station={station}
             isPlaying={currentPlayingStation === station.id}
-            onPlayToggle={onStationClick}
+            onPlayToggle={handleStationClick}
           />
         ))}
       </div>

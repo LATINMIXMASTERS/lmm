@@ -42,7 +42,8 @@ export const useStationPlayer = ({
     setAudioState(prev => ({ 
       ...prev, 
       currentStation: currentPlayingStation,
-      currentTrack: null
+      currentTrack: null,
+      isPlaying: true // Set isPlaying to true immediately when station changes
     }));
     
     const currentStation = stations.find(station => station.id === currentPlayingStation);
@@ -79,7 +80,6 @@ export const useStationPlayer = ({
     console.log("Final audio source URL:", streamUrl);
     
     if (audioRef.current.src !== streamUrl) {
-      const wasPlaying = !audioRef.current.paused;
       audioRef.current.pause();
       
       audioRef.current.src = streamUrl;
@@ -95,24 +95,23 @@ export const useStationPlayer = ({
         metadata: currentStation.currentMetadata
       });
       
-      if (wasPlaying || audioState.isPlaying) {
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(error => {
-            console.error("Failed to play audio:", error);
-            toast({
-              title: "Playback Error",
-              description: "Failed to play this station. Trying an alternative stream for demonstration.",
-              variant: "destructive"
-            });
-            
-            audioRef.current!.src = 'https://ice1.somafm.com/groovesalad-128-mp3';
-            audioRef.current!.load();
-            audioRef.current!.play().catch(innerError => {
-              console.error("Failed to play fallback audio:", innerError);
-            });
+      // Always attempt to play immediately when station is selected
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error("Failed to play audio:", error);
+          toast({
+            title: "Playback Error",
+            description: "Failed to play this station. Trying an alternative stream for demonstration.",
+            variant: "destructive"
           });
-        }
+          
+          audioRef.current!.src = 'https://ice1.somafm.com/groovesalad-128-mp3';
+          audioRef.current!.load();
+          audioRef.current!.play().catch(innerError => {
+            console.error("Failed to play fallback audio:", innerError);
+          });
+        });
       }
       
       // Set up metadata polling with the station ID for central updates
