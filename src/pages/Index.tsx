@@ -26,18 +26,7 @@ const Index: React.FC = () => {
   }, [stations]);
 
   const handleStationClick = (stationId: string) => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please login to listen to radio stations",
-        variant: "destructive"
-      });
-      navigate('/login');
-      return;
-    }
-
     setCurrentPlayingStation(stationId);
-    // Toast removed as requested
   };
 
   return (
