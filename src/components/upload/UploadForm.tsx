@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTrack } from '@/hooks/useTrackContext';
@@ -8,7 +8,10 @@ import TrackInfoFields from './TrackInfoFields';
 import CoverImageUpload from './CoverImageUpload';
 import AudioFileUpload from './AudioFileUpload';
 import { Button } from '@/components/ui/button';
-import { Upload } from 'lucide-react';
+import { Upload, AlertCircle } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { uploadFileToS3, isS3Configured } from '@/services/s3UploadService';
 
 // Max file size: 250MB in bytes
 const MAX_FILE_SIZE = 262144000;
@@ -26,9 +29,18 @@ const UploadForm: React.FC = () => {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [coverProgress, setCoverProgress] = useState(0);
+  const [s3Configured, setS3Configured] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  
+  // Check if S3 is configured when component mounts
+  useEffect(() => {
+    setS3Configured(isS3Configured());
+  }, []);
   
   // Set current user as default artist when component mounts
-  React.useEffect(() => {
+  useEffect(() => {
     if (user) {
       setSelectedArtistId(user.id);
     }
@@ -50,22 +62,30 @@ const UploadForm: React.FC = () => {
     }
     
     setIsUploading(true);
+    setUploadError(null);
     
     try {
-      // Find the selected artist name from the AuthContext
+      // Find the selected artist name
       const { users } = useAuth();
       const selectedArtist = users.find(u => u.id === selectedArtistId);
       if (!selectedArtist) {
         throw new Error("Selected DJ not found");
       }
       
-      // In a real app, we would upload files to a server here
-      // For this demo, we'll create URLs
-      const coverUrl = coverPreview; // Using the data URL as our "hosted" URL
+      // Upload cover image to S3
+      setUploadProgress(0);
+      const coverUploadResult = await uploadFileToS3(coverImage, 'covers', setCoverProgress);
       
-      // For audio, in a real app we'd upload to a server
-      // Here we just pretend we have a URL
-      const audioUrl = `/demo-uploads/${audioFile.name}`;
+      if (!coverUploadResult.success) {
+        throw new Error(`Cover image upload failed: ${coverUploadResult.error}`);
+      }
+      
+      // Upload audio file to S3
+      const audioUploadResult = await uploadFileToS3(audioFile, 'audio', setUploadProgress);
+      
+      if (!audioUploadResult.success) {
+        throw new Error(`Audio file upload failed: ${audioUploadResult.error}`);
+      }
       
       // Add track to our context
       addTrack({
@@ -73,18 +93,26 @@ const UploadForm: React.FC = () => {
         artist: selectedArtist.username,
         artistId: selectedArtistId,
         genre: selectedGenre,
-        coverImage: coverUrl,
-        audioFile: audioUrl,
+        coverImage: coverUploadResult.url,
+        audioFile: audioUploadResult.url,
         fileSize: audioFile.size,
         uploadedBy: user.id
+      });
+      
+      // Show success message
+      toast({
+        title: "Upload successful",
+        description: "Your track has been uploaded successfully",
       });
       
       // Redirect to mixes page
       navigate('/mixes');
     } catch (error) {
+      console.error('Upload error:', error);
+      setUploadError(error instanceof Error ? error.message : 'Unknown upload error');
       toast({
         title: "Upload failed",
-        description: "There was an error uploading your track",
+        description: error instanceof Error ? error.message : "There was an error uploading your track",
         variant: "destructive"
       });
     } finally {
@@ -94,6 +122,16 @@ const UploadForm: React.FC = () => {
   
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {!s3Configured && (
+        <Alert variant="warning" className="bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-800">
+          <AlertCircle className="h-4 w-4 mr-2" />
+          <AlertDescription>
+            S3 storage is not configured. File uploads will use local storage instead. 
+            To configure S3 storage, go to Admin Dashboard and set up your S3 provider.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <TrackInfoFields 
         title={title}
         setTitle={setTitle}
@@ -114,6 +152,33 @@ const UploadForm: React.FC = () => {
         setAudioFile={setAudioFile}
         maxFileSize={MAX_FILE_SIZE}
       />
+      
+      {isUploading && (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm mb-1">
+              <span>Uploading cover image...</span>
+              <span>{coverProgress}%</span>
+            </div>
+            <Progress value={coverProgress} />
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm mb-1">
+              <span>Uploading audio file...</span>
+              <span>{uploadProgress}%</span>
+            </div>
+            <Progress value={uploadProgress} />
+          </div>
+        </div>
+      )}
+      
+      {uploadError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4 mr-2" />
+          <AlertDescription>{uploadError}</AlertDescription>
+        </Alert>
+      )}
       
       <Button 
         type="submit" 
