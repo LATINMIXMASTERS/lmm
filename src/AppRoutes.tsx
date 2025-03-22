@@ -40,9 +40,15 @@ const AppRoutes: React.FC = () => {
       <Route path="/go-live/:stationId?" element={<GoLive />} />
       <Route path="/dashboard" element={<HostDashboard />} />
       <Route path="/admin" element={<AdminDashboard />} />
+      
+      {/* Updated routes with alternate paths for legal pages */}
       <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route path="/cookies" element={<CookiePolicy />} />
+      <Route path="/cookie-policy" element={<CookiePolicy />} />
+      
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
