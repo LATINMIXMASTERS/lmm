@@ -54,10 +54,23 @@ const SystemUpdate: React.FC = () => {
    apt update && apt upgrade -y
    \`\`\`
 
-2. Install Node.js and npm:
+2. Install Node.js and npm (v18.x is recommended):
    \`\`\`bash
    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
    apt install -y nodejs
+   # Verify installation
+   node -v  # Should show v18.x.x
+   npm -v   # Should show 8.x.x or higher
+   \`\`\`
+
+   If you encounter issues with Node.js installation:
+   \`\`\`bash
+   # Alternative installation using NVM
+   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+   export NVM_DIR="$HOME/.nvm"
+   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+   nvm install 18
+   nvm use 18
    \`\`\`
 
 3. Install necessary tools:
@@ -80,7 +93,25 @@ const SystemUpdate: React.FC = () => {
 
 3. Install dependencies and build:
    \`\`\`bash
-   npm install
+   # Make sure you're in the project directory
+   cd /var/www/latinmixmasters
+   
+   # Install dependencies
+   npm install --legacy-peer-deps
+   
+   # If you encounter EACCES errors:
+   sudo chown -R $(whoami) ~/.npm
+   sudo chown -R $(whoami) /var/www/latinmixmasters
+   
+   # If you have memory issues during installation:
+   export NODE_OPTIONS=--max_old_space_size=4096
+   npm install --legacy-peer-deps
+   
+   # Build the application
+   npm run build
+   
+   # If the build fails with memory errors:
+   export NODE_OPTIONS=--max_old_space_size=4096
    npm run build
    \`\`\`
 
@@ -100,6 +131,9 @@ const SystemUpdate: React.FC = () => {
        root /var/www/latinmixmasters/dist;
        index index.html;
        
+       # Important: Make sure this path matches your build output directory
+       # It might be 'dist', 'build', or 'public' depending on your build config
+       
        location / {
            try_files $uri $uri/ /index.html;
        }
@@ -115,10 +149,32 @@ const SystemUpdate: React.FC = () => {
    }
    \`\`\`
 
+   Troubleshooting Nginx:
+   \`\`\`bash
+   # Check for syntax errors in your config
+   nginx -t
+   
+   # Check Nginx error logs
+   tail -f /var/log/nginx/error.log
+   
+   # Check access logs
+   tail -f /var/log/nginx/access.log
+   
+   # Ensure proper permissions on your web directory
+   chmod -R 755 /var/www/latinmixmasters/dist
+   \`\`\`
+
 3. Enable the site and set up SSL:
    \`\`\`bash
    ln -s /etc/nginx/sites-available/latinmixmasters /etc/nginx/sites-enabled/
+   
+   # Remove default site if it exists and may conflict
+   rm -f /etc/nginx/sites-enabled/default
+   
+   # Set up SSL (make sure your domain points to the server first)
    certbot --nginx -d your-domain.com -d www.your-domain.com
+   
+   # Restart Nginx to apply changes
    nginx -t && systemctl restart nginx
    \`\`\`
 
@@ -148,6 +204,9 @@ If you're using Supabase:
    WorkingDirectory=/var/www/latinmixmasters
    ExecStart=/usr/bin/npm run preview
    Restart=on-failure
+   Environment=NODE_ENV=production
+   # If you're running into memory issues, add:
+   # Environment=NODE_OPTIONS=--max_old_space_size=4096
 
    [Install]
    WantedBy=multi-user.target
@@ -155,8 +214,15 @@ If you're using Supabase:
 
 3. Enable and start the service:
    \`\`\`bash
+   systemctl daemon-reload
    systemctl enable latinmixmasters
    systemctl start latinmixmasters
+   
+   # Check service status
+   systemctl status latinmixmasters
+   
+   # View service logs if there are issues
+   journalctl -u latinmixmasters -f
    \`\`\`
 
 ## Setting Up Auto-Update Functionality
@@ -171,11 +237,37 @@ If you're using Supabase:
 2. Add the following content:
    \`\`\`bash
    #!/bin/bash
+   
+   # Exit on error
+   set -e
+   
+   echo "Starting update process..."
    cd /var/www/latinmixmasters
+   
+   # Backup current version
+   echo "Creating backup..."
+   timestamp=$(date +"%Y%m%d_%H%M%S")
+   mkdir -p /var/backups/latinmixmasters
+   tar -czf /var/backups/latinmixmasters/backup_$timestamp.tar.gz .
+   
+   # Pull latest code
+   echo "Pulling latest code..."
    git pull
-   npm install
+   
+   # Install dependencies
+   echo "Installing dependencies..."
+   export NODE_OPTIONS=--max_old_space_size=4096
+   npm install --legacy-peer-deps
+   
+   # Build application
+   echo "Building application..."
    npm run build
+   
+   # Restart the service
+   echo "Restarting service..."
    systemctl restart latinmixmasters
+   
+   echo "Update completed successfully!"
    \`\`\`
 
 3. Make it executable:
@@ -197,6 +289,13 @@ If you're using Supabase:
 
 1. Install a simple webhook server:
    \`\`\`bash
+   npm install -g webhook
+   
+   # If you get EACCES errors:
+   mkdir -p ~/.npm-global
+   npm config set prefix '~/.npm-global'
+   export PATH=~/.npm-global/bin:$PATH
+   echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
    npm install -g webhook
    \`\`\`
 
@@ -240,6 +339,8 @@ If you're using Supabase:
 
    [Service]
    ExecStart=/usr/local/bin/webhook -hooks /etc/webhook/hooks.json -verbose
+   # If you installed with npm-global, use the correct path:
+   # ExecStart=/root/.npm-global/bin/webhook -hooks /etc/webhook/hooks.json -verbose
    Restart=on-failure
 
    [Install]
@@ -248,8 +349,12 @@ If you're using Supabase:
 
 6. Enable and start the webhook service:
    \`\`\`bash
+   systemctl daemon-reload
    systemctl enable webhook
    systemctl start webhook
+   
+   # Check webhook service status
+   systemctl status webhook
    \`\`\`
 
 7. Update your Nginx configuration:
@@ -270,6 +375,50 @@ If you're using Supabase:
 9. Restart Nginx:
    \`\`\`bash
    nginx -t && systemctl restart nginx
+   \`\`\`
+
+### Common Troubleshooting
+
+1. If npm install fails:
+   \`\`\`bash
+   # Clear npm cache
+   npm cache clean --force
+   
+   # Try installing with --force
+   npm install --legacy-peer-deps --force
+   
+   # If there are permission issues
+   sudo chown -R $(whoami) ~/.npm
+   sudo chown -R $(whoami) /var/www/latinmixmasters
+   \`\`\`
+
+2. If the application doesn't start:
+   \`\`\`bash
+   # Check service logs
+   journalctl -u latinmixmasters -f
+   
+   # Check for build issues
+   cd /var/www/latinmixmasters
+   npm run build
+   
+   # Try running the app directly
+   cd /var/www/latinmixmasters
+   npm run preview
+   \`\`\`
+
+3. If Nginx isn't serving your site:
+   \`\`\`bash
+   # Check Nginx error logs
+   tail -f /var/log/nginx/error.log
+   
+   # Verify your site is enabled
+   ls -la /etc/nginx/sites-enabled/
+   
+   # Check for syntax errors
+   nginx -t
+   
+   # Restart Nginx
+   systemctl restart nginx
    \`\`\`
 
 ### Maintenance Recommendations
@@ -299,6 +448,25 @@ If you're using Supabase:
    \`\`\`
    0 2 * * * /root/backup.sh
    \`\`\`
+
+6. Monitor disk space:
+   \`\`\`bash
+   # Set up log rotation
+   nano /etc/logrotate.d/latinmixmasters
+   \`\`\`
+
+7. Add this configuration:
+   \`\`\`
+   /var/log/latinmixmasters/*.log {
+       daily
+       missingok
+       rotate 14
+       compress
+       delaycompress
+       notifempty
+       create 0640 www-data adm
+   }
+   \`\`\`
 `;
 
     // Create a proper Word document format using a simple HTML approach
@@ -314,13 +482,24 @@ If you're using Supabase:
           <w:WordDocument>
             <w:View>Print</w:View>
             <w:Zoom>100</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
           </w:WordDocument>
         </xml>
         <style>
-          body { font-family: Calibri, sans-serif; line-height: 1.5; }
-          h1, h2, h3 { font-family: Calibri, sans-serif; }
-          code, pre { font-family: Consolas, monospace; background-color: #f5f5f5; padding: 2px 4px; }
-          pre { padding: 8px; white-space: pre-wrap; margin: 10px 0; }
+          body { font-family: Calibri, sans-serif; line-height: 1.5; margin: 1cm; }
+          h1 { font-size: 16pt; font-weight: bold; color: #2a5885; margin-top: 12pt; margin-bottom: 3pt; }
+          h2 { font-size: 14pt; font-weight: bold; color: #2a5885; margin-top: 12pt; margin-bottom: 3pt; }
+          h3 { font-size: 12pt; font-weight: bold; color: #2a5885; margin-top: 12pt; margin-bottom: 3pt; }
+          code { font-family: "Courier New", monospace; background-color: #f5f5f5; padding: 2px 4px; }
+          pre { font-family: "Courier New", monospace; background-color: #f5f5f5; padding: 8px; white-space: pre-wrap; margin: 10px 0; border: 1px solid #ddd; font-size: 10pt; }
+          ol, ul { margin-left: 10pt; padding-left: 10pt; }
+          p { margin-top: 6pt; margin-bottom: 6pt; }
+          .note { background-color: #fff8dc; padding: 8px; border-left: 4px solid #ffeb3b; margin: 10px 0; }
+          .warning { background-color: #ffebee; padding: 8px; border-left: 4px solid #f44336; margin: 10px 0; }
+          .success { background-color: #e8f5e9; padding: 8px; border-left: 4px solid #4caf50; margin: 10px 0; }
+          table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f5f5f5; }
         </style>
       </head>
       <body>
@@ -340,9 +519,20 @@ If you're using Supabase:
           <li>Update system packages:
             <pre>apt update && apt upgrade -y</pre>
           </li>
-          <li>Install Node.js and npm:
+          <li>Install Node.js and npm (v18.x is recommended):
             <pre>curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-apt install -y nodejs</pre>
+apt install -y nodejs
+# Verify installation
+node -v  # Should show v18.x.x
+npm -v   # Should show 8.x.x or higher</pre>
+
+            <div class="note">If you encounter issues with Node.js installation:</div>
+            <pre># Alternative installation using NVM
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \\. "$NVM_DIR/nvm.sh"
+nvm install 18
+nvm use 18</pre>
           </li>
           <li>Install necessary tools:
             <pre>apt install -y git nginx certbot python3-certbot-nginx</pre>
@@ -359,7 +549,25 @@ apt install -y nodejs</pre>
 cd /var/www/latinmixmasters</pre>
           </li>
           <li>Install dependencies and build:
-            <pre>npm install
+            <pre># Make sure you're in the project directory
+cd /var/www/latinmixmasters
+
+# Install dependencies
+npm install --legacy-peer-deps
+
+# If you encounter EACCES errors:
+sudo chown -R $(whoami) ~/.npm
+sudo chown -R $(whoami) /var/www/latinmixmasters
+
+# If you have memory issues during installation:
+export NODE_OPTIONS=--max_old_space_size=4096
+npm install --legacy-peer-deps
+
+# Build the application
+npm run build
+
+# If the build fails with memory errors:
+export NODE_OPTIONS=--max_old_space_size=4096
 npm run build</pre>
           </li>
         </ol>
@@ -377,6 +585,9 @@ npm run build</pre>
     root /var/www/latinmixmasters/dist;
     index index.html;
     
+    # Important: Make sure this path matches your build output directory
+    # It might be 'dist', 'build', or 'public' depending on your build config
+    
     location / {
         try_files $uri $uri/ /index.html;
     }
@@ -390,10 +601,30 @@ npm run build</pre>
         proxy_cache_bypass $http_upgrade;
     }
 }</pre>
+
+            <div class="warning">Troubleshooting Nginx:</div>
+            <pre># Check for syntax errors in your config
+nginx -t
+
+# Check Nginx error logs
+tail -f /var/log/nginx/error.log
+
+# Check access logs
+tail -f /var/log/nginx/access.log
+
+# Ensure proper permissions on your web directory
+chmod -R 755 /var/www/latinmixmasters/dist</pre>
           </li>
           <li>Enable the site and set up SSL:
             <pre>ln -s /etc/nginx/sites-available/latinmixmasters /etc/nginx/sites-enabled/
+
+# Remove default site if it exists and may conflict
+rm -f /etc/nginx/sites-enabled/default
+
+# Set up SSL (make sure your domain points to the server first)
 certbot --nginx -d your-domain.com -d www.your-domain.com
+
+# Restart Nginx to apply changes
 nginx -t && systemctl restart nginx</pre>
           </li>
         </ol>
@@ -421,13 +652,23 @@ User=root
 WorkingDirectory=/var/www/latinmixmasters
 ExecStart=/usr/bin/npm run preview
 Restart=on-failure
+Environment=NODE_ENV=production
+# If you're running into memory issues, add:
+# Environment=NODE_OPTIONS=--max_old_space_size=4096
 
 [Install]
 WantedBy=multi-user.target</pre>
           </li>
           <li>Enable and start the service:
-            <pre>systemctl enable latinmixmasters
-systemctl start latinmixmasters</pre>
+            <pre>systemctl daemon-reload
+systemctl enable latinmixmasters
+systemctl start latinmixmasters
+
+# Check service status
+systemctl status latinmixmasters
+
+# View service logs if there are issues
+journalctl -u latinmixmasters -f</pre>
           </li>
         </ol>
         
@@ -440,11 +681,37 @@ systemctl start latinmixmasters</pre>
           </li>
           <li>Add the following content:
             <pre>#!/bin/bash
+
+# Exit on error
+set -e
+
+echo "Starting update process..."
 cd /var/www/latinmixmasters
+
+# Backup current version
+echo "Creating backup..."
+timestamp=$(date +"%Y%m%d_%H%M%S")
+mkdir -p /var/backups/latinmixmasters
+tar -czf /var/backups/latinmixmasters/backup_$timestamp.tar.gz .
+
+# Pull latest code
+echo "Pulling latest code..."
 git pull
-npm install
+
+# Install dependencies
+echo "Installing dependencies..."
+export NODE_OPTIONS=--max_old_space_size=4096
+npm install --legacy-peer-deps
+
+# Build application
+echo "Building application..."
 npm run build
-systemctl restart latinmixmasters</pre>
+
+# Restart the service
+echo "Restarting service..."
+systemctl restart latinmixmasters
+
+echo "Update completed successfully!"</pre>
           </li>
           <li>Make it executable:
             <pre>chmod +x /var/www/latinmixmasters/update.sh</pre>
@@ -460,7 +727,14 @@ systemctl restart latinmixmasters</pre>
         <h3>Setting Up a Webhook</h3>
         <ol>
           <li>Install a simple webhook server:
-            <pre>npm install -g webhook</pre>
+            <pre>npm install -g webhook
+
+# If you get EACCES errors:
+mkdir -p ~/.npm-global
+npm config set prefix '~/.npm-global'
+export PATH=~/.npm-global/bin:$PATH
+echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
+npm install -g webhook</pre>
           </li>
           <li>Create a webhook configuration:
             <pre>mkdir -p /etc/webhook
@@ -495,14 +769,20 @@ After=network.target
 
 [Service]
 ExecStart=/usr/local/bin/webhook -hooks /etc/webhook/hooks.json -verbose
+# If you installed with npm-global, use the correct path:
+# ExecStart=/root/.npm-global/bin/webhook -hooks /etc/webhook/hooks.json -verbose
 Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target</pre>
           </li>
           <li>Enable and start the webhook service:
-            <pre>systemctl enable webhook
-systemctl start webhook</pre>
+            <pre>systemctl daemon-reload
+systemctl enable webhook
+systemctl start webhook
+
+# Check webhook service status
+systemctl status webhook</pre>
           </li>
           <li>Update your Nginx configuration:
             <pre>nano /etc/nginx/sites-available/latinmixmasters</pre>
@@ -519,6 +799,49 @@ systemctl start webhook</pre>
             <pre>nginx -t && systemctl restart nginx</pre>
           </li>
         </ol>
+        
+        <h3>Common Troubleshooting</h3>
+        <div class="warning">
+          <h4>If npm install fails:</h4>
+          <pre># Clear npm cache
+npm cache clean --force
+
+# Try installing with --force
+npm install --legacy-peer-deps --force
+
+# If there are permission issues
+sudo chown -R $(whoami) ~/.npm
+sudo chown -R $(whoami) /var/www/latinmixmasters</pre>
+        </div>
+        
+        <div class="warning">
+          <h4>If the application doesn't start:</h4>
+          <pre># Check service logs
+journalctl -u latinmixmasters -f
+
+# Check for build issues
+cd /var/www/latinmixmasters
+npm run build
+
+# Try running the app directly
+cd /var/www/latinmixmasters
+npm run preview</pre>
+        </div>
+        
+        <div class="warning">
+          <h4>If Nginx isn't serving your site:</h4>
+          <pre># Check Nginx error logs
+tail -f /var/log/nginx/error.log
+
+# Verify your site is enabled
+ls -la /etc/nginx/sites-enabled/
+
+# Check for syntax errors
+nginx -t
+
+# Restart Nginx
+systemctl restart nginx</pre>
+        </div>
         
         <h3>Maintenance Recommendations</h3>
         <ol>
@@ -538,13 +861,42 @@ duplicity /var/www/latinmixmasters file:///var/backups/latinmixmasters</pre>
           <li>Add this line for daily backups:
             <pre>0 2 * * * /root/backup.sh</pre>
           </li>
+          <li>Monitor disk space:
+            <pre># Set up log rotation
+nano /etc/logrotate.d/latinmixmasters</pre>
+          </li>
+          <li>Add this configuration:
+            <pre>/var/log/latinmixmasters/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 0640 www-data adm
+}</pre>
+          </li>
         </ol>
+        
+        <div class="success">
+          <h4>Final Checklist</h4>
+          <ul>
+            <li>Confirm Node.js and npm are properly installed</li>
+            <li>Verify all dependencies were installed successfully</li>
+            <li>Check that the build process completed without errors</li>
+            <li>Confirm Nginx is properly configured and running</li>
+            <li>Verify SSL certificates are properly installed</li>
+            <li>Check that your systemd service is running correctly</li>
+            <li>Test the webhook endpoint for updates (if configured)</li>
+            <li>Set up a proper backup and maintenance schedule</li>
+          </ul>
+        </div>
       </body>
       </html>
     `;
 
     // Create a Blob with the HTML content and the correct MIME type for Word
-    const blob = new Blob([htmlContent], { type: 'application/msword' });
+    const blob = new Blob([htmlContent], { type: 'application/vnd.ms-word' });
     const url = URL.createObjectURL(blob);
     
     // Create and trigger the download
@@ -558,7 +910,7 @@ duplicity /var/www/latinmixmasters file:///var/backups/latinmixmasters</pre>
     
     toast({
       title: "Instructions Downloaded",
-      description: "Installation instructions have been downloaded as a Word document."
+      description: "Installation instructions have been downloaded as a Word document with troubleshooting guides."
     });
   };
 
@@ -596,7 +948,7 @@ duplicity /var/www/latinmixmasters file:///var/backups/latinmixmasters</pre>
             <CardHeader className="p-3">
               <CardTitle className="text-lg">Installation Guide</CardTitle>
               <CardDescription>
-                Download VPS installation instructions as Word document
+                Download VPS installation instructions with troubleshooting guide
               </CardDescription>
             </CardHeader>
             <CardContent className="p-3">
