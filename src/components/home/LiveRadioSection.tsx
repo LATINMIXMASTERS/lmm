@@ -38,7 +38,7 @@ const LiveRadioSection: React.FC<LiveRadioSectionProps> = ({
         <h2 className="text-2xl md:text-3xl font-bold text-foreground">Live Radios</h2>
         <button
           onClick={() => navigate('/stations')}
-          className="text-gold hover:underline flex items-center"
+          className="text-gold hover:underline flex items-center text-foreground"
         >
           View All <ArrowRight className="w-4 h-4 ml-1" />
         </button>

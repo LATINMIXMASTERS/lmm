@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/layout/MainLayout';
@@ -58,7 +59,13 @@ const StationDetails: React.FC = () => {
   }, [id, stations, getBookingsForStation, navigate, toast]);
 
   if (!station) {
-    return null;
+    return (
+      <MainLayout>
+        <div className="container py-8 flex items-center justify-center">
+          <p className="text-foreground">Loading station details...</p>
+        </div>
+      </MainLayout>
+    );
   }
 
   const handlePlayToggle = () => {
@@ -114,14 +121,14 @@ const StationDetails: React.FC = () => {
   return (
     <MainLayout>
       <div className="container py-8 md:py-12">
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden border border-border">
           <StationHeader
             stationName={station.name}
             genre={station.genre}
             imageUrl={station.image}
           />
           
-          <CardContent className="p-6">
+          <CardContent className="p-6 bg-card text-card-foreground">
             <StationControls
               isPlaying={isPlaying}
               listeners={station.listeners}
@@ -130,7 +137,7 @@ const StationDetails: React.FC = () => {
               onBookShow={handleBookShow}
             />
             
-            <div className="prose prose-slate max-w-none">
+            <div className="prose prose-slate dark:prose-invert max-w-none">
               <StationDescription
                 description={station.description}
                 broadcastTime={station.broadcastTime}
@@ -157,8 +164,8 @@ const StationDetails: React.FC = () => {
               {/* Live status and chat controls for admins/hosts */}
               {isPrivilegedUser && (
                 <div className="mb-6 mt-4 space-y-4">
-                  <div className="flex flex-col gap-4 p-4 border rounded-md bg-gray-50">
-                    <h3 className="text-lg font-medium">Broadcast Controls</h3>
+                  <div className="flex flex-col gap-4 p-4 border rounded-md bg-muted">
+                    <h3 className="text-lg font-medium text-foreground">Broadcast Controls</h3>
                     
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -167,14 +174,14 @@ const StationDetails: React.FC = () => {
                           onCheckedChange={handleToggleLiveStatus} 
                           id="live-status"
                         />
-                        <label htmlFor="live-status" className="cursor-pointer">
+                        <label htmlFor="live-status" className="cursor-pointer text-foreground">
                           {station.isLive ? 
                             <Badge variant="destructive" className="animate-pulse">LIVE</Badge> : 
                             'Go Live'}
                         </label>
                       </div>
                       
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-muted-foreground">
                         Station is currently {station.isLive ? 'broadcasting live' : 'offline'}
                       </div>
                     </div>
@@ -187,14 +194,14 @@ const StationDetails: React.FC = () => {
                           disabled={!station.isLive}
                           id="chat-status"
                         />
-                        <label htmlFor="chat-status" className={`cursor-pointer ${!station.isLive ? 'text-gray-400' : ''}`}>
+                        <label htmlFor="chat-status" className={`cursor-pointer text-foreground ${!station.isLive ? 'opacity-50' : ''}`}>
                           {station.chatEnabled ? 
                             <Badge className="bg-green-500">Chat Enabled</Badge> : 
                             'Enable Chat'}
                         </label>
                       </div>
                       
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-muted-foreground">
                         {!station.isLive ? 
                           'Set station to live first' : 
                           (station.chatEnabled ? 'Chat is active' : 'Chat is disabled')}
@@ -202,7 +209,7 @@ const StationDetails: React.FC = () => {
                     </div>
                   </div>
                   
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     These controls are for demonstration purposes - in production, live status would be determined by actual streaming activity.
                   </p>
                 </div>

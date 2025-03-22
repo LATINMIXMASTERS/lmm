@@ -87,10 +87,10 @@ const SystemUpdateCard: React.FC = () => {
   };
 
   return (
-    <Card className="border border-dashed p-4 h-full">
+    <Card className="border border-dashed p-4 h-full shadow-sm bg-card text-card-foreground">
       <CardHeader className="p-3">
-        <CardTitle className="text-lg">System Update</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-lg text-foreground">System Update</CardTitle>
+        <CardDescription className="text-muted-foreground">
           Trigger system update on your VPS via webhook or manual script
         </CardDescription>
       </CardHeader>
@@ -103,7 +103,7 @@ const SystemUpdateCard: React.FC = () => {
           
           <TabsContent value="webhook" className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="webhookUrl" className="text-sm font-medium">
+              <label htmlFor="webhookUrl" className="text-sm font-medium text-foreground">
                 Webhook URL
               </label>
               <Input
@@ -112,11 +112,12 @@ const SystemUpdateCard: React.FC = () => {
                 value={webhookUrl}
                 onChange={(e) => setWebhookUrl(e.target.value)}
                 disabled={isUpdating}
+                className="bg-background text-foreground"
               />
             </div>
             
             <div className="space-y-2">
-              <label htmlFor="secretToken" className="text-sm font-medium">
+              <label htmlFor="secretToken" className="text-sm font-medium text-foreground">
                 Secret Token (Optional)
               </label>
               <Input
@@ -126,6 +127,7 @@ const SystemUpdateCard: React.FC = () => {
                 value={secretToken}
                 onChange={(e) => setSecretToken(e.target.value)}
                 disabled={isUpdating}
+                className="bg-background text-foreground"
               />
               <p className="text-xs text-muted-foreground">
                 This will be sent as the Authorization header
@@ -145,7 +147,7 @@ const SystemUpdateCard: React.FC = () => {
           
           <TabsContent value="manual" className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label className="text-sm font-medium text-foreground">
                 Server Type
               </label>
               <div className="flex space-x-2">
@@ -169,11 +171,11 @@ const SystemUpdateCard: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label className="text-sm font-medium text-foreground">
                 Manual Update Script
               </label>
               <div className="relative">
-                <pre className="p-4 rounded-md bg-muted text-xs overflow-x-auto max-h-48 overflow-y-auto">
+                <pre className="p-4 rounded-md bg-muted text-xs overflow-x-auto max-h-48 overflow-y-auto text-foreground">
                   {updateScripts[scriptType]}
                 </pre>
                 <Button 
@@ -195,13 +197,13 @@ const SystemUpdateCard: React.FC = () => {
             </div>
             
             <div className="p-3 rounded-md bg-muted">
-              <h4 className="text-sm font-medium mb-2">Manual Update Instructions:</h4>
+              <h4 className="text-sm font-medium mb-2 text-foreground">Manual Update Instructions:</h4>
               <ol className="text-xs space-y-1 list-decimal list-inside text-muted-foreground">
-                <li>SSH into your server: <code>ssh user@your-server</code></li>
-                <li>Navigate to your application directory: <code>cd /var/www/latinmixmasters</code></li>
-                <li>Copy the script above into a file: <code>nano update.sh</code></li>
-                <li>Make the script executable: <code>chmod +x update.sh</code></li>
-                <li>Run the script: <code>./update.sh</code></li>
+                <li>SSH into your server: <code className="bg-background px-1 rounded">ssh user@your-server</code></li>
+                <li>Navigate to your application directory: <code className="bg-background px-1 rounded">cd /var/www/latinmixmasters</code></li>
+                <li>Copy the script above into a file: <code className="bg-background px-1 rounded">nano update.sh</code></li>
+                <li>Make the script executable: <code className="bg-background px-1 rounded">chmod +x update.sh</code></li>
+                <li>Run the script: <code className="bg-background px-1 rounded">./update.sh</code></li>
               </ol>
             </div>
           </TabsContent>

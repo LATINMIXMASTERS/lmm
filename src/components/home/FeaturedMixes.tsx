@@ -55,7 +55,7 @@ const FeaturedMixes: React.FC = () => {
         <h2 className="text-2xl md:text-3xl font-bold text-foreground">FEATURED MIXES</h2>
         <button
           onClick={() => navigate('/mixes')}
-          className="text-gold hover:underline flex items-center"
+          className="text-gold hover:underline flex items-center text-foreground"
         >
           View All <ArrowRight className="w-4 h-4 ml-1" />
         </button>
@@ -65,7 +65,7 @@ const FeaturedMixes: React.FC = () => {
         {genresWithTracks.map(({ name, id, sampleTrack }) => (
           <div 
             key={id} 
-            className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer bg-white dark:bg-gray-800"
+            className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer bg-card dark:bg-card"
             onClick={() => handleGenreClick(id)}
           >
             <img
@@ -77,8 +77,8 @@ const FeaturedMixes: React.FC = () => {
               <div className={`inline-block px-2 py-1 ${genreColorMap[name] || 'bg-gray-600'} text-white text-xs rounded mb-2`}>
                 {name}
               </div>
-              <h3 className="font-bold text-lg mb-2 text-black dark:text-white">{name} Classics</h3>
-              <p className="text-gray-600 dark:text-gray-300 text-sm">
+              <h3 className="font-bold text-lg mb-2 text-foreground">{name} Classics</h3>
+              <p className="text-muted-foreground text-sm">
                 Discover the best {name} tracks in this exclusive mix.
               </p>
               <button
