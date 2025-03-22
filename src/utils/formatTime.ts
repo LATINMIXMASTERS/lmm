@@ -8,3 +8,8 @@ export const formatDuration = (seconds?: number): string => {
   const remainingSeconds = seconds % 60;
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
+
+/**
+ * Formats a duration in seconds to MM:SS format (alias for formatDuration)
+ */
+export const formatTime = formatDuration;

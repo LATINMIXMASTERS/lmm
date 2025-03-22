@@ -9,7 +9,7 @@ import DesktopNav from './navbar/DesktopNav';
 import UserMenu from './navbar/UserMenu';
 import MobileMenu from './navbar/MobileMenu';
 import MobileMenuToggle from './navbar/MobileMenuToggle';
-import { NavLink } from './navbar/types';
+import { NavLink, NavItem } from './navbar/types';
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -21,6 +21,12 @@ const Navbar: React.FC = () => {
     { name: 'Stations', path: '/stations', icon: <Radio className="w-4 h-4" /> },
     { name: 'Mixes', path: '/mixes', icon: <Music className="w-4 h-4" /> }
   ];
+
+  // Convert NavLink[] to NavItem[] for the components
+  const navItems: NavItem[] = navLinks.map(link => ({
+    href: link.path,
+    label: link.name
+  }));
 
   useEffect(() => {
     const handleScroll = () => {
@@ -53,7 +59,7 @@ const Navbar: React.FC = () => {
         <Logo />
         
         {/* Desktop Navigation */}
-        <DesktopNav navLinks={navLinks} />
+        <DesktopNav items={navItems} />
 
         {/* User Menu (Desktop) */}
         <UserMenu />
@@ -67,8 +73,9 @@ const Navbar: React.FC = () => {
       
       {/* Mobile Menu */}
       <MobileMenu 
-        navLinks={navLinks} 
-        isMobileMenuOpen={isMobileMenuOpen} 
+        items={navItems} 
+        isOpen={isMobileMenuOpen} 
+        onClose={() => setIsMobileMenuOpen(false)}
       />
     </header>
   );
