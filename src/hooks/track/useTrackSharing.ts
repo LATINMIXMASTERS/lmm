@@ -52,6 +52,27 @@ export const useTrackSharing = () => {
   };
 
   /**
+   * Copies the sharing URL to clipboard
+   * @param shareUrl - The URL to copy
+   */
+  const copyShareUrl = (shareUrl: string) => {
+    copyToClipboard(shareUrl)
+      .then(() => {
+        toast({
+          title: "Link copied!",
+          description: "Share link copied to clipboard",
+        });
+      })
+      .catch(() => {
+        toast({
+          title: "Failed to copy",
+          description: "Could not copy the link to clipboard",
+          variant: "destructive"
+        });
+      });
+  };
+
+  /**
    * Displays a custom sharing dialog with various sharing options
    * @param track - The track to share
    */
@@ -59,54 +80,31 @@ export const useTrackSharing = () => {
     // Generate the share URL
     const shareUrl = `${window.location.origin}/mixes?track=${track.id}`;
     
-    // Show sharing options using toast
+    // Create a custom action function that will be called when the user clicks on the toast action
+    const action = {
+      label: "Share Options",
+      onClick: () => {
+        // We could show a modal or additional UI here, but for simplicity
+        // we'll log a message and rely on the InteractionControls to handle sharing
+        console.log("Opening sharing options");
+      }
+    };
+    
+    // Show toast notification
     toast({
       title: "Share this track",
       description: `${track.artist} - ${track.title}`,
-      action: (
-        <div className="flex space-x-2 mt-2">
-          <button 
-            onClick={() => shareToWhatsApp(track, shareUrl)}
-            className="px-3 py-1 rounded bg-green-500 hover:bg-green-600 text-white text-xs"
-          >
-            WhatsApp
-          </button>
-          <button 
-            onClick={() => shareToFacebook(shareUrl)}
-            className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs"
-          >
-            Facebook
-          </button>
-          <button 
-            onClick={() => shareViaSMS(track, shareUrl)}
-            className="px-3 py-1 rounded bg-gray-500 hover:bg-gray-600 text-white text-xs"
-          >
-            SMS
-          </button>
-          <button 
-            onClick={() => {
-              copyToClipboard(shareUrl)
-                .then(() => {
-                  toast({
-                    title: "Link copied!",
-                    description: "Share link copied to clipboard",
-                  });
-                })
-                .catch(() => {
-                  toast({
-                    title: "Failed to copy",
-                    description: "Could not copy the link to clipboard",
-                    variant: "destructive"
-                  });
-                });
-            }}
-            className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-800 text-white text-xs"
-          >
-            Copy
-          </button>
-        </div>
-      ),
+      action,
     });
+    
+    // Return the shareUrl and sharing methods so they can be used by the caller
+    return {
+      shareUrl,
+      shareToWhatsApp: () => shareToWhatsApp(track, shareUrl),
+      shareToFacebook: () => shareToFacebook(shareUrl),
+      shareViaSMS: () => shareViaSMS(track, shareUrl),
+      copyShareUrl: () => copyShareUrl(shareUrl)
+    };
   };
 
   return {
@@ -114,6 +112,7 @@ export const useTrackSharing = () => {
     shareToWhatsApp,
     shareToFacebook,
     shareViaSMS,
+    copyShareUrl,
     showSharingOptions
   };
 };
