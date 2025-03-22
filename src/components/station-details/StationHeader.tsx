@@ -14,7 +14,7 @@ const StationHeader: React.FC<StationHeaderProps> = ({
   imageUrl 
 }) => {
   return (
-    <div className="relative">
+    <div className="relative max-w-3xl mx-auto">
       <AspectRatio ratio={16 / 9} className="bg-gray-100">
         <img 
           src={imageUrl} 

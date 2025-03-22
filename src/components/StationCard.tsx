@@ -65,7 +65,7 @@ const StationCard: React.FC<StationCardProps> = ({
       )}
       style={style}
     >
-      <div className="relative">
+      <div className="relative w-full max-w-[280px] mx-auto">
         <AspectRatio ratio={16 / 9} className="bg-gray-100">
           <img 
             src={station.image} 
