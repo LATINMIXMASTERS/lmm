@@ -41,7 +41,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   }, [location, displayLocation]);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Navbar />
       
       <main 
@@ -54,7 +54,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <Button 
               asChild 
               variant="default" 
-              className="rounded-full shadow-lg p-3 h-12 w-12"
+              className="rounded-full shadow-lg p-3 h-12 w-12 bg-gold hover:bg-gold-dark dark:bg-gold dark:hover:bg-gold-dark"
             >
               <Link to="/host-dashboard">
                 <LayoutDashboard className="h-5 w-5" />

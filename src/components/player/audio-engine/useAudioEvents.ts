@@ -24,13 +24,17 @@ export const useAudioEvents = ({
       audioRef.current = new Audio();
       
       audioRef.current.addEventListener('error', (e) => {
-        console.error("Audio playback error:", e);
-        toast({
-          title: "Playback Error",
-          description: "There was an error playing this stream. Please try a different station.",
-          variant: "destructive"
-        });
-        setAudioState(prev => ({ ...prev, isPlaying: false }));
+        // Only show error toast if the error is severe and we're not just switching sources
+        if (audioRef.current?.error?.code === 4) {
+          console.error("Audio playback error:", e);
+          toast({
+            title: "Playback Issue",
+            description: "Please try again or select another station",
+            variant: "destructive"
+          });
+        }
+        
+        // Don't update playing state - let the stream try to reconnect instead
       });
       
       audioRef.current.addEventListener('playing', () => {

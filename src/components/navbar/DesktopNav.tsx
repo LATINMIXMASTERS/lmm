@@ -1,52 +1,31 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Shield } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
-import { NavLink } from './types';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { NavItem } from './types';
 
 interface DesktopNavProps {
-  navLinks: NavLink[];
+  items: NavItem[];
+  className?: string;
 }
 
-const DesktopNav: React.FC<DesktopNavProps> = ({ navLinks }) => {
-  const location = useLocation();
-  const { user, isAuthenticated } = useAuth();
-
+const DesktopNav: React.FC<DesktopNavProps> = ({ 
+  items, 
+  className 
+}) => {
   return (
-    <nav className="hidden md:flex items-center space-x-8">
-      {navLinks.map((link) => (
+    <nav className={cn('hidden md:flex items-center space-x-6', className)}>
+      {items.map((item) => (
         <Link
-          key={link.path}
-          to={link.path}
-          className={cn(
-            'flex items-center space-x-1.5 text-sm font-medium transition-colors duration-300',
-            location.pathname === link.path 
-              ? 'text-gold' 
-              : 'text-gray-dark hover:text-gold'
-          )}
+          key={item.href}
+          to={item.href}
+          className="text-base font-medium text-gray-dark hover:text-gold transition-colors dark:text-gray-light dark:hover:text-gold"
         >
-          {link.icon}
-          <span>{link.name}</span>
+          {item.label}
         </Link>
       ))}
-      
-      {/* Admin Dashboard Link (only for admins) */}
-      {isAuthenticated && user?.isAdmin && (
-        <Link
-          to="/admin"
-          className={cn(
-            'flex items-center space-x-1.5 text-sm font-medium transition-colors duration-300',
-            location.pathname === '/admin' 
-              ? 'text-gold' 
-              : 'text-gray-dark hover:text-gold'
-          )}
-        >
-          <Shield className="w-4 h-4" />
-          <span>Admin</span>
-        </Link>
-      )}
+      <ThemeToggle />
     </nav>
   );
 };

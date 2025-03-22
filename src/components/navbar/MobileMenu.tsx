@@ -1,111 +1,68 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { User, Shield, LogOut, Headphones } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
-import { NavLink } from './types';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { NavItem } from './types';
 
 interface MobileMenuProps {
-  navLinks: NavLink[];
-  isMobileMenuOpen: boolean;
+  items: NavItem[];
+  isOpen: boolean;
+  onClose: () => void;
+  className?: string;
 }
 
-const MobileMenu: React.FC<MobileMenuProps> = ({ navLinks, isMobileMenuOpen }) => {
-  const location = useLocation();
-  const { user, isAuthenticated, logout } = useAuth();
+const MobileMenu: React.FC<MobileMenuProps> = ({
+  items,
+  isOpen,
+  onClose,
+  className
+}) => {
+  if (!isOpen) return null;
 
   return (
     <div
       className={cn(
-        'fixed inset-0 z-40 glass-dark pt-20 pb-6 px-6 md:hidden flex flex-col transition-all duration-400',
-        isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        'fixed inset-0 z-50 bg-background md:hidden',
+        className
       )}
     >
-      <nav className="flex flex-col space-y-4 mt-8">
-        {navLinks.map((link) => (
-          <Link
-            key={link.path}
-            to={link.path}
-            className={cn(
-              'flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors duration-300',
-              location.pathname === link.path 
-                ? 'bg-gold/10 text-gold' 
-                : 'text-white hover:bg-white/5'
-            )}
+      <div className="fixed inset-0 overflow-y-auto">
+        <div className="flex min-h-full items-end justify-center p-0 text-center sm:items-center sm:p-0">
+          <div
+            className="relative transform overflow-hidden rounded-t-xl bg-background px-5 py-6 w-full transition-all sm:rounded-xl"
           >
-            {link.icon}
-            <span className="text-lg">{link.name}</span>
-          </Link>
-        ))}
-        
-        {/* Profile Link in Mobile Menu (only for authenticated users) */}
-        {isAuthenticated && (
-          <Link
-            to={user?.isRadioHost ? `/host/${user.id}` : `/user/${user.id}`}
-            className={cn(
-              'flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors duration-300',
-              (location.pathname === `/user/${user?.id}` || location.pathname === `/host/${user?.id}`)
-                ? 'bg-gold/10 text-gold' 
-                : 'text-white hover:bg-white/5'
-            )}
-          >
-            <User className="w-4 h-4" />
-            <span className="text-lg">My Profile</span>
-          </Link>
-        )}
-        
-        {/* Host Dashboard Link in Mobile Menu (only for hosts) */}
-        {isAuthenticated && user?.isRadioHost && (
-          <Link
-            to="/host-dashboard"
-            className={cn(
-              'flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors duration-300',
-              location.pathname === '/host-dashboard' 
-                ? 'bg-gold/10 text-gold' 
-                : 'text-white hover:bg-white/5'
-            )}
-          >
-            <Headphones className="w-4 h-4" />
-            <span className="text-lg">Host Dashboard</span>
-          </Link>
-        )}
-        
-        {/* Admin Dashboard Link in Mobile Menu (only for admins) */}
-        {isAuthenticated && user?.isAdmin && (
-          <Link
-            to="/admin"
-            className={cn(
-              'flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors duration-300',
-              location.pathname === '/admin' 
-                ? 'bg-gold/10 text-gold' 
-                : 'text-white hover:bg-white/5'
-            )}
-          >
-            <Shield className="w-4 h-4" />
-            <span className="text-lg">Admin Dashboard</span>
-          </Link>
-        )}
-        
-        {/* Mobile auth links */}
-        {isAuthenticated ? (
-          <button
-            onClick={logout}
-            className="flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors duration-300 text-white hover:bg-white/5"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="text-lg">Sign out</span>
-          </button>
-        ) : (
-          <Link
-            to="/login"
-            className="flex items-center space-x-3 py-3 px-4 border border-white/20 text-white rounded-lg hover:bg-white/5 transition-colors duration-300"
-          >
-            <User className="w-4 h-4" />
-            <span className="text-lg">Sign in</span>
-          </Link>
-        )}
-      </nav>
+            <div className="absolute right-4 top-4">
+              <button
+                type="button"
+                className="text-gray-dark hover:text-gold dark:text-gray-light dark:hover:text-gold"
+                onClick={onClose}
+              >
+                <X className="h-6 w-6" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="mt-5 sm:mt-6">
+              <nav className="flex flex-col space-y-8">
+                {items.map((item) => (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className="text-lg font-medium text-gray-dark hover:text-gold dark:text-gray-light dark:hover:text-gold text-center"
+                    onClick={onClose}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+                <div className="flex justify-center mt-4">
+                  <ThemeToggle />
+                </div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

@@ -22,7 +22,7 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
   return (
     <div 
       className={cn(
-        "relative overflow-hidden bg-gradient-to-br from-red to-red-dark text-white",
+        "relative overflow-hidden bg-gradient-to-br from-red to-red-dark dark:from-black dark:to-gray-dark text-white",
         "min-h-[85vh] flex items-center justify-center rounded-xl",
         className
       )}
@@ -44,7 +44,7 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
           style={{ animationDelay: "0.1s" }}
         >
           <img 
-            src="/lovable-uploads/42fbeaeb-8383-46a5-99ec-9eade511c5a3.png" 
+            src="/lovable-uploads/1c428522-a0bb-44a9-8f08-2afd85e478ed.png" 
             alt="LATINMIXMASTERS Logo"
             className="w-full"
           />
@@ -116,7 +116,7 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
             { label: "DJs", value: "20+" },
             { label: "Active Listeners", value: "1M+" }
           ].map((stat, index) => (
-            <div key={index} className="backdrop-blur-md bg-gold/10 rounded-xl p-6 border border-gold/20">
+            <div key={index} className="backdrop-blur-md bg-gold/10 dark:bg-gold/5 rounded-xl p-6 border border-gold/20">
               <div className="text-3xl sm:text-4xl font-bold text-gold">{stat.value}</div>
               <div className="text-gold-light/90 text-sm sm:text-base">{stat.label}</div>
             </div>
@@ -128,7 +128,7 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
       <div className="absolute bottom-0 left-0 right-0">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120" className="w-full h-auto">
           <path 
-            fill="#ffffff" 
+            fill="var(--wave-fill, #ffffff)" 
             fillOpacity="1" 
             d="M0,64L60,64C120,64,240,64,360,74.7C480,85,600,107,720,101.3C840,96,960,64,1080,48C1200,32,1320,32,1380,32L1440,32L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"
           ></path>

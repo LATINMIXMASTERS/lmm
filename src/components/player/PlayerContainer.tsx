@@ -109,7 +109,7 @@ const PlayerContainer: React.FC<PlayerContainerProps> = ({
         )}
         
         {showComments && (
-          <div className="px-4 overflow-y-auto h-48 border-t border-gray-100 pt-4">
+          <div className="px-4 overflow-y-auto h-48 border-t border-gray-100 dark:border-gray-800 pt-4">
             <h3 className="font-medium mb-3">Comments ({comments.length})</h3>
             
             <CommentSection 

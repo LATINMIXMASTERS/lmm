@@ -43,6 +43,8 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    --wave-fill: #ffffff;
   }
 
   .dark {
@@ -82,6 +84,8 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    --wave-fill: #121212;
   }
 }
 
@@ -151,11 +155,11 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-light rounded-full;
+    @apply bg-gray-light dark:bg-gray rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray;
+    @apply bg-gray dark:bg-gray-light;
   }
 
   /* Page transitions */
@@ -177,16 +181,12 @@
 
   /* Glass effect */
   .glass {
-    @apply bg-white/80 backdrop-blur-md border border-white/20;
-  }
-
-  .glass-dark {
-    @apply bg-black/70 backdrop-blur-md border border-white/10;
+    @apply bg-white/80 backdrop-blur-md border border-white/20 dark:bg-black/70 dark:border-white/10;
   }
 
   /* Image lazy loading animation */
   .image-loading {
-    @apply animate-pulse-subtle bg-gray-lightest;
+    @apply animate-pulse-subtle bg-gray-lightest dark:bg-gray-dark;
   }
 
   /* LATINMIXMASTERS specific styles */

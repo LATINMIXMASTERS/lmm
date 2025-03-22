@@ -1,135 +1,170 @@
-
-import React, { useState } from 'react';
-import { Play, Pause, Heart, MessageCircle, Share2, Edit, Trash2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import React from 'react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { Track, Comment } from '@/models/Track';
-import CommentSection from './CommentSection';
+import { Play, Pause, Volume2, Heart, MessageCircle } from 'lucide-react';
+import { formatTime } from '@/utils/formatTime';
+import { useTrackPlayback } from '@/hooks/track/useTrackPlayback';
 
 interface TrackCardProps {
-  track: Track;
-  isPlaying: boolean;
-  onPlay: () => void;
-  onLike: (e: React.MouseEvent) => void;
-  onShare: (e: React.MouseEvent) => void;
-  newComment: string;
-  onCommentChange: (value: string) => void;
-  onSubmitComment: (e: React.FormEvent) => void;
-  formatDuration: (seconds?: number) => string;
-  renderTrackActions?: (track: Track) => React.ReactNode;
+  id: string;
+  title: string;
+  artist: string;
+  duration: number;
+  imageUrl: string;
+  genre: string;
+  plays: number;
+  likes: number;
+  commentCount: number;
+  className?: string;
+  compact?: boolean;
+  onActionClick?: (action: 'like' | 'comment' | 'share', trackId: string) => void;
 }
 
 const TrackCard: React.FC<TrackCardProps> = ({
-  track,
-  isPlaying,
-  onPlay,
-  onLike,
-  onShare,
-  newComment,
-  onCommentChange,
-  onSubmitComment,
-  formatDuration,
-  renderTrackActions
+  id,
+  title,
+  artist,
+  duration,
+  imageUrl,
+  genre,
+  plays,
+  likes,
+  commentCount,
+  className,
+  compact = false,
+  onActionClick
 }) => {
-  const [showComments, setShowComments] = useState(false);
+  const { currentPlayingTrack, handlePlayTrack } = useTrackPlayback();
+  const isPlaying = currentPlayingTrack === id;
   
+  const handlePlay = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handlePlayTrack(id);
+  };
+  
+  const handleLike = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onActionClick?.('like', id);
+  };
+  
+  const handleComment = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onActionClick?.('comment', id);
+  };
+
+  if (compact) {
+    return (
+      <div className={cn(
+        "flex items-center p-3 rounded-lg hover:bg-gray-lightest dark:hover:bg-gray-dark transition-colors",
+        isPlaying && "bg-gold/5 border-l-2 border-gold",
+        className
+      )}>
+        <div className="relative flex-shrink-0 w-12 h-12 mr-3">
+          <img 
+            src={imageUrl} 
+            alt={`${artist} - ${title}`} 
+            className="w-full h-full object-cover rounded"
+          />
+          <button
+            onClick={handlePlay}
+            className="absolute inset-0 flex items-center justify-center bg-black/40 rounded hover:bg-black/60 transition-colors"
+          >
+            {isPlaying ? (
+              <Pause className="w-5 h-5 text-white" />
+            ) : (
+              <Play className="w-5 h-5 text-white" />
+            )}
+          </button>
+        </div>
+        
+        <div className="flex-grow min-w-0">
+          <h3 className="text-sm font-medium truncate">{title}</h3>
+          <p className="text-xs text-gray-dark dark:text-gray-light truncate">{artist}</p>
+        </div>
+        
+        <div className="flex-shrink-0 text-xs text-gray-dark dark:text-gray-light">
+          {formatTime(duration)}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow duration-300">
-      <div className="relative aspect-video bg-gray-100 overflow-hidden">
+    <div className={cn(
+      "group relative overflow-hidden rounded-xl border border-gray-light dark:border-gray-dark hover:shadow-md transition-all duration-300",
+      isPlaying && "border-gold/50 bg-gold/5",
+      className
+    )}>
+      <div className="aspect-square overflow-hidden">
         <img 
-          src={track.coverImage} 
-          alt={track.title}
-          className="w-full h-full object-cover"
+          src={imageUrl} 
+          alt={`${artist} - ${title}`} 
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
-        <button
-          onClick={onPlay}
-          className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity duration-300"
-        >
-          <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-            <div className="w-14 h-14 rounded-full bg-blue flex items-center justify-center">
-              {isPlaying ? (
-                <Pause className="w-6 h-6 text-white" />
-              ) : (
-                <Play className="w-6 h-6 text-white ml-1" />
-              )}
+        
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={handlePlay}
+                className="w-12 h-12 rounded-full bg-gold text-black flex items-center justify-center hover:bg-gold-dark transition-colors"
+              >
+                {isPlaying ? (
+                  <Pause className="w-6 h-6" />
+                ) : (
+                  <Play className="w-6 h-6 ml-1" />
+                )}
+              </button>
+              
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleLike}
+                  className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors"
+                >
+                  <Heart className="w-4 h-4 text-white" />
+                </button>
+                
+                <button
+                  onClick={handleComment}
+                  className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4 text-white" />
+                </button>
+              </div>
             </div>
           </div>
-        </button>
+        </div>
+        
+        {isPlaying && (
+          <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-gold flex items-center justify-center">
+            <Volume2 className="w-4 h-4 text-black" />
+          </div>
+        )}
       </div>
       
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start mb-3">
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-2">
           <div>
-            <h3 className="font-semibold text-lg truncate">{track.title}</h3>
-            <p className="text-sm text-gray-600">{track.artist}</p>
+            <h3 className="font-medium truncate">{title}</h3>
+            <p className="text-sm text-gray-dark dark:text-gray-light truncate">{artist}</p>
           </div>
-          <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">{track.genre}</span>
+          <span className="text-xs text-gray-dark dark:text-gray-light flex-shrink-0 ml-2">
+            {formatTime(duration)}
+          </span>
         </div>
         
-        {/* Waveform visualization */}
-        <div className="flex h-12 items-end space-x-0.5 mb-3">
-          {track.waveformData?.map((height: number, i: number) => (
-            <div 
-              key={i}
-              className={cn(
-                "flex-1 rounded-sm", 
-                isPlaying ? "bg-blue" : "bg-gray-300"
-              )}
-              style={{ height: `${height}%` }}
-            />
-          ))}
-        </div>
-        
-        <div className="flex justify-between text-xs text-gray-500 mb-4">
-          <span>{formatDuration(track.duration)}</span>
-          <span>{format(new Date(track.uploadDate), 'MMM d, yyyy')}</span>
-        </div>
-        
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={onLike}
-              className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
-            >
-              <Heart className="w-4 h-4" />
-              <span>{track.likes}</span>
-            </button>
-            
-            <button 
-              onClick={() => setShowComments(!showComments)}
-              className={cn(
-                "flex items-center gap-1 transition-colors",
-                showComments ? "text-blue-500" : "text-gray-500 hover:text-blue-500"
-              )}
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>{track.comments?.length || 0}</span>
-            </button>
-            
-            <button 
-              onClick={onShare}
-              className="text-gray-500 hover:text-blue-500 transition-colors"
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
+        <div className="flex justify-between text-xs text-gray-dark dark:text-gray-light">
+          <span className="px-2 py-1 rounded-full bg-gray-lightest dark:bg-gray-dark">{genre}</span>
+          <div className="flex space-x-3">
+            <span>{plays} plays</span>
+            <span>{likes} likes</span>
+            <span>{commentCount} comments</span>
           </div>
-          
-          {renderTrackActions && renderTrackActions(track)}
         </div>
-        
-        {/* Comments section */}
-        {showComments && (
-          <CommentSection 
-            comments={track.comments || []}
-            newComment={newComment}
-            onCommentChange={onCommentChange}
-            onSubmitComment={onSubmitComment}
-          />
-        )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
