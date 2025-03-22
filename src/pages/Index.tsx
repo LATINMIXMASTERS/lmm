@@ -34,7 +34,7 @@ const Index: React.FC = () => {
       {/* Hero Banner */}
       <Hero />
       
-      <div className="container py-8 md:py-12 -mt-6 relative z-10 bg-white">
+      <div className="container py-8 md:py-12 -mt-6 relative z-10 bg-background dark:bg-background">
         {/* Featured Mixes Section */}
         <FeaturedMixes />
 

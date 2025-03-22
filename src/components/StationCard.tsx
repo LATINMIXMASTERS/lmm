@@ -62,14 +62,15 @@ const StationCard: React.FC<StationCardProps> = ({
     <div
       onClick={handleCardClick}
       className={cn(
-        "bg-white rounded-lg overflow-hidden border border-gray-light hover:shadow-md transition-all duration-300",
+        "rounded-lg overflow-hidden border border-gray-light hover:shadow-md transition-all duration-300",
         "flex flex-col h-full cursor-pointer",
+        "bg-white dark:bg-gray-dark", // Ensure proper background in both light/dark modes
         className
       )}
       style={style}
     >
       <div className="relative w-full max-w-[280px] mx-auto">
-        <AspectRatio ratio={16 / 9} className="bg-gray-100">
+        <AspectRatio ratio={16 / 9} className="bg-gray-100 dark:bg-gray-800">
           <img 
             src={station.image} 
             alt={station.name}
@@ -104,10 +105,10 @@ const StationCard: React.FC<StationCardProps> = ({
       </div>
       
       <div className="p-4 flex-1 flex flex-col">
-        <h3 className="font-medium mb-1 line-clamp-1">{station.name}</h3>
-        <p className="text-xs text-gray mb-3 line-clamp-1">{station.genre}</p>
+        <h3 className="font-medium mb-1 line-clamp-1 text-black dark:text-white">{station.name}</h3>
+        <p className="text-xs text-gray dark:text-gray-300 mb-3 line-clamp-1">{station.genre}</p>
         
-        <div className="mt-auto flex items-center text-xs text-gray">
+        <div className="mt-auto flex items-center text-xs text-gray dark:text-gray-400">
           <Users className="w-3.5 h-3.5 mr-1" />
           <span>{station.listeners} listeners</span>
         </div>
