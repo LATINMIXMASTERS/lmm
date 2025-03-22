@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useRadio } from '@/hooks/useRadioContext';
 import { RadioStation } from '@/models/RadioStation';
 import { useToast } from '@/hooks/use-toast';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface StationCardProps {
   station: RadioStation;
@@ -39,7 +40,6 @@ const StationCard: React.FC<StationCardProps> = ({
       } else {
         if (station?.streamUrl) {
           setCurrentPlayingStation(station.id);
-          // Toast notification removed as requested
         } else {
           toast({
             title: "Stream Not Available",
@@ -66,14 +66,14 @@ const StationCard: React.FC<StationCardProps> = ({
       style={style}
     >
       <div className="relative">
-        <div className="aspect-video bg-gray-light overflow-hidden">
+        <AspectRatio ratio={16 / 9} className="bg-gray-100">
           <img 
             src={station.image} 
             alt={station.name}
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
             loading="lazy"
           />
-        </div>
+        </AspectRatio>
         
         <button
           className={cn(

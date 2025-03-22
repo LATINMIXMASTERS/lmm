@@ -3,6 +3,7 @@ import React from 'react';
 import { Clock, Radio } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioStation } from '@/models/RadioStation';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface StationInfoCardProps {
   station: RadioStation;
@@ -15,8 +16,14 @@ const StationInfoCard: React.FC<StationInfoCardProps> = ({ station }) => {
         <CardTitle>Station Information</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-4 mb-4">
-          <img src={station.image} alt={station.name} className="w-20 h-20 rounded-md object-cover" />
+        <div className="mb-4">
+          <AspectRatio ratio={16 / 9} className="rounded-md overflow-hidden bg-gray-100 mb-3">
+            <img 
+              src={station.image} 
+              alt={station.name} 
+              className="w-full h-full object-cover" 
+            />
+          </AspectRatio>
           <div>
             <h2 className="font-semibold">{station.name}</h2>
             <p className="text-sm text-muted-foreground">Genre: {station.genre}</p>
