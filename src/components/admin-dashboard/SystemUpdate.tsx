@@ -2,8 +2,8 @@
 import React from 'react';
 import SystemUpdatePanel from './system/SystemUpdatePanel';
 
-const SystemUpdate: React.FC = () => {
+const SystemManagement: React.FC = () => {
   return <SystemUpdatePanel />;
 };
 
-export default SystemUpdate;
+export default SystemManagement;
