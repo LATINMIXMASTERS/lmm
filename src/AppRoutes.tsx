@@ -32,7 +32,11 @@ const AppRoutes: React.FC = () => {
       <Route path="/djs" element={<DJs />} />
       <Route path="/profile/:userId" element={<UserProfile />} />
       <Route path="/host/:hostId" element={<HostProfile />} />
+      
+      {/* Update the upload path to include both routes */}
       <Route path="/upload" element={<UploadTrack />} />
+      <Route path="/upload-track" element={<UploadTrack />} />
+      
       <Route path="/edit/:trackId" element={<EditTrack />} />
       <Route path="/manage-genres" element={<ManageGenres />} />
       <Route path="/genres" element={<ManageGenres />} />

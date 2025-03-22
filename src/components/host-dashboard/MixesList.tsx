@@ -21,7 +21,7 @@ const MixesList: React.FC<MixesListProps> = ({ tracks, onEditTrack, onDeleteTrac
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Your Mixes</CardTitle>
-        <Button onClick={() => navigate('/upload-track')}>
+        <Button onClick={() => navigate('/upload')}>
           <PlusCircle className="h-4 w-4 mr-2" />
           Upload New Mix
         </Button>
@@ -33,7 +33,7 @@ const MixesList: React.FC<MixesListProps> = ({ tracks, onEditTrack, onDeleteTrac
             <p className="text-muted-foreground">You haven't uploaded any mixes yet</p>
             <Button 
               className="mt-4" 
-              onClick={() => navigate('/upload-track')}
+              onClick={() => navigate('/upload')}
             >
               Upload Your First Mix
             </Button>

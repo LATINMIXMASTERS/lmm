@@ -36,7 +36,8 @@ export const useTrackUpload = () => {
       return;
     }
 
-    navigate('/upload-track');
+    // Update the navigation path to use "/upload" consistently
+    navigate('/upload');
   };
 
   return {
