@@ -1,6 +1,7 @@
 
 import { Track, Genre, Comment } from '@/models/Track';
 import { copyToClipboard } from '@/utils/trackUtils';
+import { ToastAction } from '@/components/ui/toast';
 
 /**
  * Creates track interaction action functions
@@ -96,16 +97,18 @@ export const createTrackInteractionActions = (
     toast({
       title: "Share this track",
       description: `${track.artist} - ${track.title}`,
-      action: {
-        label: "Share",
-        onClick: () => {
-          // This action object should be handled by the toast component
+      // Fix: Use JSX element instead of object with label and onClick
+      action: (
+        <ToastAction altText="Share" onClick={() => {
           console.log("User clicked share");
-        }
-      }
+          // Copy to clipboard as a fallback action
+          copyToClipboard(shareUrl);
+        }}>
+          Share
+        </ToastAction>
+      )
     });
     
-    // Use our hook for direct sharing
     // This is handled by the useTrackSharing hook elsewhere
   };
 

@@ -81,7 +81,7 @@ export const useTrackSharing = () => {
     // Generate the share URL
     const shareUrl = `${window.location.origin}/mixes?track=${track.id}`;
     
-    // Show toast notification
+    // Show toast notification with proper JSX for the action
     toast({
       title: "Share this track",
       description: `${track.artist} - ${track.title}`,

@@ -8,6 +8,7 @@ import { useRadio } from '@/hooks/useRadioContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 import GenreTabs from '@/components/GenreTabs';
 import { Track } from '@/models/Track';
 import UserNotFound from '@/components/profile/UserNotFound';
@@ -100,10 +101,6 @@ const HostProfile: React.FC = () => {
   const handleShareTrack = (trackId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     shareTrack(trackId);
-    toast({
-      title: "Share link copied",
-      description: "Track link has been copied to clipboard",
-    });
   };
 
   const handleCommentChange = (trackId: string, value: string) => {

@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useTrack } from '@/hooks/useTrackContext';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from "@/components/ui/toast";
 
 interface UsePlayerProps {
   audioRef: React.MutableRefObject<HTMLAudioElement | null>;
@@ -100,6 +101,10 @@ const usePlayer = ({ audioRef }: UsePlayerProps) => {
       toast({
         title: "Share feature",
         description: "Share functionality will be implemented soon!",
+        // Fixed: using JSX element instead of object
+        action: (
+          <ToastAction altText="OK">OK</ToastAction>
+        )
       });
     }
   };
