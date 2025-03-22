@@ -3,6 +3,7 @@ import { useTrack } from '@/hooks/useTrackContext';
 import { Track } from '@/models/Track';
 import { useToast } from '@/hooks/use-toast';
 import { copyToClipboard } from '@/utils/trackUtils';
+import { ToastAction } from '@/components/ui/toast';
 
 /**
  * Custom hook for track sharing functionality
@@ -80,21 +81,11 @@ export const useTrackSharing = () => {
     // Generate the share URL
     const shareUrl = `${window.location.origin}/mixes?track=${track.id}`;
     
-    // Create a custom action function that will be called when the user clicks on the toast action
-    const action = {
-      label: "Share Options",
-      onClick: () => {
-        // We could show a modal or additional UI here, but for simplicity
-        // we'll log a message and rely on the InteractionControls to handle sharing
-        console.log("Opening sharing options");
-      }
-    };
-    
     // Show toast notification
     toast({
       title: "Share this track",
       description: `${track.artist} - ${track.title}`,
-      action,
+      action: <ToastAction altText="Open sharing options" onClick={() => console.log("Opening sharing options")}>Share Options</ToastAction>,
     });
     
     // Return the shareUrl and sharing methods so they can be used by the caller
