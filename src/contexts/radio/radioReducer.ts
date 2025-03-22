@@ -29,6 +29,9 @@ export const radioReducer = (state: RadioState, action: RadioAction): RadioState
       
     case 'UPDATE_STATION_METADATA':
       return stationReducers.updateStationMetadata(state, action);
+      
+    case 'UPDATE_STATION_LISTENERS':
+      return stationReducers.updateStationListeners(state, action);
     
     case 'SET_STATION_LIVE_STATUS':
       return chatReducers.setStationLiveStatus(state, action);

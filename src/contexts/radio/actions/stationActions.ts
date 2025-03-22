@@ -1,4 +1,3 @@
-
 import { RadioState } from '../types';
 import { RadioStation, FileUpload } from '@/models/RadioStation';
 import { useToast } from '@/hooks/use-toast';
@@ -108,12 +107,22 @@ export const useStationActions = (
     console.log(`Updated metadata for station ${stationId}:`, metadata);
   };
 
+  const updateStationListenersImpl = (stationId: string, listeners: number) => {
+    dispatch({ 
+      type: 'UPDATE_STATION_LISTENERS', 
+      payload: { stationId, listeners } 
+    });
+    
+    console.log(`Updated listeners for station ${stationId} to ${listeners}`);
+  };
+
   return {
     updateStreamDetails: updateStreamDetailsImpl,
     updateStreamUrl: updateStreamUrlImpl,
     updateStationImage: updateStationImageImpl,
     uploadStationImage: uploadStationImageImpl,
     updateStationS3Image: updateStationS3ImageImpl,
-    updateStationMetadata: updateStationMetadataImpl
+    updateStationMetadata: updateStationMetadataImpl,
+    updateStationListeners: updateStationListenersImpl
   };
 };

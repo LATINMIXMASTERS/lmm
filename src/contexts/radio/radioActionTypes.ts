@@ -20,4 +20,5 @@ export type RadioAction =
   | { type: 'SET_STATION_LIVE_STATUS'; payload: { stationId: string, isLive: boolean, chatEnabled: boolean } }
   | { type: 'TOGGLE_CHAT_ENABLED'; payload: { stationId: string, enabled: boolean } }
   | { type: 'UPDATE_STATION_METADATA'; payload: { stationId: string, metadata: RadioMetadata } }
-  | { type: 'UPDATE_STATION_S3_IMAGE'; payload: { stationId: string, s3ImageUrl: string } };
+  | { type: 'UPDATE_STATION_S3_IMAGE'; payload: { stationId: string, s3ImageUrl: string } }
+  | { type: 'UPDATE_STATION_LISTENERS'; payload: { stationId: string, listeners: number } };

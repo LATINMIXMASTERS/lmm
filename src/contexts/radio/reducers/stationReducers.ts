@@ -1,4 +1,3 @@
-
 import { RadioState } from '../types';
 import { RadioAction } from '../radioActionTypes';
 
@@ -92,6 +91,24 @@ export const stationReducers = {
     const updatedStations = state.stations.map(station => 
       station.id === stationId 
         ? { ...station, currentMetadata: metadata } 
+        : station
+    );
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+    
+    return {
+      ...state,
+      stations: updatedStations
+    };
+  },
+  
+  updateStationListeners: (state: RadioState, action: Extract<RadioAction, { type: 'UPDATE_STATION_LISTENERS' }>): RadioState => {
+    const { stationId, listeners } = action.payload;
+    
+    const updatedStations = state.stations.map(station => 
+      station.id === stationId 
+        ? { ...station, listeners } 
         : station
     );
     
