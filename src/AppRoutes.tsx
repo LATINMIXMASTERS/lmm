@@ -34,6 +34,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/host/:hostId" element={<HostProfile />} />
       <Route path="/upload" element={<UploadTrack />} />
       <Route path="/edit/:trackId" element={<EditTrack />} />
+      <Route path="/manage-genres" element={<ManageGenres />} />
       <Route path="/genres" element={<ManageGenres />} />
       <Route path="/book/:stationId?" element={<BookShow />} />
       <Route path="/go-live/:stationId?" element={<GoLive />} />

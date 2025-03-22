@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Music, ArrowRight } from 'lucide-react';
