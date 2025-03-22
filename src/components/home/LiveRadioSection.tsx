@@ -20,10 +20,16 @@ const LiveRadioSection: React.FC<LiveRadioSectionProps> = ({
   const navigate = useNavigate();
   const { setAudioState } = useRadio();
   
-  // Enhance onStationClick to also update audioState to playing
+  // Update handleStationClick to toggle play/pause and set isPlaying correctly
   const handleStationClick = (stationId: string) => {
-    onStationClick(stationId);
-    setAudioState(prev => ({ ...prev, isPlaying: true }));
+    if (currentPlayingStation === stationId) {
+      // If clicking the current station, don't change the station but toggle play state
+      setAudioState(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
+    } else {
+      // If clicking a different station, change to it and ensure playing state is true
+      onStationClick(stationId);
+      setAudioState(prev => ({ ...prev, isPlaying: true }));
+    }
   };
   
   return (

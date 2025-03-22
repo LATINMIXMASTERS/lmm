@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 const Stations: React.FC = () => {
-  const { stations, currentPlayingStation, setCurrentPlayingStation, setAudioState } = useRadio();
+  const { stations, currentPlayingStation, setCurrentPlayingStation, setAudioState, audioState } = useRadio();
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,11 +22,11 @@ const Stations: React.FC = () => {
 
   const handlePlayToggle = (stationId: string) => {
     if (currentPlayingStation === stationId) {
-      setCurrentPlayingStation(null);
-      setAudioState(prev => ({ ...prev, isPlaying: false }));
+      // Toggle the playing state of the current station
+      setAudioState(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
     } else {
+      // Change to new station and ensure it's playing
       setCurrentPlayingStation(stationId);
-      // Ensure audio state is updated to playing immediately
       setAudioState(prev => ({ ...prev, isPlaying: true }));
     }
   };
@@ -45,7 +45,7 @@ const Stations: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold mb-2">Radio Stations</h1>
-            <p className="text-gray-600 mb-4">Listen to live radio from around the world</p>
+            <p className="text-gray-600 mb-4 dark:text-gray-400">Listen to live radio from around the world</p>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -57,7 +57,7 @@ const Stations: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             <select
-              className="bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue focus:border-blue-300 text-sm"
+              className="bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue focus:border-blue-300 text-sm"
               value={filterGenre}
               onChange={(e) => setFilterGenre(e.target.value)}
             >
@@ -73,7 +73,7 @@ const Stations: React.FC = () => {
             <StationCard
               key={station.id}
               station={station}
-              isPlaying={currentPlayingStation === station.id}
+              isPlaying={currentPlayingStation === station.id && audioState.isPlaying}
               onPlayToggle={handlePlayToggle}
             />
           ))}

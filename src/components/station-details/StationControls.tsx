@@ -50,7 +50,7 @@ const StationControls: React.FC<StationControlsProps> = ({
         </Button>
       )}
       
-      <div className="flex items-center gap-1 text-gray-500 text-sm">
+      <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm">
         <Users className="w-4 h-4" />
         <span>{listeners} listeners</span>
       </div>

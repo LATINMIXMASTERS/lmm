@@ -42,11 +42,15 @@ export const setupMetadataPolling = (
   // First, try to get actual metadata from the stream
   const fetchMetadata = async () => {
     try {
+      console.log("Attempting to fetch metadata for stream:", formattedStreamUrl);
+      
       // Try to get real metadata if the URL is valid
       if (isValidStreamUrl(formattedStreamUrl)) {
         const metadata = await fetchStreamMetadata(formattedStreamUrl);
         
         if (metadata.title) {
+          console.log("Successfully fetched metadata:", metadata);
+          
           const metadataString = metadata.artist 
             ? `${metadata.artist} - ${metadata.title}`
             : metadata.title;
@@ -67,6 +71,7 @@ export const setupMetadataPolling = (
       }
       
       // Fall back to simulation if we couldn't get metadata
+      console.log("Metadata fetch failed, falling back to simulation");
       simulateMetadata();
     } catch (error) {
       console.error('Error in metadata polling:', error);
@@ -101,9 +106,9 @@ export const setupMetadataPolling = (
     }
   };
   
-  // Initial metadata fetch
+  // Initial metadata fetch - do this immediately
   fetchMetadata();
   
-  // Set up polling (every 15 seconds to avoid too many requests)
-  metadataTimerRef.current = window.setInterval(fetchMetadata, 15000);
+  // Set up polling with shorter interval for better responsiveness (now every 10 seconds)
+  metadataTimerRef.current = window.setInterval(fetchMetadata, 10000);
 };
