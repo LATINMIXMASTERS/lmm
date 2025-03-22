@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Mic, Volume2, ImageIcon, Users, Calendar as CalendarIcon, DatabaseBackup, Share2, Activity } from 'lucide-react';
+import { Shield, Mic, Volume2, ImageIcon, Users, Calendar as CalendarIcon, DatabaseBackup, Share2, Activity, Settings } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +16,7 @@ import ShowBookings from '@/components/admin-dashboard/ShowBookings';
 import S3ConfigurationPanel from '@/components/admin-dashboard/S3StorageConfig';
 import SocialMediaConfig from '@/components/admin-dashboard/SocialMediaConfig';
 import ListenersManagement from '@/components/admin-dashboard/ListenersManagement';
+import SystemUpdate from '@/components/admin-dashboard/SystemUpdate';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -88,6 +89,10 @@ const AdminDashboard: React.FC = () => {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="system" className="flex items-center">
+              <Settings className="w-4 h-4 mr-2" />
+              System
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="stations">
@@ -120,6 +125,10 @@ const AdminDashboard: React.FC = () => {
           
           <TabsContent value="bookings">
             <ShowBookings />
+          </TabsContent>
+          
+          <TabsContent value="system">
+            <SystemUpdate />
           </TabsContent>
         </Tabs>
       </div>
