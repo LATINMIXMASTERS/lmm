@@ -1,13 +1,30 @@
 
 import React, { useState } from 'react';
-import { Github, X, Instagram, Facebook, Youtube, Linkedin, Save } from 'lucide-react';
+import { Github, Instagram, Facebook, Youtube, Linkedin, Save } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
+// Custom X (Twitter) logo component
+const XLogo = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-5 w-5"
+  >
+    <path
+      d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
 const socialIcons = {
-  x: <X className="h-5 w-5" />,
+  x: <XLogo />,
   instagram: <Instagram className="h-5 w-5" />,
   facebook: <Facebook className="h-5 w-5" />,
   github: <Github className="h-5 w-5" />,

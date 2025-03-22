@@ -15,13 +15,9 @@ export const parseIcecastMetadata = (metadataString: string): Partial<RadioMetad
     const titleInfo = streamTitle[1];
     
     // Try to extract artist and title (common format: Artist - Title)
-    const match = titleInfo.match(/(.*?)\s-\s(.*)/);
-    if (match) {
-      metadata.artist = match[1]?.trim();
-      metadata.title = match[2]?.trim();
-    } else {
-      metadata.title = titleInfo.trim();
-    }
+    const { artist, title } = extractArtistAndTitle(titleInfo);
+    metadata.artist = artist;
+    metadata.title = title;
   }
   
   return metadata;
@@ -36,26 +32,21 @@ export const parseTextMetadata = (text: string): Partial<RadioMetadata> => {
   // Try to extract metadata from HTML or text
   const titleMatch = text.match(/<title>(.*?)<\/title>/) || 
                     text.match(/StreamTitle='([^']*)'/) ||
-                    text.match(/currentsong=(.*?)(&|$)/);
+                    text.match(/currentsong=(.*?)(&|$)/) ||
+                    text.match(/song_title="([^"]*)"/) ||
+                    text.match(/Current Song: <[^>]*>([^<]*)<\//) ||
+                    text.match(/Now Playing:.*?>(.*?)<\//);
                     
   if (titleMatch && titleMatch[1]) {
     // Found title in HTML or text format
-    const titleInfo = titleMatch[1];
-    const match = titleInfo.match(/(.*?)\s-\s(.*)/);
+    const titleInfo = titleMatch[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+    const { artist, title } = extractArtistAndTitle(titleInfo);
     
-    if (match) {
-      return {
-        artist: match[1]?.trim(),
-        title: match[2]?.trim(),
-        startedAt: new Date()
-      };
-    } else {
-      return {
-        title: titleInfo.trim(),
-        artist: 'Unknown Artist',
-        startedAt: new Date()
-      };
-    }
+    return {
+      artist: artist,
+      title: title,
+      startedAt: new Date()
+    };
   }
   
   return {};
@@ -75,23 +66,14 @@ export const parseIcecastJson = (data: any): Partial<RadioMetadata> => {
   
   if (source.title) {
     const titleInfo = source.title;
-    const match = titleInfo.match(/(.*?)\s-\s(.*)/);
+    const { artist, title } = extractArtistAndTitle(titleInfo);
     
-    if (match) {
-      return {
-        artist: match[1]?.trim(),
-        title: match[2]?.trim(),
-        startedAt: new Date(),
-        album: source.album || undefined
-      };
-    } else {
-      return {
-        title: titleInfo.trim(),
-        artist: source.artist || 'Unknown Artist',
-        startedAt: new Date(),
-        album: source.album || undefined
-      };
-    }
+    return {
+      artist: artist || source.artist || 'Unknown Artist',
+      title: title,
+      startedAt: new Date(),
+      album: source.album || undefined
+    };
   }
   
   return {};
@@ -103,24 +85,22 @@ export const parseIcecastJson = (data: any): Partial<RadioMetadata> => {
  * @returns Partial RadioMetadata object
  */
 export const parseShoutcastData = (data: any): Partial<RadioMetadata> => {
-  if (!data?.songtitle && !data?.title) return {};
-  
-  const titleInfo = data.songtitle || data.title;
-  const match = titleInfo.match(/(.*?)\s-\s(.*)/);
-  
-  if (match) {
+  // Multiple possible formats from different Shoutcast versions
+  const titleInfo = data?.songtitle || data?.title || data?.streamtitle || 
+                   data?.data?.songtitle || data?.data?.title || data?.current_song || 
+                   data?.currenttitle || data?.currentsong;
+                   
+  if (titleInfo) {
+    const { artist, title } = extractArtistAndTitle(titleInfo);
+    
     return {
-      artist: match[1]?.trim(),
-      title: match[2]?.trim(),
-      startedAt: new Date()
-    };
-  } else {
-    return {
-      title: titleInfo.trim(),
-      artist: data.artist || 'Unknown Artist',
+      artist: artist || data.artist || 'Unknown Artist',
+      title: title,
       startedAt: new Date()
     };
   }
+  
+  return {};
 };
 
 /**
@@ -129,16 +109,41 @@ export const parseShoutcastData = (data: any): Partial<RadioMetadata> => {
  * @returns Partial RadioMetadata object
  */
 export const parseNowPlayingJson = (data: any): Partial<RadioMetadata> => {
-  if (!data?.now_playing?.song) return {};
+  // Check for AzuraCast format
+  if (data?.now_playing?.song) {
+    const song = data.now_playing.song;
+    return {
+      title: song.title,
+      artist: song.artist,
+      album: song.album,
+      coverArt: song.art || song.artwork_url,
+      startedAt: new Date()
+    };
+  }
   
-  const song = data.now_playing.song;
-  return {
-    title: song.title,
-    artist: song.artist,
-    album: song.album,
-    coverArt: song.art || song.artwork_url,
-    startedAt: new Date()
-  };
+  // Check for simple now_playing format
+  if (data?.now_playing || data?.currentSong || data?.current_song) {
+    const songInfo = data.now_playing || data.currentSong || data.current_song;
+    
+    if (typeof songInfo === 'string') {
+      const { artist, title } = extractArtistAndTitle(songInfo);
+      return {
+        artist,
+        title,
+        startedAt: new Date()
+      };
+    } else if (typeof songInfo === 'object') {
+      return {
+        title: songInfo.title || songInfo.name,
+        artist: songInfo.artist || songInfo.performer || 'Unknown Artist',
+        album: songInfo.album,
+        coverArt: songInfo.artwork || songInfo.cover || songInfo.art,
+        startedAt: new Date()
+      };
+    }
+  }
+  
+  return {};
 };
 
 /**
@@ -147,17 +152,37 @@ export const parseNowPlayingJson = (data: any): Partial<RadioMetadata> => {
  * @returns Object with separated artist and title
  */
 export const extractArtistAndTitle = (trackString: string): { artist: string, title: string } => {
-  const match = trackString.match(/(.*?)\s-\s(.*)/);
-  
-  if (match) {
-    return {
-      artist: match[1]?.trim() || 'Unknown Artist',
-      title: match[2]?.trim() || 'Unknown Track'
-    };
-  } else {
+  if (!trackString) {
     return {
       artist: 'Unknown Artist',
-      title: trackString.trim() || 'Unknown Track'
+      title: 'Unknown Track'
     };
   }
+  
+  // Common formats:
+  // Artist - Title
+  // Artist "Title"
+  // Artist: Title
+  const patterns = [
+    /(.*?)\s-\s(.*)/,        // Artist - Title
+    /(.*?)\s["""](.*?)["""]/,   // Artist "Title"
+    /(.*?):\s+(.*)/,         // Artist: Title
+    /(.*?)\s[▸▶♫]+\s(.*)/    // Artist ▶ Title
+  ];
+  
+  for (const pattern of patterns) {
+    const match = trackString.match(pattern);
+    if (match) {
+      return {
+        artist: match[1]?.trim() || 'Unknown Artist',
+        title: match[2]?.trim() || 'Unknown Track'
+      };
+    }
+  }
+  
+  // If no pattern matched, assume it's all title
+  return {
+    artist: 'Unknown Artist',
+    title: trackString.trim() || 'Unknown Track'
+  };
 };
