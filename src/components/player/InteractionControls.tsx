@@ -27,7 +27,6 @@ const InteractionControls: React.FC<InteractionControlsProps> = ({
           isLiked ? "text-red-500" : "text-gray hover:text-red-500"
         )}
         aria-label={isLiked ? "Already liked" : "Like track"}
-        disabled={isLiked}
       >
         <Heart className="w-5 h-5" fill={isLiked ? "currentColor" : "none"} />
       </button>

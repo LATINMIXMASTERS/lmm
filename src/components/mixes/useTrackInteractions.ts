@@ -28,8 +28,8 @@ export const useTrackInteractions = () => {
   const { isAuthenticated, user } = useAuth();
   
   // Track interaction hooks
-  const { handleLikeTrack } = useTrackLikes();
-  const { handleShareTrack } = useTrackSharing();
+  const { handleLikeTrack, hasUserLikedTrack } = useTrackLikes();
+  const { handleShareTrack, showSharingOptions } = useTrackSharing();
   const { newComments, handleCommentChange, handleSubmitComment } = useTrackComments();
   const { currentPlayingTrack, handlePlayTrack } = useTrackPlayback();
   const { handleEditTrack, handleDeleteTrack, canUserEditTrack } = useTrackManagement();
@@ -47,7 +47,9 @@ export const useTrackInteractions = () => {
     
     // Track interactions
     handleLikeTrack,
+    hasUserLikedTrack,
     handleShareTrack,
+    showSharingOptions,
     
     // Comments
     newComments,

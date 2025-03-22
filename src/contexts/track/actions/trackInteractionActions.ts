@@ -1,3 +1,4 @@
+
 import { Track, Genre, Comment } from '@/models/Track';
 import { copyToClipboard } from '@/utils/trackUtils';
 
@@ -92,54 +93,20 @@ export const createTrackInteractionActions = (
   // Helper function to show custom share options
   const showShareDialog = (track: Track, shareUrl: string, toast: any) => {
     // Create custom share dialog with social media options
-    // This will be triggered by the toast notification with action buttons
     toast({
       title: "Share this track",
       description: `${track.artist} - ${track.title}`,
-      action: (
-        <div className="flex space-x-2">
-          <button 
-            onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Check out this mix: ${track.artist} - ${track.title}\n${shareUrl}`)}`, '_blank')}
-            className="px-3 py-1 rounded bg-green-500 text-white text-xs"
-          >
-            WhatsApp
-          </button>
-          <button 
-            onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank')}
-            className="px-3 py-1 rounded bg-blue-600 text-white text-xs"
-          >
-            Facebook
-          </button>
-          <button 
-            onClick={() => window.open(`sms:?&body=${encodeURIComponent(`Check out this mix: ${track.artist} - ${track.title}\n${shareUrl}`)}`, '_blank')}
-            className="px-3 py-1 rounded bg-gray-500 text-white text-xs"
-          >
-            SMS
-          </button>
-          <button 
-            onClick={() => {
-              copyToClipboard(shareUrl)
-                .then(() => {
-                  toast({
-                    title: "Link copied!",
-                    description: "Share link copied to clipboard",
-                  });
-                })
-                .catch(() => {
-                  toast({
-                    title: "Failed to copy",
-                    description: "Could not copy the link to clipboard",
-                    variant: "destructive"
-                  });
-                });
-            }}
-            className="px-3 py-1 rounded bg-gray-700 text-white text-xs"
-          >
-            Copy
-          </button>
-        </div>
-      ),
+      action: {
+        label: "Share",
+        onClick: () => {
+          // This action object should be handled by the toast component
+          console.log("User clicked share");
+        }
+      }
     });
+    
+    // Use our hook for direct sharing
+    // This is handled by the useTrackSharing hook elsewhere
   };
 
   return {
