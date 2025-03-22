@@ -1,3 +1,4 @@
+
 export interface RadioStation {
   id: string;
   name: string;
@@ -80,8 +81,10 @@ export interface S3StorageConfig {
   bucketName: string;
   region: string;
   accessKeyId?: string;
+  secretAccessKey?: string;  // Added missing property
   endpoint?: string;
   publicUrlBase?: string;
+  secretKey?: string;        // Added for backward compatibility if needed
 }
 
 export interface S3FileReference {
