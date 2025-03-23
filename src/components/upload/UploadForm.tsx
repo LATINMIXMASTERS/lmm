@@ -36,7 +36,9 @@ const UploadForm: React.FC = () => {
   
   // Check if S3 is configured when component mounts
   useEffect(() => {
-    setS3Configured(isS3Configured());
+    const s3Status = isS3Configured();
+    console.log('S3 configuration status:', s3Status);
+    setS3Configured(s3Status);
   }, []);
   
   // Set current user as default artist when component mounts
@@ -50,7 +52,14 @@ const UploadForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You must be logged in to upload tracks",
+        variant: "destructive"
+      });
+      return;
+    }
     
     if (!title || !selectedArtistId || !selectedGenre || !coverImage || !audioFile) {
       toast({
@@ -65,15 +74,18 @@ const UploadForm: React.FC = () => {
     setUploadError(null);
     
     try {
+      console.log('Starting upload process...');
       // Find the selected artist name
       const { users } = useAuth();
       const selectedArtist = users.find(u => u.id === selectedArtistId);
       if (!selectedArtist) {
-        throw new Error("Selected DJ not found");
+        throw new Error("Selected artist not found");
       }
       
       // Upload cover image to S3
       setUploadProgress(0);
+      setCoverProgress(0);
+      console.log('Uploading cover image...');
       const coverUploadResult = await uploadFileToS3(coverImage, 'covers', setCoverProgress);
       
       if (!coverUploadResult.success) {
@@ -81,6 +93,7 @@ const UploadForm: React.FC = () => {
       }
       
       // Upload audio file to S3
+      console.log('Uploading audio file...');
       const audioUploadResult = await uploadFileToS3(audioFile, 'audio', setUploadProgress);
       
       if (!audioUploadResult.success) {
@@ -88,7 +101,7 @@ const UploadForm: React.FC = () => {
       }
       
       // Add track to our context
-      addTrack({
+      const newTrack = {
         title,
         artist: selectedArtist.username,
         artistId: selectedArtistId,
@@ -97,7 +110,10 @@ const UploadForm: React.FC = () => {
         audioFile: audioUploadResult.url,
         fileSize: audioFile.size,
         uploadedBy: user.id
-      });
+      };
+      
+      console.log('Adding track to context:', newTrack);
+      addTrack(newTrack);
       
       // Show success message
       toast({

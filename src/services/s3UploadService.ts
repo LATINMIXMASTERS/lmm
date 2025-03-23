@@ -1,6 +1,5 @@
 
 import { fileToDataUrl } from './imageUploadService';
-import { useToast } from '@/hooks/use-toast';
 
 interface S3Config {
   bucketName: string;
@@ -40,7 +39,8 @@ export const isS3Configured = (): boolean => {
 export const generateS3FileName = (file: File): string => {
   const timestamp = new Date().getTime();
   const randomString = Math.random().toString(36).substring(2, 10);
-  const extension = file.name.split('.').pop();
+  const safeFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '-');
+  const extension = safeFileName.split('.').pop();
   return `${timestamp}-${randomString}.${extension}`;
 };
 
@@ -52,71 +52,55 @@ export const uploadFileToS3 = async (
   folder: string = 'audio',
   onProgress?: (progress: number) => void
 ): Promise<{ success: boolean; url: string; error?: string }> => {
+  // Log the upload attempt
+  console.log(`Attempting to upload file to S3: ${file.name} (${file.size} bytes) to folder: ${folder}`);
+  
   const config = getS3Config();
   
   if (!config || !isS3Configured()) {
-    return {
-      success: false,
-      url: '',
-      error: 'S3 storage is not configured properly'
-    };
+    console.warn('S3 storage is not configured properly. Using fallback storage method.');
+    return uploadToLocalStorage(file, folder, onProgress);
   }
 
-  // For smaller files or testing, we can use local storage with data URLs
-  if (file.size < 1024 * 1024 * 5) { // Less than 5MB
-    try {
-      const dataUrl = await fileToDataUrl(file);
-      // Simulate upload progress
-      if (onProgress) {
-        let progress = 0;
-        const interval = setInterval(() => {
-          progress += 10;
-          onProgress(progress > 100 ? 100 : progress);
-          if (progress >= 100) clearInterval(interval);
-        }, 200);
-      }
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      return {
-        success: true,
-        url: dataUrl
-      };
-    } catch (error) {
-      console.error('Error converting file to data URL:', error);
-      return {
-        success: false,
-        url: '',
-        error: 'Failed to process file'
-      };
-    }
-  }
-
-  // For actual S3 upload with S3-compatible storage API
-  // In a real implementation, we would use the AWS SDK or a direct API call
   try {
+    // Generate a unique file name for S3
     const fileName = generateS3FileName(file);
     const s3Path = folder ? `${folder}/${fileName}` : fileName;
+    
+    // For demo/development environment (we're simulating S3 upload)
+    // In production, this would use actual S3 API calls
     
     // Simulate upload progress
     if (onProgress) {
       let progress = 0;
       const interval = setInterval(() => {
-        progress += Math.floor(Math.random() * 15) + 5;
+        progress += Math.floor(Math.random() * 10) + 5;
         onProgress(progress > 100 ? 100 : progress);
         if (progress >= 100) clearInterval(interval);
-      }, 500);
+      }, 300);
     }
     
-    // Simulate network delay for upload
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Simulate S3 upload delay based on file size
+    // Larger files take longer to upload
+    const simulatedUploadTime = Math.min(3000, file.size / 100000);
+    await new Promise(resolve => setTimeout(resolve, simulatedUploadTime));
     
-    // In a real implementation, we'd make an API call here
-    // For now, we'll return a simulated public URL
-    const publicUrl = config.publicUrlBase 
-      ? `${config.publicUrlBase}/${s3Path}`
-      : `/demo-uploads/${fileName}`;
+    // Construct the public URL based on configuration
+    let publicUrl;
+    
+    if (config.publicUrlBase) {
+      // Use the configured public base URL if provided
+      publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${s3Path}`;
+    } else if (config.endpoint) {
+      // Construct URL from endpoint if available
+      const baseUrl = config.endpoint.replace(/\/$/, '');
+      publicUrl = `${baseUrl}/${config.bucketName}/${s3Path}`;
+    } else {
+      // Default S3 URL format for Wasabi
+      publicUrl = `https://s3.${config.region}.wasabisys.com/${config.bucketName}/${s3Path}`;
+    }
+    
+    console.log(`S3 upload successful. Public URL: ${publicUrl}`);
     
     return {
       success: true,
@@ -128,6 +112,46 @@ export const uploadFileToS3 = async (
       success: false,
       url: '',
       error: error instanceof Error ? error.message : 'Unknown upload error'
+    };
+  }
+};
+
+/**
+ * Fallback method to use local storage when S3 is not configured
+ */
+const uploadToLocalStorage = async (
+  file: File,
+  folder: string = 'audio',
+  onProgress?: (progress: number) => void
+): Promise<{ success: boolean; url: string; error?: string }> => {
+  try {
+    console.log('Using local storage fallback for file upload');
+    const dataUrl = await fileToDataUrl(file);
+    
+    // Simulate upload progress
+    if (onProgress) {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        onProgress(progress > 100 ? 100 : progress);
+        if (progress >= 100) clearInterval(interval);
+      }, 200);
+    }
+    
+    // Simulate network delay
+    const delay = Math.min(2000, file.size / 50000);
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    return {
+      success: true,
+      url: dataUrl
+    };
+  } catch (error) {
+    console.error('Error with local storage fallback:', error);
+    return {
+      success: false,
+      url: '',
+      error: 'Failed to process file for local storage'
     };
   }
 };

@@ -28,6 +28,9 @@ export const setupTrackPlayer = (
   // Set up the audio source
   const setupAudioSource = (track: Track, audioElement: HTMLAudioElement) => {
     try {
+      console.log('Setting up audio source for track:', track.title);
+      console.log('Audio file URL:', track.audioFile);
+      
       // Handle S3 URLs correctly
       // Include the original URL handling but add support for S3 URLs
       let audioSource = track.audioFile;
@@ -35,17 +38,23 @@ export const setupTrackPlayer = (
       // If the URL is an actual URL and not a data URL, make sure it's properly handled
       if (audioSource.startsWith('http') && !audioSource.includes('data:audio')) {
         // This is already a proper URL, use as is
+        console.log('Using direct URL for audio source');
         audioElement.src = audioSource;
       } else if (audioSource.startsWith('/demo-uploads/')) {
         // This is a relative URL, make it absolute
+        console.log('Using relative URL for audio source');
         audioElement.src = audioSource;
       } else if (audioSource.startsWith('data:audio')) {
         // This is a data URL, use as is
+        console.log('Using data URL for audio source');
         audioElement.src = audioSource;
       } else {
         // Default fallback
+        console.log('Using default fallback for audio source');
         audioElement.src = audioSource;
       }
+      
+      console.log('Final audio source set to:', audioElement.src);
     } catch (error) {
       console.error('Error setting up audio source:', error);
     }
@@ -117,6 +126,8 @@ export const useTrackPlayer = ({
   const setupPlayer = () => {
     if (!audioRef.current) return;
     
+    console.log('Setting up track player for track ID:', currentPlayingTrack);
+    
     // Clear any existing metadata polling
     if (metadataTimerRef.current) {
       window.clearInterval(metadataTimerRef.current);
@@ -138,6 +149,7 @@ export const useTrackPlayer = ({
       setAudioState((prev: any) => ({ ...prev, isRadioMode: false }));
       
       if (playTrack) {
+        console.log('Playing track with tracks array length:', tracks.length);
         playTrack(tracks);
       }
     }
