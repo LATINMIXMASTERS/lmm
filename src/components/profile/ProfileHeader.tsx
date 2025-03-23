@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Youtube, Upload } from 'lucide-react';
@@ -7,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { fileToDataUrl, validateImageFile } from '@/services/imageUploadService';
-import { uploadFileToS3 } from '@/services/s3UploadService';
+import { uploadFileToS3, isS3Configured } from '@/services/s3UploadService';
 
 interface ProfileHeaderProps {
   profileUser: {
@@ -150,14 +149,12 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profileUser, isOwnProfile
           </span>
         </div>
         
-        {/* Biography */}
         {profileUser.biography && (
           <p className="text-muted-foreground mb-4">
             {profileUser.biography}
           </p>
         )}
         
-        {/* Social Links */}
         {profileUser.socialLinks && Object.values(profileUser.socialLinks).some(link => !!link) && (
           <div className="flex gap-3 justify-center md:justify-start mb-4">
             {profileUser.socialLinks.facebook && (
