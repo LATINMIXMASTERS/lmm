@@ -4,11 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/layout/MainLayout";
-import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -55,22 +53,6 @@ const Login: React.FC = () => {
     setIsRegistering(false);
   };
 
-  const handleTestLogin = (type: 'host' | 'user' | 'admin') => {
-    if (type === 'host') {
-      setEmail('testhost@example.com');
-      setPassword('test123');
-    } else if (type === 'admin') {
-      setEmail('admin@example.com');
-      setPassword('admin');
-    } else {
-      setEmail('testuser@example.com');
-      setPassword('test123');
-    }
-  };
-
-  // For debugging
-  console.log("Current login state:", { email, password, isRegistering });
-
   return (
     <MainLayout>
       <div className="container relative grid items-center gap-8 py-8 md:py-12 lg:pt-24 lg:pb-32">
@@ -97,39 +79,6 @@ const Login: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
-              {!isRegistering && (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Test Accounts Available</AlertTitle>
-                  <AlertDescription>
-                    You can use our test accounts to explore the platform:
-                    <div className="grid gap-2 mt-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleTestLogin('admin')}
-                      >
-                        Use Admin Account
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleTestLogin('host')}
-                      >
-                        Use Test Host Account
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleTestLogin('user')}
-                      >
-                        Use Test User Account
-                      </Button>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
-              
               <form onSubmit={isRegistering ? handleRegister : handleLogin}>
                 <div className="grid gap-2">
                   {isRegistering && (
@@ -220,14 +169,6 @@ const Login: React.FC = () => {
                 )}
               </div>
             </CardContent>
-            
-            {!isRegistering && (
-              <CardFooter className="flex flex-col text-sm text-muted-foreground">
-                <div>Admin login: admin@example.com / admin</div>
-                <div>Test Host login: testhost@example.com / test123</div>
-                <div>Test User login: testuser@example.com / test123</div>
-              </CardFooter>
-            )}
           </Card>
         </div>
       </div>

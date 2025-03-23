@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
 import Login from "@/pages/Login";
@@ -34,19 +34,24 @@ const AppRoutes: React.FC = () => {
       <Route path="/host/:hostId" element={<HostProfile />} />
       <Route path="/user/:userId" element={<UserProfile />} />
       
-      {/* Fixed upload paths */}
+      {/* Upload paths */}
       <Route path="/upload" element={<UploadTrack />} />
       <Route path="/upload-track" element={<UploadTrack />} />
+      <Route path="/uploads" element={<Navigate to="/upload" replace />} />
       
+      {/* Edit paths */}
       <Route path="/edit/:trackId" element={<EditTrack />} />
       <Route path="/edit-track/:trackId" element={<EditTrack />} />
+      
+      {/* Genre management */}
       <Route path="/manage-genres" element={<ManageGenres />} />
       <Route path="/genres" element={<ManageGenres />} />
       
-      {/* Fixed booking and station routes */}
+      {/* Booking and station routes */}
       <Route path="/book-show/:stationId?" element={<BookShow />} />
       <Route path="/book/:stationId?" element={<BookShow />} />
       <Route path="/go-live/:stationId?" element={<GoLive />} />
+      <Route path="/live/:stationId?" element={<GoLive />} />
       
       {/* Dashboard routes */}
       <Route path="/dashboard" element={<HostDashboard />} />

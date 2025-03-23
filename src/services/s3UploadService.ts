@@ -30,7 +30,22 @@ export const getS3Config = (): S3Config | null => {
  */
 export const isS3Configured = (): boolean => {
   const config = getS3Config();
-  return !!(config?.bucketName && config?.region && config?.accessKeyId && config?.secretAccessKey);
+  if (!config) {
+    console.warn('No S3 configuration found');
+    return false;
+  }
+  
+  if (!config.bucketName || !config.region || !config.accessKeyId || !config.secretAccessKey) {
+    console.warn('Incomplete S3 configuration', { 
+      hasBucket: !!config.bucketName, 
+      hasRegion: !!config.region,
+      hasAccessKey: !!config.accessKeyId,
+      hasSecretKey: !!config.secretAccessKey
+    });
+    return false;
+  }
+  
+  return true;
 };
 
 /**
@@ -67,10 +82,7 @@ export const uploadFileToS3 = async (
     const fileName = generateS3FileName(file);
     const s3Path = folder ? `${folder}/${fileName}` : fileName;
     
-    // For demo/development environment (we're simulating S3 upload)
-    // In production, this would use actual S3 API calls
-    
-    // Simulate upload progress
+    // Simulate upload progress - In production, this would use actual S3 API calls
     if (onProgress) {
       let progress = 0;
       const interval = setInterval(() => {
@@ -81,7 +93,6 @@ export const uploadFileToS3 = async (
     }
     
     // Simulate S3 upload delay based on file size
-    // Larger files take longer to upload
     const simulatedUploadTime = Math.min(3000, file.size / 100000);
     await new Promise(resolve => setTimeout(resolve, simulatedUploadTime));
     
@@ -92,7 +103,7 @@ export const uploadFileToS3 = async (
       // Use the configured public base URL if provided
       publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${s3Path}`;
     } else if (config.endpoint) {
-      // Construct URL from endpoint if available
+      // Construct URL from endpoint if available (Wasabi typically uses this format)
       const baseUrl = config.endpoint.replace(/\/$/, '');
       publicUrl = `${baseUrl}/${config.bucketName}/${s3Path}`;
     } else {

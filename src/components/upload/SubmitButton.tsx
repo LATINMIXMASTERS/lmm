@@ -16,7 +16,7 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({ isUploading, isDisabled }) 
       disabled={isUploading || isDisabled}
     >
       {isUploading ? (
-        <>Uploading...</>
+        "Uploading..."
       ) : (
         <>
           <Upload className="w-4 h-4 mr-2" />

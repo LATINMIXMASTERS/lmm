@@ -12,42 +12,50 @@ import { S3StorageConfig } from '@/models/RadioStation';
 const S3ConfigurationPanel: React.FC = () => {
   const { toast } = useToast();
   const [isConfigured, setIsConfigured] = useState(false);
-  
-  // S3 configuration state
-  const [s3Config, setS3Config] = useState<S3StorageConfig>({
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [config, setConfig] = useState<S3StorageConfig>({
     bucketName: '',
     region: 'us-east-1',
     endpoint: '',
     publicUrlBase: '',
   });
   
-  // Test connection state
-  const [testingConnection, setTestingConnection] = useState(false);
-  
   // Load saved configuration on mount
   useEffect(() => {
+    loadConfig();
+  }, []);
+  
+  const loadConfig = () => {
     const savedConfig = localStorage.getItem('latinmixmasters_s3config');
     if (savedConfig) {
       try {
-        const config = JSON.parse(savedConfig);
-        setS3Config(config);
-        setIsConfigured(true);
+        const parsedConfig = JSON.parse(savedConfig);
+        setConfig(parsedConfig);
+        
+        // Check if config has all required fields
+        const hasRequiredFields = 
+          parsedConfig.bucketName && 
+          parsedConfig.region && 
+          parsedConfig.accessKeyId && 
+          parsedConfig.secretAccessKey;
+          
+        setIsConfigured(hasRequiredFields);
       } catch (error) {
         console.error('Error parsing saved S3 configuration:', error);
       }
     }
-  }, []);
+  };
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setS3Config(prev => ({
+    setConfig(prev => ({
       ...prev,
       [name]: value
     }));
   };
   
   const saveConfiguration = () => {
-    if (!s3Config.bucketName) {
+    if (!config.bucketName) {
       toast({
         title: "Validation Error",
         description: "Bucket name is required",
@@ -56,7 +64,7 @@ const S3ConfigurationPanel: React.FC = () => {
       return;
     }
     
-    if (!s3Config.region) {
+    if (!config.region) {
       toast({
         title: "Validation Error",
         description: "Region is required",
@@ -65,8 +73,26 @@ const S3ConfigurationPanel: React.FC = () => {
       return;
     }
     
+    if (!config.accessKeyId) {
+      toast({
+        title: "Validation Error",
+        description: "Access Key ID is required",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!config.secretAccessKey) {
+      toast({
+        title: "Validation Error",
+        description: "Secret Access Key is required",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Save configuration to localStorage
-    localStorage.setItem('latinmixmasters_s3config', JSON.stringify(s3Config));
+    localStorage.setItem('latinmixmasters_s3config', JSON.stringify(config));
     
     setIsConfigured(true);
     
@@ -77,13 +103,16 @@ const S3ConfigurationPanel: React.FC = () => {
   };
   
   const testConnection = async () => {
-    setTestingConnection(true);
+    setIsTestingConnection(true);
     
     try {
-      // Simulate connection test
+      if (!config.bucketName || !config.region || !config.accessKeyId || !config.secretAccessKey) {
+        throw new Error("Missing required configuration");
+      }
+      
+      // In a real app, this would make an actual request to test the connection
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // In a real app, we would make an API call to test the connection
       toast({
         title: "Connection Successful",
         description: "Successfully connected to S3 storage"
@@ -91,15 +120,15 @@ const S3ConfigurationPanel: React.FC = () => {
     } catch (error) {
       toast({
         title: "Connection Failed",
-        description: "Failed to connect to S3 storage. Please check your configuration.",
+        description: error instanceof Error ? error.message : "Failed to connect to S3 storage",
         variant: "destructive"
       });
     } finally {
-      setTestingConnection(false);
+      setIsTestingConnection(false);
     }
   };
 
-  // Wasabi specific configuration examples
+  // Wasabi helper functions
   const wasabiRegions = [
     { name: "US East 1", value: "us-east-1", endpoint: "s3.us-east-1.wasabisys.com" },
     { name: "US East 2", value: "us-east-2", endpoint: "s3.us-east-2.wasabisys.com" },
@@ -110,17 +139,16 @@ const S3ConfigurationPanel: React.FC = () => {
     { name: "AP Northeast 2", value: "ap-northeast-2", endpoint: "s3.ap-northeast-2.wasabisys.com" }
   ];
 
-  // Function to apply Wasabi configuration
   const applyWasabiConfig = (regionId: string) => {
     const selectedRegion = wasabiRegions.find(r => r.value === regionId);
     
     if (selectedRegion) {
-      setS3Config(prev => ({
+      setConfig(prev => ({
         ...prev,
         region: selectedRegion.value,
         endpoint: `https://${selectedRegion.endpoint}`,
-        publicUrlBase: s3Config.bucketName ? 
-          `https://s3.${selectedRegion.value}.wasabisys.com/${s3Config.bucketName}` : ''
+        publicUrlBase: prev.bucketName ? 
+          `https://s3.${selectedRegion.value}.wasabisys.com/${prev.bucketName}` : ''
       }));
       
       toast({
@@ -130,7 +158,6 @@ const S3ConfigurationPanel: React.FC = () => {
     }
   };
 
-  // Function to generate a sample CORS configuration for Wasabi
   const getWasabiCorsConfig = () => {
     return `[
   {
@@ -142,7 +169,6 @@ const S3ConfigurationPanel: React.FC = () => {
 ]`;
   };
 
-  // Function to copy text to clipboard
   const copyToClipboard = (text: string, successMessage: string) => {
     navigator.clipboard.writeText(text).then(() => {
       toast({
@@ -168,7 +194,7 @@ const S3ConfigurationPanel: React.FC = () => {
         <div className="bg-blue-50 dark:bg-blue-950 rounded-md p-3 mb-6">
           <p className="text-sm text-blue-800 dark:text-blue-200">
             Configure an S3-compatible storage provider to store uploaded media files.
-            For Wasabi storage specifically, use the Wasabi tab to get region-specific settings.
+            For Wasabi storage, use the Wasabi tab to get region-specific settings.
           </p>
         </div>
         
@@ -187,7 +213,7 @@ const S3ConfigurationPanel: React.FC = () => {
                   <Input
                     id="bucketName"
                     name="bucketName"
-                    value={s3Config.bucketName}
+                    value={config.bucketName}
                     onChange={handleInputChange}
                     placeholder="my-latinmix-bucket"
                   />
@@ -198,7 +224,7 @@ const S3ConfigurationPanel: React.FC = () => {
                   <Input
                     id="region"
                     name="region"
-                    value={s3Config.region}
+                    value={config.region}
                     onChange={handleInputChange}
                     placeholder="us-east-1"
                   />
@@ -209,7 +235,7 @@ const S3ConfigurationPanel: React.FC = () => {
                   <Input
                     id="accessKeyId"
                     name="accessKeyId"
-                    value={s3Config.accessKeyId || ''}
+                    value={config.accessKeyId || ''}
                     onChange={handleInputChange}
                     placeholder="Enter your access key"
                     type="password"
@@ -221,7 +247,7 @@ const S3ConfigurationPanel: React.FC = () => {
                   <Input
                     id="secretAccessKey"
                     name="secretAccessKey"
-                    value={s3Config.secretAccessKey || ''}
+                    value={config.secretAccessKey || ''}
                     onChange={handleInputChange}
                     placeholder="Enter your secret key"
                     type="password"
@@ -236,7 +262,7 @@ const S3ConfigurationPanel: React.FC = () => {
                   <Input
                     id="publicUrlBase"
                     name="publicUrlBase"
-                    value={s3Config.publicUrlBase || ''}
+                    value={config.publicUrlBase || ''}
                     onChange={handleInputChange}
                     placeholder="https://my-bucket.s3.wasabisys.com"
                   />
@@ -307,7 +333,7 @@ const S3ConfigurationPanel: React.FC = () => {
                 <Input
                   id="endpoint"
                   name="endpoint"
-                  value={s3Config.endpoint || ''}
+                  value={config.endpoint || ''}
                   onChange={handleInputChange}
                   placeholder="https://s3.us-east-1.wasabisys.com"
                 />
@@ -331,10 +357,10 @@ const S3ConfigurationPanel: React.FC = () => {
           <Button 
             variant="outline" 
             onClick={testConnection}
-            disabled={testingConnection || !s3Config.bucketName}
+            disabled={isTestingConnection || !config.bucketName}
           >
             <TestTube className="w-4 h-4 mr-2" />
-            {testingConnection ? 'Testing...' : 'Test Connection'}
+            {isTestingConnection ? 'Testing...' : 'Test Connection'}
           </Button>
         </div>
         

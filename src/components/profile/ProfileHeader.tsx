@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { fileToDataUrl, validateImageFile } from '@/services/imageUploadService';
+import { uploadFileToS3 } from '@/services/s3UploadService';
 
 interface ProfileHeaderProps {
   profileUser: {
@@ -57,14 +58,31 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profileUser, isOwnProfile
     setIsUploading(true);
     
     try {
-      const dataUrl = await fileToDataUrl(file);
-      updateProfile({ profileImage: dataUrl });
+      // Try to upload to S3 first if configured
+      const isS3Ready = isS3Configured();
+      let imageUrl;
+      
+      if (isS3Ready) {
+        // Upload to S3
+        const result = await uploadFileToS3(file, 'profiles');
+        if (result.success) {
+          imageUrl = result.url;
+        } else {
+          throw new Error(result.error || 'Failed to upload to S3');
+        }
+      } else {
+        // Fallback to local data URL
+        imageUrl = await fileToDataUrl(file);
+      }
+      
+      updateProfile({ profileImage: imageUrl });
+      
       toast({
         title: "Profile updated",
         description: "Your profile image has been updated"
       });
     } catch (error) {
-      console.error(error);
+      console.error('Profile image upload error:', error);
       toast({
         title: "Upload failed",
         description: "Failed to upload profile image",
