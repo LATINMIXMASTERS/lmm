@@ -123,7 +123,7 @@ const UploadForm: React.FC = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {!s3Configured && (
-        <Alert variant="warning" className="bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-800">
+        <Alert className="bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-800">
           <AlertCircle className="h-4 w-4 mr-2" />
           <AlertDescription>
             S3 storage is not configured. File uploads will use local storage instead. 
