@@ -1,10 +1,9 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Play, Pause, Volume2, Heart, MessageCircle } from 'lucide-react';
+import { Play, Pause, Volume2, Heart, MessageCircle, Share2 } from 'lucide-react';
 import { formatTime } from '@/utils/formatTime';
 import { Track } from '@/models/Track';
-import { useTrackPlayback } from '@/hooks/track/useTrackPlayback';
 
 export interface TrackCardProps {
   track: Track;
@@ -69,8 +68,24 @@ const TrackCard: React.FC<TrackCardProps> = ({
           <p className="text-xs text-gray-dark dark:text-gray-light truncate">{track.artist}</p>
         </div>
         
-        <div className="flex-shrink-0 text-xs text-gray-dark dark:text-gray-light">
-          {formatDuration(track.duration)}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onLike}
+            className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+          >
+            <Heart className="w-4 h-4" />
+          </button>
+          
+          <button
+            onClick={onShare}
+            className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+          
+          <span className="text-xs text-gray-dark dark:text-gray-light">
+            {formatDuration(track.duration)}
+          </span>
         </div>
       </div>
     );
@@ -119,7 +134,7 @@ const TrackCard: React.FC<TrackCardProps> = ({
                   onClick={onShare}
                   className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors"
                 >
-                  <MessageCircle className="w-4 h-4 text-white" />
+                  <Share2 className="w-4 h-4 text-white" />
                 </button>
               </div>
             </div>

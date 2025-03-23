@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Play, Pause, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRadio } from '@/hooks/useRadioContext';
@@ -55,6 +55,7 @@ const StationCard: React.FC<StationCardProps> = ({
   };
 
   const handleCardClick = () => {
+    // Fixed: Navigate to the proper station details page
     navigate(`/stations/${station.id}`);
   };
 
@@ -64,7 +65,7 @@ const StationCard: React.FC<StationCardProps> = ({
       className={cn(
         "rounded-lg overflow-hidden border border-gray-light hover:shadow-md transition-all duration-300",
         "flex flex-col h-full cursor-pointer",
-        "bg-white dark:bg-gray-dark", // Ensure proper background in both light/dark modes
+        "bg-white dark:bg-gray-dark", 
         className
       )}
       style={style}

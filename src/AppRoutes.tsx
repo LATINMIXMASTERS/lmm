@@ -27,25 +27,34 @@ const AppRoutes: React.FC = () => {
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
       <Route path="/stations" element={<Stations />} />
-      <Route path="/stations/:stationId" element={<StationDetails />} />
+      <Route path="/stations/:id" element={<StationDetails />} />
       <Route path="/mixes" element={<Mixes />} />
       <Route path="/djs" element={<DJs />} />
       <Route path="/profile/:userId" element={<UserProfile />} />
       <Route path="/host/:hostId" element={<HostProfile />} />
+      <Route path="/user/:userId" element={<UserProfile />} />
       
-      {/* Update the upload path to include both routes */}
+      {/* Fixed upload paths */}
       <Route path="/upload" element={<UploadTrack />} />
       <Route path="/upload-track" element={<UploadTrack />} />
       
       <Route path="/edit/:trackId" element={<EditTrack />} />
+      <Route path="/edit-track/:trackId" element={<EditTrack />} />
       <Route path="/manage-genres" element={<ManageGenres />} />
       <Route path="/genres" element={<ManageGenres />} />
+      
+      {/* Fixed booking and station routes */}
+      <Route path="/book-show/:stationId?" element={<BookShow />} />
       <Route path="/book/:stationId?" element={<BookShow />} />
       <Route path="/go-live/:stationId?" element={<GoLive />} />
-      <Route path="/dashboard" element={<HostDashboard />} />
-      <Route path="/admin" element={<AdminDashboard />} />
       
-      {/* Updated routes with alternate paths for legal pages */}
+      {/* Dashboard routes */}
+      <Route path="/dashboard" element={<HostDashboard />} />
+      <Route path="/host-dashboard" element={<HostDashboard />} />
+      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/admin-dashboard" element={<AdminDashboard />} />
+      
+      {/* Legal pages with alternate paths */}
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />
