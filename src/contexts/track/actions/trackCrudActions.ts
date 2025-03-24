@@ -44,7 +44,7 @@ export const createTrackCrudActions = (
     return newTrack;
   };
 
-  // Delete a track
+  // Delete a track - Allow admins to delete any track
   const deleteTrack = (trackId: string): boolean => {
     if (!userInfo) {
       toast({
@@ -65,6 +65,7 @@ export const createTrackCrudActions = (
       return false;
     }
 
+    // Admin can delete any track, regular users can only delete their own
     if (!userInfo.isAdmin && track.uploadedBy !== userInfo.id) {
       toast({
         title: "Permission denied",
@@ -86,7 +87,7 @@ export const createTrackCrudActions = (
     return true;
   };
 
-  // Update a track
+  // Update a track - Allow admins to update any track
   const updateTrack = (trackId: string, trackData: Partial<Track>): boolean => {
     if (!userInfo) {
       toast({
@@ -107,6 +108,7 @@ export const createTrackCrudActions = (
       return false;
     }
     
+    // Admin can update any track, regular users can only update their own
     if (!userInfo.isAdmin && track.uploadedBy !== userInfo.id) {
       toast({
         title: "Permission denied",

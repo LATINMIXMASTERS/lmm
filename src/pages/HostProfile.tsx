@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { User as UserIcon, Music, Edit, Trash2, Share2 } from 'lucide-react';
@@ -53,6 +54,40 @@ const HostProfile: React.FC = () => {
       </MainLayout>
     );
   }
+  
+  // Handle profile sharing
+  const handleShareProfile = () => {
+    const shareUrl = `${window.location.origin}/host/${hostUser.id}`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: `${hostUser.username}'s DJ Profile - Latin Mix Masters`,
+        text: `Check out ${hostUser.username}, a DJ on Latin Mix Masters!`,
+        url: shareUrl
+      }).catch(error => {
+        console.error('Error sharing:', error);
+        copyProfileLink(shareUrl);
+      });
+    } else {
+      copyProfileLink(shareUrl);
+    }
+  };
+  
+  // Copy profile link to clipboard
+  const copyProfileLink = (url: string) => {
+    navigator.clipboard.writeText(url).then(() => {
+      toast({
+        title: "Link copied!",
+        description: `${hostUser.username}'s profile link copied to clipboard`,
+      });
+    }).catch(() => {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy the profile link to clipboard",
+        variant: "destructive"
+      });
+    });
+  };
   
   const startListening = (stationId: string) => {
     setCurrentPlayingStation(stationId);
@@ -139,6 +174,7 @@ const HostProfile: React.FC = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
   
+  // Can manage track - admins can manage ANY track
   const canManageTrack = (track: Track) => {
     if (!user) return false;
     return user.isAdmin || track.uploadedBy === user.id;
@@ -172,10 +208,23 @@ const HostProfile: React.FC = () => {
   return (
     <MainLayout>
       <div className="container py-8 md:py-12">
-        <HostProfileHeader 
-          hostUser={hostUser} 
-          onEditProfile={user?.id === hostUser.id ? () => navigate('/host-dashboard') : undefined}
-        />
+        {/* Profile Header with Share Button */}
+        <div className="flex justify-between items-start mb-6">
+          <HostProfileHeader 
+            hostUser={hostUser} 
+            onEditProfile={user?.id === hostUser.id ? () => navigate('/host-dashboard') : undefined}
+          />
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleShareProfile}
+            className="flex items-center gap-1"
+          >
+            <Share2 className="h-4 w-4" />
+            Share Profile
+          </Button>
+        </div>
         
         <div className="max-w-5xl mx-auto">
           <Tabs defaultValue="mixes" className="w-full">

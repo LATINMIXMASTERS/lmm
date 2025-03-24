@@ -1,6 +1,7 @@
 
 import { fileToDataUrl } from './imageUploadService';
 import { S3StorageConfig } from '@/components/admin-dashboard/s3-config/S3ConfigTypes';
+import * as crypto from 'crypto';
 
 /**
  * Gets the S3 configuration from localStorage
@@ -52,22 +53,65 @@ export const generateS3FileName = (file: File): string => {
 };
 
 /**
- * Create AWS formatted authorization headers for S3 requests
+ * Create proper AWS signature v4 headers for S3 requests
  */
-const createAuthHeaders = (config: S3StorageConfig, method: string, contentType: string, path: string): HeadersInit => {
-  const date = new Date().toUTCString();
-  const contentMD5 = ''; // Not using content MD5 for simplicity
-
-  // Create the string to sign (simplified version, production would use proper AWS signature)
-  const stringToSign = `${method}\n${contentMD5}\n${contentType}\n${date}\n/${config.bucketName}/${path}`;
+const createAuthHeaders = (config: S3StorageConfig, method: string, contentType: string, path: string, date = new Date()): HeadersInit => {
+  // Format date in required format
+  const amzDate = date.toISOString().replace(/[:-]|\.\d{3}/g, '');
+  const dateStamp = amzDate.slice(0, 8);
   
-  // In a real implementation, you would create a proper AWS signature here
-  // This is a simplified version for demonstration purposes
+  // Prepare canonical request components
+  const httpMethod = method.toUpperCase();
+  const canonicalUri = `/${path}`;
+  const canonicalQueryString = '';
+  const canonicalHeaders = `content-type:${contentType}\nhost:${config.bucketName}.${config.endpoint.replace(/^https?:\/\//, '')}\nx-amz-date:${amzDate}\n`;
+  const signedHeaders = 'content-type;host;x-amz-date';
+  const payloadHash = 'UNSIGNED-PAYLOAD'; // For simplicity
+  
+  // Create canonical request
+  const canonicalRequest = [
+    httpMethod,
+    canonicalUri,
+    canonicalQueryString,
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash
+  ].join('\n');
+  
+  // AWS region and service for signature
+  const algorithm = 'AWS4-HMAC-SHA256';
+  const region = config.region;
+  const service = 's3';
+  const credential_scope = `${dateStamp}/${region}/${service}/aws4_request`;
+  
+  // Create string to sign
+  const stringToSign = [
+    algorithm,
+    amzDate,
+    credential_scope,
+    crypto.createHash('sha256').update(canonicalRequest).digest('hex')
+  ].join('\n');
+  
+  // Calculate signature
+  const getSignatureKey = (key: string, dateStamp: string, regionName: string, serviceName: string) => {
+    const kDate = crypto.createHmac('sha256', `AWS4${key}`).update(dateStamp).digest();
+    const kRegion = crypto.createHmac('sha256', kDate).update(regionName).digest();
+    const kService = crypto.createHmac('sha256', kRegion).update(serviceName).digest();
+    const kSigning = crypto.createHmac('sha256', kService).update('aws4_request').digest();
+    return kSigning;
+  };
+  
+  const signingKey = getSignatureKey(config.secretAccessKey || '', dateStamp, region, service);
+  const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex');
+  
+  // Create authorization header
+  const authorization = `${algorithm} Credential=${config.accessKeyId}/${credential_scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
   
   return {
-    'Date': date,
     'Content-Type': contentType,
-    'Authorization': `AWS ${config.accessKeyId}:${config.secretAccessKey}`,
+    'X-Amz-Date': amzDate,
+    'Authorization': authorization,
+    'x-amz-content-sha256': payloadHash,
     'x-amz-acl': 'public-read'
   };
 };
@@ -100,16 +144,20 @@ export const uploadFileToS3 = async (
       onProgress(0);
     }
     
-    // Construct the endpoint URL
-    const endpoint = config.endpoint || `https://s3.${config.region}.wasabisys.com`;
-    const uploadUrl = `${endpoint}/${config.bucketName}/${s3Path}`;
+    // Construct the endpoint URL, removing any trailing slashes
+    const endpoint = config.endpoint.replace(/\/$/, '') || `https://s3.${config.region}.wasabisys.com`;
+    const bucketEndpoint = `${endpoint}/${config.bucketName}`;
+    const uploadUrl = `${bucketEndpoint}/${s3Path}`;
     
     console.log(`Uploading to S3 URL: ${uploadUrl}`);
     
-    // Upload the file to S3 using fetch API
+    // Get the current date for consistent use in auth headers
+    const now = new Date();
+    
+    // Upload the file to S3 using fetch API with proper AWS auth
     const response = await fetch(uploadUrl, {
       method: 'PUT',
-      headers: createAuthHeaders(config, 'PUT', file.type, s3Path),
+      headers: createAuthHeaders(config, 'PUT', file.type || 'application/octet-stream', s3Path, now),
       body: file
     });
     
@@ -129,12 +177,9 @@ export const uploadFileToS3 = async (
     if (config.publicUrlBase) {
       // Use the configured public base URL if provided
       publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${s3Path}`;
-    } else if (config.endpoint) {
-      // Construct URL from endpoint if available (Wasabi typically uses this format)
-      publicUrl = `${config.endpoint.replace(/\/$/, '')}/${config.bucketName}/${s3Path}`;
     } else {
-      // Default S3 URL format for Wasabi
-      publicUrl = `https://s3.${config.region}.wasabisys.com/${config.bucketName}/${s3Path}`;
+      // Construct URL based on the bucket endpoint
+      publicUrl = `${bucketEndpoint}/${s3Path}`;
     }
     
     console.log(`S3 upload successful. Public URL: ${publicUrl}`);

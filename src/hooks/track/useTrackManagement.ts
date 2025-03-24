@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
  */
 export const useTrackManagement = () => {
   const { user } = useAuth();
-  const { deleteTrack, canEditTrack } = useTrack();
+  const { deleteTrack, tracks } = useTrack();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -34,11 +34,21 @@ export const useTrackManagement = () => {
 
   /**
    * Checks if the current user can edit a specific track
+   * Admin users can edit any track, regular users can only edit their own tracks
    * @param trackId - ID of the track to check permissions for
    * @returns Boolean indicating whether user can edit the track
    */
   const canUserEditTrack = (trackId: string): boolean => {
-    return canEditTrack(trackId);
+    if (!user) return false;
+    
+    // Admin can edit any track
+    if (user.isAdmin) return true;
+    
+    // Regular users can only edit their own tracks
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return false;
+    
+    return track.uploadedBy === user.id;
   };
 
   return {

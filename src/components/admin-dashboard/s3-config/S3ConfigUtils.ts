@@ -1,5 +1,6 @@
 
 import { S3StorageConfig, WasabiRegion, wasabiRegions } from "./S3ConfigTypes";
+import * as crypto from 'crypto';
 
 // Load the S3 configuration from localStorage
 export const loadS3Config = (): S3StorageConfig => {
@@ -68,17 +69,71 @@ export const applyWasabiRegionSettings = (
     region: selectedRegion.value,
     endpoint: `https://${selectedRegion.endpoint}`,
     publicUrlBase: config.bucketName ? 
-      `https://${selectedRegion.endpoint}/${config.bucketName}` : ''
+      `https://${config.bucketName}.${selectedRegion.endpoint}` : ''
   };
 };
 
-// Create auth headers for S3 test request
-const createAuthHeaders = (config: S3StorageConfig): HeadersInit => {
-  const date = new Date().toUTCString();
+// Create proper AWS signature v4 headers for S3 requests
+const createAuthHeaders = (config: S3StorageConfig, method: string, path: string): HeadersInit => {
+  // Prepare date for signing
+  const date = new Date();
+  const amzDate = date.toISOString().replace(/[:-]|\.\d{3}/g, '');
+  const dateStamp = amzDate.slice(0, 8);
+  
+  // Set up host from endpoint
+  const host = config.endpoint.replace(/^https?:\/\//, '');
+  
+  // Prepare canonical request components
+  const httpMethod = method.toUpperCase();
+  const canonicalUri = `/${config.bucketName}/${path}`.replace(/\/\//g, '/');
+  const canonicalQueryString = 'location';
+  const canonicalHeaders = `host:${host}\nx-amz-date:${amzDate}\n`;
+  const signedHeaders = 'host;x-amz-date';
+  const payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'; // empty string hash
+  
+  // Create canonical request
+  const canonicalRequest = [
+    httpMethod,
+    canonicalUri,
+    canonicalQueryString,
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash
+  ].join('\n');
+  
+  // Set up signature parameters
+  const algorithm = 'AWS4-HMAC-SHA256';
+  const region = config.region;
+  const service = 's3';
+  const credential_scope = `${dateStamp}/${region}/${service}/aws4_request`;
+  
+  // Create string to sign
+  const stringToSign = [
+    algorithm,
+    amzDate,
+    credential_scope,
+    crypto.createHash('sha256').update(canonicalRequest).digest('hex')
+  ].join('\n');
+  
+  // Calculate signature
+  const getSignatureKey = (key: string, dateStamp: string, regionName: string, serviceName: string) => {
+    const kDate = crypto.createHmac('sha256', `AWS4${key}`).update(dateStamp).digest();
+    const kRegion = crypto.createHmac('sha256', kDate).update(regionName).digest();
+    const kService = crypto.createHmac('sha256', kRegion).update(serviceName).digest();
+    const kSigning = crypto.createHmac('sha256', kService).update('aws4_request').digest();
+    return kSigning;
+  };
+  
+  const signingKey = getSignatureKey(config.secretAccessKey || '', dateStamp, region, service);
+  const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex');
+  
+  // Create authorization header
+  const authorization = `${algorithm} Credential=${config.accessKeyId}/${credential_scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
   
   return {
-    'Date': date,
-    'Authorization': `AWS ${config.accessKeyId}:${config.secretAccessKey}`,
+    'X-Amz-Date': amzDate,
+    'Authorization': authorization,
+    'x-amz-content-sha256': payloadHash
   };
 };
 
@@ -94,11 +149,16 @@ export const testS3Connection = async (
     // Determine the endpoint URL
     const endpoint = config.endpoint || `https://s3.${config.region}.wasabisys.com`;
     
-    // Make a HEAD request to the bucket to check existence and permissions
+    console.log("Testing S3 connection with endpoint:", endpoint);
+    console.log("Bucket:", config.bucketName);
+    
+    // Make a GET request to check bucket location
     const response = await fetch(`${endpoint}/${config.bucketName}?location`, {
       method: 'GET',
-      headers: createAuthHeaders(config)
+      headers: createAuthHeaders(config, 'GET', '')
     });
+    
+    console.log("S3 test response status:", response.status);
     
     if (response.ok) {
       return { 
@@ -110,6 +170,8 @@ export const testS3Connection = async (
       let errorMessage;
       try {
         const text = await response.text();
+        console.log("Error response:", text);
+        
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(text, "text/xml");
         const code = xmlDoc.getElementsByTagName("Code")[0]?.textContent;
@@ -118,7 +180,8 @@ export const testS3Connection = async (
         errorMessage = code && message 
           ? `${code}: ${message}`
           : `HTTP ${response.status} - ${response.statusText}`;
-      } catch {
+      } catch (e) {
+        console.error("Error parsing response:", e);
         errorMessage = `HTTP ${response.status} - ${response.statusText}`;
       }
       
