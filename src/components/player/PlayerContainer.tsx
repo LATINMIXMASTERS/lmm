@@ -34,6 +34,7 @@ interface PlayerContainerProps {
   setNewComment: (value: string) => void;
   handleAddComment: (e: React.FormEvent) => void;
   className?: string;
+  isMobile?: boolean; // Add the isMobile prop
 }
 
 const PlayerContainer: React.FC<PlayerContainerProps> = ({
@@ -59,7 +60,8 @@ const PlayerContainer: React.FC<PlayerContainerProps> = ({
   newComment,
   setNewComment,
   handleAddComment,
-  className
+  className,
+  isMobile = false // Provide a default value
 }) => {
   return (
     <div 

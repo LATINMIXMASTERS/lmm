@@ -63,7 +63,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
   };
 
   const handleLike = () => {
-    const { currentPlayingTrack } = useTrack();
     if (currentPlayingTrack) {
       likeTrack(currentPlayingTrack);
       if (isLiked) {
@@ -76,7 +75,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
   };
 
   const handleShare = () => {
-    const { currentPlayingTrack } = useTrack();
     if (currentPlayingTrack) {
       shareTrack(currentPlayingTrack);
     } else {
@@ -89,7 +87,6 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
 
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
-    const { currentPlayingTrack } = useTrack();
     if (!newComment.trim() || !currentPlayingTrack) return;
     
     addComment(currentPlayingTrack, {
