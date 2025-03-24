@@ -82,13 +82,22 @@ const S3ConfigurationPanel: React.FC = () => {
     }
     
     // Save configuration to localStorage
-    saveS3Config(config);
-    setIsConfigured(true);
+    const saved = saveS3Config(config);
     
-    toast({
-      title: "Configuration Saved",
-      description: "S3 storage configuration has been saved"
-    });
+    if (saved) {
+      setIsConfigured(true);
+      
+      toast({
+        title: "Configuration Saved",
+        description: "S3 storage configuration has been saved"
+      });
+    } else {
+      toast({
+        title: "Error Saving Configuration",
+        description: "Failed to save S3 configuration",
+        variant: "destructive"
+      });
+    }
   };
   
   const testConnection = async () => {
