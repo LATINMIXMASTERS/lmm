@@ -14,11 +14,13 @@ import UserNotFound from '@/components/profile/UserNotFound';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import UserTracksTab from '@/components/profile/UserTracksTab';
 import ActivityTab from '@/components/profile/ActivityTab';
+import { useTrackManagement } from '@/hooks/track/useTrackManagement';
 
 const UserProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const { users, isAuthenticated, user, updateProfile } = useAuth();
   const { tracks, getTracksByUser, likeTrack, addComment } = useTrack();
+  const { handleEditTrack, handleDeleteTrack, canUserEditTrack } = useTrackManagement();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -165,6 +167,9 @@ const UserProfile: React.FC = () => {
                 addComment={addComment}
                 showToast={showToast}
                 user={user}
+                handleEditTrack={handleEditTrack}
+                handleDeleteTrack={handleDeleteTrack}
+                canUserEditTrack={canUserEditTrack}
               />
             </TabsContent>
             

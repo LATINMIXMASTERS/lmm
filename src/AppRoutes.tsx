@@ -30,9 +30,13 @@ const AppRoutes: React.FC = () => {
       <Route path="/stations/:id" element={<StationDetails />} />
       <Route path="/mixes" element={<Mixes />} />
       <Route path="/djs" element={<DJs />} />
+      
+      {/* User Profile routes - ensure both formats work */}
       <Route path="/profile/:userId" element={<UserProfile />} />
-      <Route path="/host/:hostId" element={<HostProfile />} />
       <Route path="/user/:userId" element={<UserProfile />} />
+      
+      {/* Host Profile route */}
+      <Route path="/host/:userId" element={<HostProfile />} />
       
       {/* Upload paths */}
       <Route path="/upload" element={<UploadTrack />} />

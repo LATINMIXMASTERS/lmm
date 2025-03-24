@@ -11,52 +11,50 @@ const UserMenu: React.FC = () => {
     <div className="hidden md:flex items-center space-x-4">
       {isAuthenticated ? (
         <div className="flex items-center space-x-4">
-          <Link to={user?.isRadioHost ? `/host/${user.id}` : `/user/${user.id}`} className="flex items-center space-x-2 group cursor-pointer">
-            <div className="w-8 h-8 bg-gold/10 rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-gold" />
-            </div>
-            <div className="relative group">
-              <div className="flex items-center space-x-1">
-                <span className="text-sm font-medium">{user?.username}</span>
+          <div className="relative group">
+            <div className="flex items-center space-x-2 cursor-pointer">
+              <div className="w-8 h-8 bg-gold/10 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-gold" />
               </div>
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <div className="py-1">
+              <span className="text-sm font-medium">{user?.username}</span>
+            </div>
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <div className="py-1">
+                <Link
+                  to={user?.isRadioHost ? `/host/${user.id}` : `/profile/${user.id}`}
+                  className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-lightest"
+                >
+                  <User className="w-4 h-4" />
+                  <span>My Profile</span>
+                </Link>
+                {user?.isRadioHost && (
                   <Link
-                    to={user?.isRadioHost ? `/host/${user.id}` : `/user/${user.id}`}
+                    to="/host-dashboard"
                     className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-lightest"
                   >
-                    <User className="w-4 h-4" />
-                    <span>My Profile</span>
+                    <Headphones className="w-4 h-4" />
+                    <span>Host Dashboard</span>
                   </Link>
-                  {user?.isRadioHost && (
-                    <Link
-                      to="/host-dashboard"
-                      className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-lightest"
-                    >
-                      <Shield className="w-4 h-4" />
-                      <span>Host Dashboard</span>
-                    </Link>
-                  )}
-                  {user?.isAdmin && (
-                    <Link
-                      to="/admin"
-                      className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-lightest"
-                    >
-                      <Shield className="w-4 h-4" />
-                      <span>Admin Dashboard</span>
-                    </Link>
-                  )}
-                  <button
-                    onClick={logout}
+                )}
+                {user?.isAdmin && (
+                  <Link
+                    to="/admin"
                     className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-lightest"
                   >
-                    <LogOut className="w-4 h-4" />
-                    <span>Sign out</span>
-                  </button>
-                </div>
+                    <Shield className="w-4 h-4" />
+                    <span>Admin Dashboard</span>
+                  </Link>
+                )}
+                <button
+                  onClick={logout}
+                  className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-lightest"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign out</span>
+                </button>
               </div>
             </div>
-          </Link>
+          </div>
         </div>
       ) : (
         <Link
