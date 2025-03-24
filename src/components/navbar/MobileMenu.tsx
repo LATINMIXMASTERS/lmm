@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NavItem } from './types';
+import UserMenu from './UserMenu';
 
 interface MobileMenuProps {
   items: NavItem[];
@@ -58,6 +59,9 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
                 <div className="flex justify-center mt-4">
                   <ThemeToggle />
                 </div>
+                
+                {/* Add User Menu for mobile */}
+                <UserMenu />
               </nav>
             </div>
           </div>

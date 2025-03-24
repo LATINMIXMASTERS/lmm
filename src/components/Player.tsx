@@ -1,3 +1,4 @@
+
 import React, { useRef } from 'react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useTrack } from '@/hooks/useTrackContext';
@@ -6,6 +7,7 @@ import { cn } from '@/lib/utils';
 import usePlayerControls from '@/hooks/usePlayerControls';
 import AudioEngine from '@/components/player/audio-engine';
 import PlayerContainer from '@/components/player/PlayerContainer';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PlayerProps {
   className?: string;
@@ -16,6 +18,7 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
   const { currentPlayingStation } = useRadio();
   const { currentPlayingTrack } = useTrack();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const metadataTimerRef = useRef<number | null>(null);
@@ -109,6 +112,12 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
     return null;
   }
 
+  // Different player layout for mobile
+  const playerClassNames = cn(
+    className,
+    isMobile ? "fixed bottom-0 left-0 right-0 z-40 pb-safe" : ""
+  );
+
   return (
     <>
       <AudioEngine
@@ -147,7 +156,8 @@ const Player: React.FC<PlayerProps> = ({ className }) => {
         newComment={newComment}
         setNewComment={setNewComment}
         handleAddComment={handleAddComment}
-        className={className}
+        className={playerClassNames}
+        isMobile={isMobile}
       />
     </>
   );
