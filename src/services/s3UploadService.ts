@@ -51,111 +51,116 @@ export const generateS3FileName = (file: File): string => {
   return `${timestamp}-${randomString}.${extension}`;
 };
 
+// Helper function to convert string to hex
+function stringToHex(str: string): string {
+  let result = '';
+  for (let i = 0; i < str.length; i++) {
+    const hex = str.charCodeAt(i).toString(16);
+    result += hex.length === 2 ? hex : '0' + hex;
+  }
+  return result;
+}
+
+// SHA-256 hash function (browser-compatible)
+async function sha256(message: string): Promise<string> {
+  // Convert the message string to an ArrayBuffer
+  const msgBuffer = new TextEncoder().encode(message);
+  // Hash the message
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  // Convert ArrayBuffer to hex string
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Helper function to create HMAC signature (browser-compatible)
+async function hmacSha256(key: ArrayBuffer, message: string): Promise<ArrayBuffer> {
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  return await crypto.subtle.sign(
+    'HMAC',
+    cryptoKey,
+    new TextEncoder().encode(message)
+  );
+}
+
 /**
- * Create proper AWS signature v4 headers for S3 requests
+ * Create AWS Signature V4 for S3 requests
  */
-const createAuthHeaders = (config: S3StorageConfig, method: string, contentType: string, path: string): HeadersInit => {
-  // Format date in ISO8601 format required by AWS
+async function createSignatureV4(
+  config: S3StorageConfig,
+  method: string,
+  path: string,
+  region: string,
+  service: string,
+  payload: string,
+  headers: Record<string, string>
+): Promise<Record<string, string>> {
+  // Format date and time for AWS signature
   const now = new Date();
   const amzDate = now.toISOString().replace(/[:\-]|\.\d{3}/g, '');
   const dateStamp = amzDate.substring(0, 8);
   
-  // Prepare canonical request components
-  const httpMethod = method.toUpperCase();
-  const canonicalUri = `/${path}`;
-  const canonicalQueryString = '';
+  // Add required headers
+  headers['x-amz-date'] = amzDate;
+  headers['x-amz-content-sha256'] = await sha256(payload || '');
   
-  // We need to extract the host from the endpoint
-  let host = config.endpoint.replace(/^https?:\/\//, '');
-  // Remove any trailing slash
-  host = host.replace(/\/$/, '');
-  
-  const canonicalHeaders = `content-type:${contentType}\nhost:${host}\nx-amz-date:${amzDate}\n`;
-  const signedHeaders = 'content-type;host;x-amz-date';
-  const payloadHash = 'UNSIGNED-PAYLOAD'; // For simplicity
+  // Sort headers and create canonical headers string
+  const sortedHeaderKeys = Object.keys(headers).sort();
+  const canonicalHeaders = sortedHeaderKeys
+    .map(key => `${key.toLowerCase()}:${headers[key]}\n`)
+    .join('');
+  const signedHeaders = sortedHeaderKeys.map(key => key.toLowerCase()).join(';');
   
   // Create canonical request
   const canonicalRequest = [
-    httpMethod,
-    canonicalUri,
-    canonicalQueryString,
+    method.toUpperCase(),
+    '/' + path,
+    '', // query string
     canonicalHeaders,
     signedHeaders,
-    payloadHash
+    headers['x-amz-content-sha256']
   ].join('\n');
   
-  // AWS region and service for signature
-  const algorithm = 'AWS4-HMAC-SHA256';
-  const region = config.region;
-  const service = 's3';
-  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+  console.log('Canonical request:', canonicalRequest);
   
   // Create string to sign
+  const algorithm = 'AWS4-HMAC-SHA256';
+  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
   const stringToSign = [
     algorithm,
     amzDate,
     credentialScope,
-    createHash(canonicalRequest)
+    await sha256(canonicalRequest)
   ].join('\n');
   
+  console.log('String to sign:', stringToSign);
+  
   // Calculate signature
-  const signingKey = getSignatureKey(config.secretAccessKey || '', dateStamp, region, service);
-  const signature = createHmacSignature(signingKey, stringToSign);
+  // Create the signing key
+  let key = new TextEncoder().encode(`AWS4${config.secretAccessKey}`);
+  key = await hmacSha256(key, dateStamp);
+  key = await hmacSha256(key, region);
+  key = await hmacSha256(key, service);
+  key = await hmacSha256(key, 'aws4_request');
+  
+  // Calculate the signature
+  const signature = stringToHex(new Uint8Array(await hmacSha256(key, stringToSign)));
   
   // Create authorization header
-  const authorization = `${algorithm} Credential=${config.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  const authHeader = `${algorithm} ` +
+    `Credential=${config.accessKeyId}/${credentialScope}, ` +
+    `SignedHeaders=${signedHeaders}, ` +
+    `Signature=${signature}`;
   
   return {
-    'Content-Type': contentType,
-    'X-Amz-Date': amzDate,
-    'Authorization': authorization,
-    'x-amz-content-sha256': payloadHash
+    ...headers,
+    'Authorization': authHeader
   };
-};
-
-/**
- * Create a hash of the canonical request using a simple hash function
- * This is a simplified version for frontend use
- */
-function createHash(data: string): string {
-  let hash = 0;
-  for (let i = 0; i < data.length; i++) {
-    const char = data.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  // Convert to hex string and ensure it's the right length by padding
-  const hexHash = Math.abs(hash).toString(16).padStart(64, '0');
-  return hexHash;
-}
-
-/**
- * Calculate HMAC signature
- * This is a simplified version for frontend use
- */
-function createHmacSignature(key: string, data: string): string {
-  let signature = '';
-  for (let i = 0; i < data.length; i++) {
-    // Simple XOR operation as a stand-in for HMAC
-    signature += String.fromCharCode(key.charCodeAt(i % key.length) ^ data.charCodeAt(i));
-  }
-  
-  // Convert to hex
-  let hexSignature = '';
-  for (let i = 0; i < signature.length; i++) {
-    hexSignature += signature.charCodeAt(i).toString(16).padStart(2, '0');
-  }
-  
-  return hexSignature;
-}
-
-/**
- * Get signature key for AWS Signature V4
- * Simplified for frontend use
- */
-function getSignatureKey(key: string, dateStamp: string, region: string, service: string): string {
-  // Simplified key derivation for frontend
-  return `AWS4${key}${dateStamp}${region}${service}`;
 }
 
 /**
@@ -179,28 +184,52 @@ export const uploadFileToS3 = async (
   try {
     // Generate a unique file name for S3
     const fileName = generateS3FileName(file);
-    const s3Path = folder ? `${folder}/${fileName}` : fileName;
+    const s3Path = `${config.bucketName}/${folder}/${fileName}`;
     
     // Initialize progress reporting
     if (onProgress) {
       onProgress(0);
     }
     
-    // Construct the endpoint URL, removing any trailing slashes
-    const endpoint = config.endpoint.replace(/\/$/, '');
-    const uploadUrl = `${endpoint}/${config.bucketName}/${s3Path}`;
+    // Determine the endpoint URL, removing any trailing slashes
+    const endpoint = config.endpoint?.replace(/\/$/, '') || `https://s3.${config.region}.wasabisys.com`;
+    const host = new URL(endpoint).host;
     
+    // Prepare the request URL (without the bucket in the path for signature calculation)
+    const uploadUrl = `${endpoint}/${folder}/${fileName}`;
     console.log(`Uploading to S3 URL: ${uploadUrl}`);
+    
+    // Prepare headers for signature
+    const headers: Record<string, string> = {
+      'Host': host,
+      'Content-Type': file.type || 'application/octet-stream'
+    };
+    
+    // Generate AWS signature v4
+    const signedHeaders = await createSignatureV4(
+      config,
+      'PUT',
+      `${folder}/${fileName}`,
+      config.region,
+      's3',
+      'UNSIGNED-PAYLOAD',
+      headers
+    );
+    
+    console.log('Signed headers:', signedHeaders);
     
     // Upload the file to S3 using fetch API with proper AWS auth
     const response = await fetch(uploadUrl, {
       method: 'PUT',
-      headers: createAuthHeaders(config, 'PUT', file.type || 'application/octet-stream', s3Path),
+      headers: signedHeaders,
       body: file
     });
     
+    console.log("S3 response status:", response.status);
+    
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("S3 upload error response:", errorText);
       throw new Error(`S3 upload failed with status ${response.status}: ${errorText}`);
     }
     
@@ -214,10 +243,10 @@ export const uploadFileToS3 = async (
     
     if (config.publicUrlBase) {
       // Use the configured public base URL if provided
-      publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${s3Path}`;
+      publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${folder}/${fileName}`;
     } else {
       // Construct URL based on the bucket endpoint
-      publicUrl = `${endpoint}/${config.bucketName}/${s3Path}`;
+      publicUrl = `${endpoint}/${folder}/${fileName}`;
     }
     
     console.log(`S3 upload successful. Public URL: ${publicUrl}`);
