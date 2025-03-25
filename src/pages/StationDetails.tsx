@@ -6,9 +6,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRadio } from '@/hooks/useRadioContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StationHeader from '@/components/station-details/StationHeader';
 import StationControls from '@/components/station-details/StationControls';
@@ -18,6 +15,9 @@ import StreamingInstructions from '@/components/station-details/StreamingInstruc
 import UpcomingShows from '@/components/station-details/UpcomingShows';
 import ChatRoom from '@/components/station-details/ChatRoom';
 import VideoPlayer from '@/components/station-details/VideoPlayer';
+import LiveControls from '@/components/station-details/LiveControls';
+import VideoToggle from '@/components/station-details/VideoToggle';
+import StationDetailSkeleton from '@/components/station-details/StationDetailSkeleton';
 
 const StationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -63,13 +63,7 @@ const StationDetails: React.FC = () => {
   }, [id, stations, getBookingsForStation, navigate, toast]);
 
   if (!station) {
-    return (
-      <MainLayout>
-        <div className="container py-8 flex items-center justify-center">
-          <p className="text-foreground">Loading station details...</p>
-        </div>
-      </MainLayout>
-    );
+    return <StationDetailSkeleton />;
   }
 
   const handlePlayToggle = () => {
@@ -155,18 +149,12 @@ const StationDetails: React.FC = () => {
             />
             
             {/* Video Toggle Button */}
-            {station.isLive && station.videoStreamUrl && (
-              <div className="mt-4 flex justify-center">
-                <Button 
-                  variant="outline" 
-                  onClick={handleToggleVideo}
-                  className={showVideoPlayer ? "bg-primary text-primary-foreground" : ""}
-                >
-                  <Video className="mr-2 h-4 w-4" />
-                  {showVideoPlayer ? "Hide Video" : "Show Video Stream"}
-                </Button>
-              </div>
-            )}
+            <VideoToggle 
+              isLive={station.isLive}
+              hasVideoStream={!!station.videoStreamUrl}
+              showVideoPlayer={showVideoPlayer}
+              onToggleVideo={handleToggleVideo}
+            />
             
             <div className="prose prose-slate dark:prose-invert max-w-none">
               <StationDescription
@@ -194,56 +182,13 @@ const StationDetails: React.FC = () => {
               
               {/* Live status and chat controls for admins/hosts */}
               {isPrivilegedUser && (
-                <div className="mb-6 mt-4 space-y-4">
-                  <div className="flex flex-col gap-4 p-4 border rounded-md bg-muted">
-                    <h3 className="text-lg font-medium text-foreground">Broadcast Controls</h3>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Switch 
-                          checked={station.isLive} 
-                          onCheckedChange={handleToggleLiveStatus} 
-                          id="live-status"
-                        />
-                        <label htmlFor="live-status" className="cursor-pointer text-foreground">
-                          {station.isLive ? 
-                            <Badge variant="destructive" className="animate-pulse">LIVE</Badge> : 
-                            'Go Live'}
-                        </label>
-                      </div>
-                      
-                      <div className="text-sm text-muted-foreground">
-                        Station is currently {station.isLive ? 'broadcasting live' : 'offline'}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Switch 
-                          checked={station.chatEnabled || false} 
-                          onCheckedChange={handleToggleChat}
-                          disabled={!station.isLive}
-                          id="chat-status"
-                        />
-                        <label htmlFor="chat-status" className={`cursor-pointer text-foreground ${!station.isLive ? 'opacity-50' : ''}`}>
-                          {station.chatEnabled ? 
-                            <Badge className="bg-green-500">Chat Enabled</Badge> : 
-                            'Enable Chat'}
-                        </label>
-                      </div>
-                      
-                      <div className="text-sm text-muted-foreground">
-                        {!station.isLive ? 
-                          'Set station to live first' : 
-                          (station.chatEnabled ? 'Chat is active' : 'Chat is disabled')}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <p className="text-sm text-muted-foreground">
-                    These controls are for demonstration purposes - in production, live status would be determined by actual streaming activity.
-                  </p>
-                </div>
+                <LiveControls
+                  stationId={station.id}
+                  isLive={station.isLive}
+                  chatEnabled={station.chatEnabled}
+                  onToggleLiveStatus={handleToggleLiveStatus}
+                  onToggleChat={handleToggleChat}
+                />
               )}
               
               {/* Show chatroom when station is live and chat is enabled */}
