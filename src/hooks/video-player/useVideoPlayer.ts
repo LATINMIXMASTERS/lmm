@@ -37,46 +37,72 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
     handleCanPlay
   } = useVideoEvents(videoRef);
 
+  // Track if we should recommend using the fallback player
+  const [shouldUseFallback, setShouldUseFallback] = useState(false);
+
+  // Check for known problematic stream formats
+  useEffect(() => {
+    if (streamUrl) {
+      // Known problematic domains or URL patterns that need special handling
+      const problematicPatterns = [
+        'lmmappstore.com',
+        '.m3u8'  // Many m3u8 streams have CORS or format compatibility issues
+      ];
+      
+      // Check if URL matches any problematic patterns
+      const needsSpecialHandling = problematicPatterns.some(pattern => 
+        streamUrl.toLowerCase().includes(pattern)
+      );
+      
+      if (needsSpecialHandling) {
+        console.log("Stream URL may require special handling:", streamUrl);
+        setShouldUseFallback(true);
+      }
+    }
+  }, [streamUrl]);
+
   // Log when component initializes with stream URL
   useEffect(() => {
     console.log("useVideoPlayer hook initialized with stream URL:", streamUrl);
     console.log("Video visibility:", isVisible);
+    console.log("Should use fallback:", shouldUseFallback);
     
     // Reset loading state when visibility changes
     if (isVisible) {
       setIsLoading(true);
       setHasError(false);
     }
-  }, [isVisible, streamUrl, setIsLoading, setHasError]);
+  }, [isVisible, streamUrl, setIsLoading, setHasError, shouldUseFallback]);
 
   // Handle play state updates
   useEffect(() => {
-    if (videoRef.current && isVisible && !hasError) {
+    if (videoRef.current && isVisible && !hasError && !shouldUseFallback) {
       if (isPlaying) {
         console.log("Attempting to play video with URL:", streamUrl);
         videoRef.current.play().catch(err => {
           console.error("Error playing video:", err);
           setIsPlaying(false);
           setHasError(true);
+          setShouldUseFallback(true);
           
-          let errorMessage = "Could not play video stream.";
+          let errorMessage = "Could not play video stream. Trying alternative player...";
           if (err.name === "NotSupportedError") {
-            errorMessage = "This stream format is not supported by your browser or may have CORS restrictions.";
+            errorMessage = "This stream format is not supported by your browser. Trying alternative player...";
           } else if (err.name === "NotAllowedError") {
             errorMessage = "Autoplay was blocked. Please interact with the player to start playback.";
           }
           
           toast({
-            title: "Video Playback Error",
+            title: "Switching to Compatible Player",
             description: errorMessage,
-            variant: "destructive"
+            variant: "default"
           });
         });
       } else {
         videoRef.current.pause();
       }
     }
-  }, [isPlaying, isVisible, streamUrl, toast, hasError, setIsPlaying, setHasError]);
+  }, [isPlaying, isVisible, streamUrl, toast, hasError, setIsPlaying, setHasError, shouldUseFallback]);
 
   // Handle volume and mute changes
   useEffect(() => {
@@ -88,7 +114,7 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
 
   // Auto-play when video becomes visible
   useEffect(() => {
-    if (isVisible && videoRef.current && !hasError) {
+    if (isVisible && videoRef.current && !hasError && !shouldUseFallback) {
       console.log("Video becoming visible, loading source:", streamUrl);
       // Ensure we have a valid stream URL
       if (!streamUrl) {
@@ -106,11 +132,6 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
       setIsLoading(true);
       videoRef.current.load();
       
-      // Check if stream URL is a valid M3U8 file
-      if (!streamUrl.toLowerCase().endsWith('.m3u8')) {
-        console.warn("Stream URL doesn't end with .m3u8 extension, which may cause compatibility issues");
-      }
-      
       const playPromise = videoRef.current.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
@@ -120,23 +141,24 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
           console.error("Error auto-playing video:", err);
           setIsPlaying(false);
           setHasError(true);
+          setShouldUseFallback(true);
           
-          let errorMessage = "Could not auto-play the video.";
+          let errorMessage = "Could not auto-play the video. Trying alternative player...";
           if (err.name === "NotSupportedError") {
-            errorMessage = "This stream format is not supported by your browser or may have CORS restrictions.";
+            errorMessage = "This stream format is not supported by your browser. Trying alternative player...";
           } else if (err.name === "NotAllowedError") {
             errorMessage = "Autoplay was blocked. Please click the play button to start.";
           }
           
           toast({
-            title: "Video Playback Error",
+            title: "Switching to Compatible Player",
             description: errorMessage,
-            variant: "destructive"
+            variant: "default"
           });
         });
       }
     }
-  }, [isVisible, streamUrl, toast, hasError, setIsPlaying, setIsLoading, setHasError]);
+  }, [isVisible, streamUrl, toast, hasError, setIsPlaying, setIsLoading, setHasError, shouldUseFallback]);
 
   // Modified togglePlay to handle errors
   const enhancedTogglePlay = () => {
@@ -153,6 +175,13 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
           console.error("Error retrying video playback:", err);
           setIsPlaying(false);
           setHasError(true);
+          setShouldUseFallback(true);
+          
+          toast({
+            title: "Switching to Compatible Player",
+            description: "Using alternative player for better compatibility",
+            variant: "default"
+          });
         });
       }
     } else {
@@ -171,6 +200,7 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
     currentTime,
     duration,
     hasError,
+    shouldUseFallback,
     togglePlay: enhancedTogglePlay,
     toggleMute,
     toggleFullscreen,
@@ -182,5 +212,3 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
     formatTime
   };
 }
-
-// Export an index file to maintain backwards compatibility

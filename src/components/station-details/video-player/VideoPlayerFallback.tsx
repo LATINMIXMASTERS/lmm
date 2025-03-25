@@ -14,12 +14,17 @@ const VideoPlayerFallback: React.FC<VideoPlayerFallbackProps> = ({
   
   useEffect(() => {
     if (isVisible && streamUrl && iframeRef.current) {
-      // For known problematic URLs like the lmmappstore one, use a direct embed approach
-      if (streamUrl.includes('lmmappstore.com')) {
-        iframeRef.current.src = streamUrl;
+      console.log("Setting up fallback player for URL:", streamUrl);
+      
+      // For .m3u8 streams from lmmappstore.com, use direct embed with HLS.js player
+      if (streamUrl.includes('lmmappstore.com') || streamUrl.endsWith('.m3u8')) {
+        // Use a special player that can handle m3u8 streams directly
+        const hlsPlayerUrl = `https://player.castr.io/live?source=${encodeURIComponent(streamUrl)}`;
+        console.log("Using HLS player URL:", hlsPlayerUrl);
+        iframeRef.current.src = hlsPlayerUrl;
       } else {
-        // For other URLs, use the Castr player which has better HLS support
-        iframeRef.current.src = `https://player.castr.io/live?source=${encodeURIComponent(streamUrl)}`;
+        // For other URLs, use a direct embed
+        iframeRef.current.src = streamUrl;
       }
     }
   }, [isVisible, streamUrl]);
@@ -28,19 +33,19 @@ const VideoPlayerFallback: React.FC<VideoPlayerFallbackProps> = ({
     return null;
   }
   
-  // Select the appropriate source based on the URL
-  const iframeSrc = streamUrl.includes('lmmappstore.com') 
-    ? streamUrl 
-    : `https://player.castr.io/live?source=${encodeURIComponent(streamUrl)}`;
-  
+  // Add additional CSS to ensure full compatibility
   return (
-    <iframe
-      ref={iframeRef}
-      src={iframeSrc}
-      className="w-full h-full absolute inset-0 z-20"
-      allow="autoplay; fullscreen"
-      allowFullScreen
-    ></iframe>
+    <div className="w-full h-full absolute inset-0 z-20 bg-black">
+      <iframe
+        ref={iframeRef}
+        className="w-full h-full border-0"
+        src=""
+        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+        allowFullScreen
+        title="Video Stream Player"
+        sandbox="allow-same-origin allow-scripts allow-forms allow-presentation"
+      ></iframe>
+    </div>
   );
 };
 

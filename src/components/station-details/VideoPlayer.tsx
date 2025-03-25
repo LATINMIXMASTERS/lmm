@@ -66,6 +66,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     isFullscreen,
     currentTime,
     duration,
+    shouldUseFallback,
     togglePlay,
     toggleMute,
     toggleFullscreen,
@@ -79,6 +80,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     streamUrl,
     isVisible: isVisible && !fallbackToIframe // Only use native player if not falling back
   });
+
+  // Update fallback state if the hook suggests we should use fallback
+  useEffect(() => {
+    if (shouldUseFallback && !fallbackToIframe) {
+      console.log("Switching to fallback player based on hook recommendation");
+      setFallbackToIframe(true);
+    }
+  }, [shouldUseFallback, fallbackToIframe]);
 
   // Don't render anything if not visible
   if (!isVisible) {
@@ -105,18 +114,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setFallbackToIframe(true);
     
     // Show a helpful error message
-    let userMessage = "Could not play video stream.";
-    
-    if (errorCode === 4) {
-      userMessage = "This stream format is not supported or may have CORS restrictions. Trying alternative player...";
-    } else if (errorCode === 2) {
-      userMessage = "Network error while loading the stream.";
-    }
-    
     toast({
-      title: "Video Stream Issue",
-      description: userMessage,
-      variant: "destructive"
+      title: "Switching to Compatible Player",
+      description: "Using alternative player for better compatibility",
+      variant: "default"
     });
   };
 
