@@ -16,6 +16,7 @@ const VideoToggle: React.FC<VideoToggleProps> = ({
   showVideoPlayer, 
   onToggleVideo 
 }) => {
+  // Only show the toggle if the station is live and has a video stream configured
   if (!isLive || !hasVideoStream) return null;
   
   return (

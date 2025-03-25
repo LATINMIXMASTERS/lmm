@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/layout/MainLayout';
@@ -18,6 +17,7 @@ import VideoPlayer from '@/components/station-details/VideoPlayer';
 import LiveControls from '@/components/station-details/LiveControls';
 import VideoToggle from '@/components/station-details/VideoToggle';
 import StationDetailSkeleton from '@/components/station-details/StationDetailSkeleton';
+import useRandomListeners from '@/hooks/useRandomListeners';
 
 const StationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,6 +65,8 @@ const StationDetails: React.FC = () => {
   if (!station) {
     return <StationDetailSkeleton />;
   }
+
+  useRandomListeners();
 
   const handlePlayToggle = () => {
     if (isPlaying) {
