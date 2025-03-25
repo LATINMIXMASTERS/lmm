@@ -4,3 +4,5 @@ export * from './configStorage';
 export * from './configValidator';
 export * from './wasabiConfig';
 export * from './connectionTester';
+export * from './authHeaders';
+export * from './signatures';

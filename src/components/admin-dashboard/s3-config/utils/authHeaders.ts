@@ -27,7 +27,7 @@ export const createAuthHeaders = async (
     'Cache-Control': 'no-cache'
   };
   
-  // Use 'UNSIGNED-PAYLOAD' for browser compatibility with empty requests
+  // Use empty string hash for browser compatibility with empty requests
   const payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'; // empty string hash
   
   // Generate AWS signature v4

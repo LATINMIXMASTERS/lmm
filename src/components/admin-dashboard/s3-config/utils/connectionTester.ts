@@ -25,9 +25,9 @@ export const testS3Connection = async (
     const headers = await createAuthHeaders(config, 'GET', '');
     
     // Display headers for debugging (removing secret key)
-    const debugHeaders = {...headers} as Record<string, string>;
-    if ('Authorization' in headers) {
-      debugHeaders.Authorization = (headers as Record<string, string>).Authorization.substring(0, 50) + '...';
+    const debugHeaders = {...headers};
+    if (headers.Authorization) {
+      debugHeaders.Authorization = headers.Authorization.substring(0, 50) + '...';
     }
     console.log("Auth headers:", debugHeaders);
     
