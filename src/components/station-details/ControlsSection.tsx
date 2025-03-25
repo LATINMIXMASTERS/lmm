@@ -1,6 +1,7 @@
 
 import React, { useEffect } from 'react';
 import StationControls from '@/components/station-details/StationControls';
+import VideoToggle from '@/components/station-details/VideoToggle';
 
 interface ControlsSectionProps {
   isPlaying: boolean;
@@ -35,13 +36,25 @@ const ControlsSection: React.FC<ControlsSectionProps> = ({
   }, [station, showVideoPlayer]);
 
   return (
-    <StationControls
-      isPlaying={isPlaying}
-      listeners={listeners}
-      isPrivilegedUser={isPrivilegedUser}
-      onPlayToggle={onPlayToggle}
-      onBookShow={onBookShow}
-    />
+    <div className="space-y-4">
+      <StationControls
+        isPlaying={isPlaying}
+        listeners={listeners}
+        isPrivilegedUser={isPrivilegedUser}
+        onPlayToggle={onPlayToggle}
+        onBookShow={onBookShow}
+      />
+      
+      {/* Only show video toggle when station is live or has video configured */}
+      {(station?.isLive || (isPrivilegedUser && station?.videoStreamUrl)) && (
+        <VideoToggle
+          isLive={station?.isLive}
+          hasVideoStream={!!station?.videoStreamUrl}
+          showVideoPlayer={showVideoPlayer}
+          onToggleVideo={onToggleVideo}
+        />
+      )}
+    </div>
   );
 };
 

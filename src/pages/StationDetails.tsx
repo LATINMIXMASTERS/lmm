@@ -33,6 +33,12 @@ const StationDetails: React.FC = () => {
     return <StationDetailSkeleton />;
   }
 
+  // Log video player state outside of JSX
+  console.log("Video player state:", {
+    streamUrl: station.videoStreamUrl || 'none',
+    isVisible: showVideoPlayer
+  });
+
   return (
     <MainLayout>
       <div className="container py-8 md:py-12">
@@ -70,14 +76,6 @@ const StationDetails: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      
-      {/* Move console.log statements outside of JSX or wrap in empty fragments */}
-      <>{
-        console.log("Video player state:", {
-          streamUrl: station.videoStreamUrl || 'none',
-          isVisible: showVideoPlayer
-        })
-      }</>
     </MainLayout>
   );
 };
