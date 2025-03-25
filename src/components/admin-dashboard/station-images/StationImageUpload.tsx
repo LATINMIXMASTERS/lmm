@@ -22,6 +22,7 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
   
   const triggerFileInputClick = () => {
@@ -34,8 +35,10 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
-    const file = files[0];
-    
+    processFile(files[0]);
+  };
+  
+  const processFile = async (file: File) => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
@@ -91,9 +94,41 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
         variant: "destructive"
       });
       // Fall back to original file
-      onFileChange(stationId, files);
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      onFileChange(stationId, dataTransfer.files);
     } finally {
       setIsCompressing(false);
+    }
+  };
+  
+  // Drag and drop handlers
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+  
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+  
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      processFile(file);
     }
   };
   
@@ -101,16 +136,24 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
     <div className="mb-4">
       <Label className="mb-2 block">Image Upload</Label>
       <div className="flex items-center gap-2">
-        <Button 
-          type="button"
-          variant="outline"
-          onClick={triggerFileInputClick}
-          className="w-full flex justify-center py-6 border-dashed"
-          disabled={isCompressing}
+        <div 
+          className={`w-full ${isDragging ? 'bg-blue-50 border-blue' : ''}`}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
         >
-          <Upload className="w-5 h-5 mr-2" />
-          {isCompressing ? 'Compressing...' : 'Choose Image File'}
-        </Button>
+          <Button 
+            type="button"
+            variant="outline"
+            onClick={triggerFileInputClick}
+            className={`w-full flex justify-center py-6 transition-colors ${isDragging ? 'border-dashed border-blue bg-blue-50' : 'border-dashed'}`}
+            disabled={isCompressing}
+          >
+            <Upload className="w-5 h-5 mr-2" />
+            {isCompressing ? 'Compressing...' : isDragging ? 'Drop Image Here' : 'Choose Image File or Drag & Drop'}
+          </Button>
+        </div>
         <input
           type="file"
           id={`file-upload-${stationId}`}
