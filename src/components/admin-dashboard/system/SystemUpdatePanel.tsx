@@ -6,8 +6,75 @@ import { Settings, Download, Globe, Trash2 } from 'lucide-react';
 import WebhookUpdateTab from './WebhookUpdateTab';
 import ManualUpdateTab from './ManualUpdateTab';
 import CacheCleanupTab from './CacheCleanupTab';
+import { useToast } from '@/hooks/use-toast';
+import { updateScripts, copyToClipboard } from './updateScripts';
 
 const SystemUpdatePanel: React.FC = () => {
+  const { toast } = useToast();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleSystemUpdate = async (webhookUrl: string, secretToken: string) => {
+    setIsUpdating(true);
+    try {
+      // Call the webhook with Authorization header
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add Authorization header if secret token is provided
+      if (secretToken) {
+        headers['Authorization'] = secretToken;
+      }
+      
+      // Make the actual webhook request
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          action: 'update',
+          timestamp: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${await response.text()}`);
+      }
+      
+      toast({
+        title: "Update Triggered",
+        description: "The system update has been triggered successfully. Check server logs for details."
+      });
+    } catch (error) {
+      console.error("Update error:", error);
+      toast({
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "There was an error updating the system. Please check the webhook URL and try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleCopyScript = async (script: string) => {
+    const success = await copyToClipboard(script);
+    if (success) {
+      setCopied(true);
+      toast({
+        title: "Script Copied",
+        description: "Update script has been copied to clipboard. You can paste it into your server's terminal."
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy script to clipboard. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -39,11 +106,17 @@ const SystemUpdatePanel: React.FC = () => {
             </TabsList>
             
             <TabsContent value="webhook">
-              <WebhookUpdateTab />
+              <WebhookUpdateTab 
+                onUpdate={handleSystemUpdate}
+                isUpdating={isUpdating}
+              />
             </TabsContent>
             
             <TabsContent value="manual">
-              <ManualUpdateTab />
+              <ManualUpdateTab 
+                onCopyScript={handleCopyScript}
+                copied={copied}
+              />
             </TabsContent>
             
             <TabsContent value="cache">
