@@ -1,13 +1,11 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { ImageIcon, Upload, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ImageIcon } from 'lucide-react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useToast } from '@/hooks/use-toast';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileUpload } from '@/models/RadioStation';
+import { StationImageCard } from './station-images';
 
 const StationImages: React.FC = () => {
   const { stations, updateStationImage, uploadStationImage } = useRadio();
@@ -15,8 +13,6 @@ const StationImages: React.FC = () => {
   
   const [stationImages, setStationImages] = useState<Record<string, string>>({});
   const [stationImageUploads, setStationImageUploads] = useState<Record<string, FileUpload | null>>({});
-  
-  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   
   useEffect(() => {
     const initialStationImages: Record<string, string> = {};
@@ -79,10 +75,6 @@ const StationImages: React.FC = () => {
       ...prev,
       [stationId]: null
     }));
-    
-    if (fileInputRefs.current[stationId]) {
-      fileInputRefs.current[stationId]!.value = '';
-    }
   };
 
   const handleSaveStationImage = async (stationId: string) => {
@@ -131,12 +123,6 @@ const StationImages: React.FC = () => {
       });
     }
   };
-
-  const triggerFileInputClick = (stationId: string) => {
-    if (fileInputRefs.current[stationId]) {
-      fileInputRefs.current[stationId]!.click();
-    }
-  };
   
   return (
     <div className="grid grid-cols-1 gap-6">
@@ -162,119 +148,16 @@ const StationImages: React.FC = () => {
         
           <div className="space-y-6">
             {stations.map((station) => (
-              <div key={station.id} className="p-4 border rounded-md">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-medium text-lg">{station.name}</h3>
-                  <span className="text-sm text-gray-500">{station.genre}</span>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                  <div>
-                    <div className="mb-4">
-                      <Label className="mb-2 block">Image Upload</Label>
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          type="button"
-                          variant="outline"
-                          onClick={() => triggerFileInputClick(station.id)}
-                          className="w-full flex justify-center py-6 border-dashed"
-                        >
-                          <Upload className="w-5 h-5 mr-2" />
-                          Choose Image File
-                        </Button>
-                        <input
-                          type="file"
-                          id={`file-upload-${station.id}`}
-                          className="hidden"
-                          accept="image/*"
-                          onChange={(e) => handleStationImageFileChange(station.id, e.target.files)}
-                          ref={(el) => fileInputRefs.current[station.id] = el}
-                        />
-                      </div>
-                    </div>
-                    
-                    {stationImageUploads[station.id] && (
-                      <div className="mt-2 mb-4 flex items-center gap-2">
-                        <div className="flex-1 bg-blue-50 rounded p-2 flex items-center">
-                          <div className="w-8 h-8 mr-2 rounded overflow-hidden">
-                            <img 
-                              src={stationImageUploads[station.id]?.dataUrl} 
-                              alt="Preview" 
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <span className="text-sm truncate">
-                            {stationImageUploads[station.id]?.file.name}
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleClearStationImageUpload(station.id)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                    
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor={`station-image-${station.id}`} className="mb-2 block">
-                        Or Enter Image URL
-                      </Label>
-                      <Input
-                        id={`station-image-${station.id}`}
-                        value={stationImages[station.id] || ''}
-                        onChange={(e) => handleStationImageChange(station.id, e.target.value)}
-                        placeholder="https://example.com/image.jpg"
-                        className="w-full"
-                        disabled={!!stationImageUploads[station.id]}
-                      />
-                      <p className="text-xs text-gray-500">
-                        {stationImageUploads[station.id] 
-                          ? "URL input is disabled while a file is selected for upload" 
-                          : "Enter a URL for the station cover image"}
-                      </p>
-                    </div>
-                    
-                    <Button 
-                      onClick={() => handleSaveStationImage(station.id)}
-                      className="mt-4 bg-blue hover:bg-blue-dark w-full"
-                    >
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      Save Image
-                    </Button>
-                  </div>
-                  
-                  <div className="bg-gray-100 rounded-md p-4 flex justify-center">
-                    <div className="aspect-video w-full max-w-[300px] rounded overflow-hidden border">
-                      {stationImageUploads[station.id]?.dataUrl ? (
-                        <img 
-                          src={stationImageUploads[station.id]?.dataUrl} 
-                          alt={`${station.name} cover preview`}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : stationImages[station.id] ? (
-                        <img 
-                          src={stationImages[station.id]} 
-                          alt={`${station.name} cover`}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : station.image ? (
-                        <img 
-                          src={station.image} 
-                          alt={`${station.name} current cover`}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                          <ImageIcon className="w-12 h-12 text-gray-400" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <StationImageCard
+                key={station.id}
+                station={station}
+                imageUrl={stationImages[station.id] || ''}
+                uploadPreview={stationImageUploads[station.id] || null}
+                onImageChange={handleStationImageChange}
+                onFileChange={handleStationImageFileChange}
+                onClearUpload={handleClearStationImageUpload}
+                onSaveImage={handleSaveStationImage}
+              />
             ))}
           </div>
         </CardContent>
