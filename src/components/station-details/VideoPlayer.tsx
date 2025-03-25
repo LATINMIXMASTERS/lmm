@@ -7,7 +7,7 @@ import VideoPlayerLoading from './video-player/VideoPlayerLoading';
 import VideoPlayerEmptyState from './video-player/VideoPlayerEmptyState';
 import VideoPlayerFallback from './video-player/VideoPlayerFallback';
 import VideoPlayerCloseButton from './video-player/VideoPlayerCloseButton';
-import { useVideoPlayer } from '@/hooks/useVideoPlayer';
+import { useVideoPlayer } from '@/hooks/video-player';
 import { useToast } from '@/hooks/use-toast';
 
 interface VideoPlayerProps {
