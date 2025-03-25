@@ -6,19 +6,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRadio } from '@/hooks/useRadioContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
 import StationHeader from '@/components/station-details/StationHeader';
-import StationControls from '@/components/station-details/StationControls';
-import StationDescription from '@/components/station-details/StationDescription';
-import StreamDetails from '@/components/station-details/StreamDetails';
-import StreamingInstructions from '@/components/station-details/StreamingInstructions';
-import UpcomingShows from '@/components/station-details/UpcomingShows';
-import ChatRoom from '@/components/station-details/ChatRoom';
-import VideoPlayer from '@/components/station-details/VideoPlayer';
-import LiveControls from '@/components/station-details/LiveControls';
-import VideoToggle from '@/components/station-details/VideoToggle';
 import StationDetailSkeleton from '@/components/station-details/StationDetailSkeleton';
+import VideoPlayer from '@/components/station-details/VideoPlayer';
 import useRandomListeners from '@/hooks/useRandomListeners';
+import ControlsSection from '@/components/station-details/ControlsSection';
+import StationContent from '@/components/station-details/StationContent';
 
 const StationDetails: React.FC = () => {
   // Call useRandomListeners hook unconditionally at the top level
@@ -152,71 +145,26 @@ const StationDetails: React.FC = () => {
           />
           
           <CardContent className="p-6 bg-card text-card-foreground">
-            <StationControls
+            <ControlsSection 
               isPlaying={isPlaying}
-              listeners={station.listeners}
+              station={station}
               isPrivilegedUser={isPrivilegedUser}
+              listeners={station.listeners}
+              showVideoPlayer={showVideoPlayer}
               onPlayToggle={handlePlayToggle}
               onBookShow={handleBookShow}
-            />
-            
-            {/* Video Toggle Button */}
-            <VideoToggle 
-              isLive={station.isLive}
-              hasVideoStream={!!station.videoStreamUrl}
-              showVideoPlayer={showVideoPlayer}
               onToggleVideo={handleToggleVideo}
             />
             
-            <div className="prose prose-slate dark:prose-invert max-w-none">
-              <StationDescription
-                description={station.description}
-                broadcastTime={station.broadcastTime}
-              />
-              
-              {/* Only show stream details to privileged users */}
-              {isPrivilegedUser && station.streamDetails && (
-                <StreamDetails
-                  url={station.streamDetails.url}
-                  port={station.streamDetails.port}
-                  password={station.streamDetails.password}
-                />
-              )}
-              
-              {/* Show streaming instructions for hosts */}
-              {isPrivilegedUser && (
-                <StreamingInstructions
-                  stationName={station.name}
-                  streamUrl={station.streamDetails?.url}
-                  streamPort={station.streamDetails?.port}
-                />
-              )}
-              
-              {/* Live status and chat controls for admins/hosts */}
-              {isPrivilegedUser && (
-                <LiveControls
-                  stationId={station.id}
-                  isLive={station.isLive}
-                  chatEnabled={station.chatEnabled}
-                  onToggleLiveStatus={handleToggleLiveStatus}
-                  onToggleChat={handleToggleChat}
-                />
-              )}
-              
-              {/* Show chatroom when station is live and chat is enabled */}
-              {station.isLive && station.chatEnabled && (
-                <div className="mb-8">
-                  <ChatRoom 
-                    stationId={station.id}
-                    messages={chatMessages}
-                    onSendMessage={handleSendMessage}
-                  />
-                </div>
-              )}
-              
-              {/* Show upcoming bookings/shows calendar */}
-              <UpcomingShows bookings={stationBookings} />
-            </div>
+            <StationContent 
+              station={station}
+              stationBookings={stationBookings}
+              isPrivilegedUser={isPrivilegedUser}
+              chatMessages={chatMessages}
+              onSendMessage={handleSendMessage}
+              onToggleLiveStatus={handleToggleLiveStatus}
+              onToggleChat={handleToggleChat}
+            />
           </CardContent>
         </Card>
       </div>
