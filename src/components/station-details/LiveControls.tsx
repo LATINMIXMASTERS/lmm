@@ -38,14 +38,17 @@ const LiveControls: React.FC<LiveControlsProps> = ({
     if (!customVideoUrl.trim()) {
       toast({
         title: "URL Required",
-        description: "Please enter a valid M3U8 stream URL",
+        description: "Please enter a valid stream URL",
         variant: "destructive"
       });
       return;
     }
     
-    // Check if URL ends with .m3u8 extension
-    if (!customVideoUrl.toLowerCase().endsWith('.m3u8')) {
+    // Check if URL ends with .m3u8 extension or is known to work
+    const isKnownWorkingUrl = customVideoUrl.includes('lmmappstore.com');
+    const isM3u8Url = customVideoUrl.toLowerCase().endsWith('.m3u8');
+    
+    if (!isM3u8Url && !isKnownWorkingUrl) {
       toast({
         title: "Warning: URL Format",
         description: "The URL doesn't end with .m3u8, which is the expected format for HLS streams",
@@ -147,8 +150,8 @@ const LiveControls: React.FC<LiveControlsProps> = ({
           
           <div className="space-y-2">
             <label htmlFor="video-url" className="text-sm font-medium flex items-center">
-              M3U8 Video Stream URL
-              {videoStreamUrl && !videoStreamUrl.toLowerCase().endsWith('.m3u8') && (
+              Video Stream URL
+              {videoStreamUrl && !videoStreamUrl.toLowerCase().endsWith('.m3u8') && !videoStreamUrl.includes('lmmappstore.com') && (
                 <span className="ml-2 text-yellow-600 text-xs flex items-center">
                   <AlertCircle className="h-3 w-3 mr-1" />
                   URL doesn't end with .m3u8
@@ -172,13 +175,14 @@ const LiveControls: React.FC<LiveControlsProps> = ({
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Enter the HLS (M3U8) video stream URL for your broadcast
+              Enter the video stream URL for your broadcast (HLS or direct embed URLs supported)
             </p>
             
             <div className="bg-yellow-50 dark:bg-yellow-950/30 p-2 rounded text-xs border border-yellow-200 dark:border-yellow-800 mt-2">
               <p className="font-medium text-yellow-800 dark:text-yellow-300">Compatible Stream Formats:</p>
               <ul className="mt-1 list-disc list-inside text-yellow-700 dark:text-yellow-400">
-                <li>Use HTTP Live Streaming (HLS) with .m3u8 extension</li>
+                <li>HTTP Live Streaming (HLS) with .m3u8 extension</li>
+                <li>LMM AppStore streams (lmmappstore.com) will use direct embedding</li>
                 <li>Ensure the server has proper CORS headers enabled</li>
                 <li>Some stream providers require special players or embedding</li>
               </ul>

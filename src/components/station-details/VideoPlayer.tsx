@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import VideoPlayerControls from './VideoPlayerControls';
 import VideoPlayerElement from './video-player/VideoPlayerElement';
@@ -24,7 +24,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   embedded = false 
 }) => {
   const { toast } = useToast();
-  const fallbackToIframe = useRef(false);
+  const [fallbackToIframe, setFallbackToIframe] = useState(false);
+  const initialUrlCheck = useRef(false);
+  
+  // Check if the URL is likely to require the fallback player immediately
+  useEffect(() => {
+    if (streamUrl && !initialUrlCheck.current) {
+      initialUrlCheck.current = true;
+      
+      // Known problematic domains that require direct iframe
+      const problematicDomains = ['lmmappstore.com'];
+      
+      // Check if the URL contains any of the problematic domains
+      const needsFallback = problematicDomains.some(domain => streamUrl.includes(domain));
+      
+      if (needsFallback) {
+        console.log("Using fallback player immediately for known problematic domain");
+        setFallbackToIframe(true);
+      }
+    }
+  }, [streamUrl]);
   
   // Enhanced logging for debugging
   useEffect(() => {
@@ -32,9 +51,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       streamUrl, 
       isVisible,
       embedded,
-      streamUrlValid: !!streamUrl && streamUrl.length > 0 
+      streamUrlValid: !!streamUrl && streamUrl.length > 0,
+      usingFallback: fallbackToIframe
     });
-  }, [streamUrl, isVisible, embedded]);
+  }, [streamUrl, isVisible, embedded, fallbackToIframe]);
   
   const {
     videoRef,
@@ -57,7 +77,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     handleCanPlay
   } = useVideoPlayer({
     streamUrl,
-    isVisible
+    isVisible: isVisible && !fallbackToIframe // Only use native player if not falling back
   });
 
   // Don't render anything if not visible
@@ -82,7 +102,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     });
     
     // Set our fallback flag to true
-    fallbackToIframe.current = true;
+    setFallbackToIframe(true);
     
     // Show a helpful error message
     let userMessage = "Could not play video stream.";
@@ -101,7 +121,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   const renderVideoContent = () => {
-    if (fallbackToIframe.current) {
+    if (fallbackToIframe) {
       return <VideoPlayerFallback streamUrl={streamUrl} isVisible={isVisible} />;
     }
     
@@ -158,9 +178,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     >
       <div className="relative">
         {renderVideoContent()}
-        
-        {!fallbackToIframe.current && <VideoPlayerCloseButton onClose={onClose} />}
-        {fallbackToIframe.current && <VideoPlayerCloseButton onClose={onClose} />}
+        <VideoPlayerCloseButton onClose={onClose} />
       </div>
     </div>
   );
