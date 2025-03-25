@@ -4,8 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { S3StorageConfig } from './S3ConfigTypes';
-import { validateWasabiConfig, getWasabiRegions } from './utils';
+import { S3StorageConfig, wasabiRegions } from './S3ConfigTypes';
 
 interface WasabiSettingsTabProps {
   config: S3StorageConfig;
@@ -17,7 +16,8 @@ const WasabiSettingsTab: React.FC<WasabiSettingsTabProps> = ({ config, updateCon
   const [regions, setRegions] = useState<string[]>([]);
   
   useEffect(() => {
-    setRegions(getWasabiRegions());
+    // Get region values from wasabiRegions array
+    setRegions(wasabiRegions.map(region => region.value));
   }, []);
   
   return (

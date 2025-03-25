@@ -16,6 +16,13 @@ export const getWasabiCorsConfig = (): string => {
 };
 
 /**
+ * Get the list of Wasabi regions
+ */
+export const getWasabiRegions = (): string[] => {
+  return wasabiRegions.map(region => region.value);
+};
+
+/**
  * Apply Wasabi region settings to the configuration
  */
 export const applyWasabiRegionSettings = (

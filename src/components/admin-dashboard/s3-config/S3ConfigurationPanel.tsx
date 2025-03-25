@@ -22,6 +22,7 @@ const S3ConfigurationPanel: React.FC = () => {
   const { toast } = useToast();
   const [isConfigured, setIsConfigured] = useState(false);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);
   const [config, setConfig] = useState<S3StorageConfig>({
     bucketName: '',
     region: 'us-east-1',
@@ -40,6 +41,13 @@ const S3ConfigurationPanel: React.FC = () => {
     setConfig(prev => ({
       ...prev,
       ...updatedConfig
+    }));
+  };
+
+  const updateConfig = (key: keyof S3StorageConfig, value: string) => {
+    setConfig(prev => ({
+      ...prev,
+      [key]: value
     }));
   };
   
@@ -161,7 +169,9 @@ const S3ConfigurationPanel: React.FC = () => {
 
           <TabsContent value="wasabi">
             <WasabiSettingsTab 
-              onSelectRegion={handleSelectWasabiRegion} 
+              config={config}
+              updateConfig={updateConfig}
+              isEditing={isEditing}
             />
           </TabsContent>
           
