@@ -33,6 +33,27 @@ const VideoPlayerControls: React.FC<VideoPlayerControlsProps> = ({
 }) => {
   return (
     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+      {/* Progress bar */}
+      {duration > 0 && (
+        <div className="mb-2">
+          <Slider
+            value={[currentTime]}
+            min={0}
+            max={duration}
+            step={0.1}
+            onValueChange={(values) => {
+              if (values.length > 0 && values[0] !== currentTime) {
+                const video = document.querySelector('video');
+                if (video) {
+                  video.currentTime = values[0];
+                }
+              }
+            }}
+            className="cursor-pointer"
+          />
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
           <Button 
@@ -65,22 +86,23 @@ const VideoPlayerControls: React.FC<VideoPlayerControlsProps> = ({
           </div>
         </div>
         
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="text-white hover:bg-white/20"
-          onClick={toggleFullscreen}
-        >
-          {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
-        </Button>
-      </div>
-      
-      {duration > 0 && (
-        <div className="flex items-center justify-between text-xs text-white/80">
-          <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(duration)}</span>
+        <div className="flex items-center">
+          {duration > 0 && (
+            <div className="text-xs text-white/80 mr-2">
+              <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
+            </div>
+          )}
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:bg-white/20"
+            onClick={toggleFullscreen}
+          >
+            {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+          </Button>
         </div>
-      )}
+      </div>
     </div>
   );
 };

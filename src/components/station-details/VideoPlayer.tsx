@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import VideoPlayerControls from './VideoPlayerControls';
 import { useVideoPlayer } from '@/hooks/useVideoPlayer';
+import { useToast } from '@/hooks/use-toast';
 
 interface VideoPlayerProps {
   streamUrl: string;
@@ -13,6 +14,13 @@ interface VideoPlayerProps {
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ streamUrl, isVisible, onClose }) => {
+  const { toast } = useToast();
+  
+  // Log props for debugging
+  useEffect(() => {
+    console.log("VideoPlayer props:", { streamUrl, isVisible });
+  }, [streamUrl, isVisible]);
+  
   const {
     videoRef,
     containerRef,
@@ -34,7 +42,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ streamUrl, isVisible, onClose
     isVisible
   });
 
+  // Don't render anything if not visible
   if (!isVisible) return null;
+  
+  // Don't render if no stream URL
+  if (!streamUrl) {
+    console.error("VideoPlayer: No stream URL provided");
+    toast({
+      title: "Video Error",
+      description: "No video stream URL available",
+      variant: "destructive"
+    });
+    return null;
+  }
 
   return (
     <div 
@@ -52,6 +72,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ streamUrl, isVisible, onClose
           playsInline
           onTimeUpdate={handleTimeUpdate}
           onDurationChange={handleDurationChange}
+          onError={(e) => {
+            console.error("Video error:", e);
+            toast({
+              title: "Video Error",
+              description: "There was an error playing this video stream",
+              variant: "destructive"
+            });
+          }}
         >
           Your browser does not support HTML5 video.
         </video>
