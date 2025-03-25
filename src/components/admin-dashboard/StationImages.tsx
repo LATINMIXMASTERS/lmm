@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ImageIcon } from 'lucide-react';
 import { useRadio } from '@/hooks/useRadioContext';
@@ -50,6 +49,8 @@ const StationImages: React.FC = () => {
       return;
     }
     
+    // Since files are now pre-compressed in the StationImageUpload component,
+    // we can increase the size limit here or keep it for additional safety
     if (file.size > 2 * 1024 * 1024) {
       toast({
         title: "File too large",
