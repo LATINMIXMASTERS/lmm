@@ -16,6 +16,7 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [hasError, setHasError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
@@ -27,20 +28,30 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
     // Reset loading state when visibility changes
     if (isVisible) {
       setIsLoading(true);
+      setHasError(false);
     }
   }, [isVisible, streamUrl]);
 
   // Handle play state updates
   useEffect(() => {
-    if (videoRef.current && isVisible) {
+    if (videoRef.current && isVisible && !hasError) {
       if (isPlaying) {
         console.log("Attempting to play video with URL:", streamUrl);
         videoRef.current.play().catch(err => {
           console.error("Error playing video:", err);
           setIsPlaying(false);
+          setHasError(true);
+          
+          let errorMessage = "Could not play video stream.";
+          if (err.name === "NotSupportedError") {
+            errorMessage = "This stream format is not supported by your browser or may have CORS restrictions.";
+          } else if (err.name === "NotAllowedError") {
+            errorMessage = "Autoplay was blocked. Please interact with the player to start playback.";
+          }
+          
           toast({
             title: "Video Playback Error",
-            description: `Could not play video: ${err.message}`,
+            description: errorMessage,
             variant: "destructive"
           });
         });
@@ -48,7 +59,7 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
         videoRef.current.pause();
       }
     }
-  }, [isPlaying, isVisible, streamUrl, toast]);
+  }, [isPlaying, isVisible, streamUrl, toast, hasError]);
 
   // Handle volume and mute changes
   useEffect(() => {
@@ -60,12 +71,13 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
 
   // Auto-play when video becomes visible
   useEffect(() => {
-    if (isVisible && videoRef.current) {
+    if (isVisible && videoRef.current && !hasError) {
       console.log("Video becoming visible, loading source:", streamUrl);
       // Ensure we have a valid stream URL
       if (!streamUrl) {
         console.error("No stream URL provided");
         setIsLoading(false);
+        setHasError(true);
         toast({
           title: "No video stream available",
           description: "The station doesn't have a valid video stream URL",
@@ -77,6 +89,11 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
       setIsLoading(true);
       videoRef.current.load();
       
+      // Check if stream URL is a valid M3U8 file
+      if (!streamUrl.toLowerCase().endsWith('.m3u8')) {
+        console.warn("Stream URL doesn't end with .m3u8 extension, which may cause compatibility issues");
+      }
+      
       const playPromise = videoRef.current.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
@@ -85,15 +102,24 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
         }).catch(err => {
           console.error("Error auto-playing video:", err);
           setIsPlaying(false);
+          setHasError(true);
+          
+          let errorMessage = "Could not auto-play the video.";
+          if (err.name === "NotSupportedError") {
+            errorMessage = "This stream format is not supported by your browser or may have CORS restrictions.";
+          } else if (err.name === "NotAllowedError") {
+            errorMessage = "Autoplay was blocked. Please click the play button to start.";
+          }
+          
           toast({
             title: "Video Playback Error",
-            description: `Could not auto-play video: ${err.message}`,
+            description: errorMessage,
             variant: "destructive"
           });
         });
       }
     }
-  }, [isVisible, streamUrl, toast]);
+  }, [isVisible, streamUrl, toast, hasError]);
 
   // Monitor fullscreen changes
   useEffect(() => {
@@ -108,7 +134,24 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
   }, []);
 
   const togglePlay = () => {
-    setIsPlaying(!isPlaying);
+    if (hasError) {
+      setHasError(false);
+      setIsLoading(true);
+      
+      // Try reloading the video
+      if (videoRef.current) {
+        videoRef.current.load();
+        videoRef.current.play().then(() => {
+          setIsPlaying(true);
+        }).catch(err => {
+          console.error("Error retrying video playback:", err);
+          setIsPlaying(false);
+          setHasError(true);
+        });
+      }
+    } else {
+      setIsPlaying(!isPlaying);
+    }
   };
 
   const toggleMute = () => {
@@ -160,6 +203,7 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
   const handleCanPlay = () => {
     console.log("Video can play now");
     setIsLoading(false);
+    setHasError(false);
   };
 
   const formatTime = (time: number) => {
@@ -178,6 +222,7 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
     isFullscreen,
     currentTime,
     duration,
+    hasError,
     togglePlay,
     toggleMute,
     toggleFullscreen,

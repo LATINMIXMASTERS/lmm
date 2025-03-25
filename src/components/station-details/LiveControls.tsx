@@ -4,9 +4,10 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Video, Save } from 'lucide-react';
+import { Video, Save, AlertCircle, HelpCircle } from 'lucide-react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface LiveControlsProps {
   stationId: string;
@@ -42,6 +43,15 @@ const LiveControls: React.FC<LiveControlsProps> = ({
         variant: "destructive"
       });
       return;
+    }
+    
+    // Check if URL ends with .m3u8 extension
+    if (!customVideoUrl.toLowerCase().endsWith('.m3u8')) {
+      toast({
+        title: "Warning: URL Format",
+        description: "The URL doesn't end with .m3u8, which is the expected format for HLS streams",
+        variant: "warning"
+      });
     }
     
     onUpdateVideoStreamUrl(customVideoUrl);
@@ -99,7 +109,20 @@ const LiveControls: React.FC<LiveControlsProps> = ({
         
         {/* Video Toggle and URL Input */}
         <div className="pt-3 border-t border-border">
-          <h4 className="text-md font-medium mb-3">Video Stream Settings</h4>
+          <h4 className="text-md font-medium mb-3 flex items-center">
+            Video Stream Settings
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-4 w-4 ml-2 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-sm">
+                  <p>For best compatibility, use a .m3u8 HLS stream from a server with CORS enabled.</p>
+                  <p className="mt-1">If direct playback fails, a fallback player will be used.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </h4>
           
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -124,8 +147,14 @@ const LiveControls: React.FC<LiveControlsProps> = ({
           </div>
           
           <div className="space-y-2">
-            <label htmlFor="video-url" className="text-sm font-medium">
+            <label htmlFor="video-url" className="text-sm font-medium flex items-center">
               M3U8 Video Stream URL
+              {videoStreamUrl && !videoStreamUrl.toLowerCase().endsWith('.m3u8') && (
+                <span className="ml-2 text-yellow-600 text-xs flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  URL doesn't end with .m3u8
+                </span>
+              )}
             </label>
             <div className="flex gap-2">
               <Input
@@ -146,6 +175,15 @@ const LiveControls: React.FC<LiveControlsProps> = ({
             <p className="text-xs text-muted-foreground">
               Enter the HLS (M3U8) video stream URL for your broadcast
             </p>
+            
+            <div className="bg-yellow-50 dark:bg-yellow-950/30 p-2 rounded text-xs border border-yellow-200 dark:border-yellow-800 mt-2">
+              <p className="font-medium text-yellow-800 dark:text-yellow-300">Compatible Stream Formats:</p>
+              <ul className="mt-1 list-disc list-inside text-yellow-700 dark:text-yellow-400">
+                <li>Use HTTP Live Streaming (HLS) with .m3u8 extension</li>
+                <li>Ensure the server has proper CORS headers enabled</li>
+                <li>Some stream providers require special players or embedding</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
