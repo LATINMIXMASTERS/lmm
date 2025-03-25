@@ -20,7 +20,7 @@ export async function createSignatureV4(
   const dateStamp = amzDate.slice(0, 8);
   
   // Add required headers
-  const allHeaders = {
+  const allHeaders: Record<string, string> = {
     ...headers,
     'x-amz-date': amzDate,
     'x-amz-content-sha256': payloadHash
@@ -74,8 +74,10 @@ export async function createSignatureV4(
     `SignedHeaders=${signedHeaders}, ` +
     `Signature=${signature}`;
   
-  return {
+  const result: Record<string, string> = {
     ...allHeaders,
     'Authorization': authorization
   };
+  
+  return result;
 }

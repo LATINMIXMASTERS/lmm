@@ -9,7 +9,7 @@ export const createAuthHeaders = async (
   config: S3StorageConfig, 
   method: string, 
   path: string
-): Promise<HeadersInit> => {
+): Promise<Record<string, string>> => {
   if (!config.secretAccessKey || !config.accessKeyId) {
     throw new Error('Missing S3 credentials');
   }
