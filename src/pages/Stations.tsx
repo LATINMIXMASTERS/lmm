@@ -17,7 +17,7 @@ const Stations: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGenre, setFilterGenre] = useState('All');
   
-  // Use the hook to simulate random listener counts
+  // Use the hook to simulate random listener counts - called at top level
   useRandomListeners();
 
   const handleStationClick = (stationId: string) => {

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/layout/MainLayout';
@@ -40,6 +41,9 @@ const StationDetails: React.FC = () => {
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const isPlaying = currentPlayingStation === id;
   
+  // Call useRandomListeners hook unconditionally at the top level
+  useRandomListeners();
+  
   // Check if user is admin or host (privileged users)
   const isPrivilegedUser = user?.isAdmin || user?.isRadioHost;
 
@@ -65,8 +69,6 @@ const StationDetails: React.FC = () => {
   if (!station) {
     return <StationDetailSkeleton />;
   }
-
-  useRandomListeners();
 
   const handlePlayToggle = () => {
     if (isPlaying) {
