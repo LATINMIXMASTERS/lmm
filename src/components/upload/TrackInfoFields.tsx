@@ -30,7 +30,7 @@ const TrackInfoFields: React.FC<TrackInfoFieldsProps> = ({
   // If user is admin, they can see all hosts, otherwise just their own profile
   const hostUsers = user?.isAdmin 
     ? users.filter(u => u.isRadioHost && u.approved)
-    : users.filter(u => u.id === user?.id && u.isRadioHost && u.approved);
+    : users.filter(u => u.id === user?.id);
   
   // If the user is authenticated but not yet selected an artist, auto-select themselves
   React.useEffect(() => {
@@ -59,7 +59,7 @@ const TrackInfoFields: React.FC<TrackInfoFieldsProps> = ({
         <Select
           value={selectedArtistId}
           onValueChange={setSelectedArtistId}
-          disabled={!user?.isAdmin && hostUsers.length === 1}
+          disabled={!user?.isAdmin}
         >
           <SelectTrigger id="artist">
             <SelectValue placeholder="Select a DJ" />
