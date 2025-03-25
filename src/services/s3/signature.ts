@@ -80,7 +80,6 @@ export async function createSignatureV4(
   const signedHeaders = sortedHeaderKeys.map(key => key.toLowerCase()).join(';');
   
   // Create canonical request
-  // Ensure path has a leading slash, no spaces, and is properly encoded
   const canonicalUri = path.startsWith('/') ? path : `/${path}`;
   
   const canonicalRequest = [
@@ -91,8 +90,6 @@ export async function createSignatureV4(
     signedHeaders,
     payloadHash
   ].join('\n');
-  
-  console.log('Canonical request:', canonicalRequest);
   
   // Create string to sign
   const algorithm = 'AWS4-HMAC-SHA256';
@@ -105,8 +102,6 @@ export async function createSignatureV4(
     credentialScope,
     stringToSignHash
   ].join('\n');
-  
-  console.log('String to sign:', stringToSign);
   
   // Calculate signature
   // Create the signing key

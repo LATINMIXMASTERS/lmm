@@ -12,9 +12,6 @@ export const uploadFileToS3 = async (
   folder: string = 'audio',
   onProgress?: (progress: number) => void
 ): Promise<S3UploadResult> => {
-  // Log the upload attempt
-  console.log(`Attempting to upload file to S3: ${file.name} (${file.size} bytes) to folder: ${folder}`);
-  
   const config = getS3Config();
   
   if (!config || !isS3Configured()) {
@@ -25,7 +22,7 @@ export const uploadFileToS3 = async (
   try {
     // Generate a unique file name for S3
     const fileName = generateS3FileName(file);
-    const s3Path = `${config.bucketName}/${folder}/${fileName}`;
+    const filePath = `${folder}/${fileName}`;
     
     // Initialize progress reporting
     if (onProgress) {
@@ -36,19 +33,13 @@ export const uploadFileToS3 = async (
     const endpoint = config.endpoint?.replace(/\/$/, '') || `https://s3.${config.region}.wasabisys.com`;
     const host = new URL(endpoint).host;
     
-    // Prepare the full upload path (without bucket name in the URL, only in the path)
-    const filePath = `${folder}/${fileName}`;
-    const uploadUrl = `${endpoint}/${filePath}`;
-    console.log(`Uploading to S3 URL: ${uploadUrl}`);
-    
     // Prepare headers for signature
     const headers: Record<string, string> = {
       'Host': host,
       'Content-Type': file.type || 'application/octet-stream'
     };
     
-    // Create a hash of the file content
-    // For simplicity and browser compatibility, we use 'UNSIGNED-PAYLOAD'
+    // Use 'UNSIGNED-PAYLOAD' for browser compatibility
     const payloadHash = 'UNSIGNED-PAYLOAD';
     
     // Generate AWS signature v4
@@ -62,20 +53,18 @@ export const uploadFileToS3 = async (
       headers
     );
     
-    console.log('Signed headers:', signedHeaders);
+    // Upload URL without bucket in path (Wasabi virtual-hosted style)
+    const uploadUrl = `${endpoint}/${filePath}`;
     
-    // Upload the file to S3 using fetch API with proper AWS auth
+    // Upload the file to S3 using fetch API
     const response = await fetch(uploadUrl, {
       method: 'PUT',
       headers: signedHeaders,
       body: file
     });
     
-    console.log("S3 response status:", response.status);
-    
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("S3 upload error response:", errorText);
       throw new Error(`S3 upload failed with status ${response.status}: ${errorText}`);
     }
     
@@ -91,11 +80,9 @@ export const uploadFileToS3 = async (
       // Use the configured public base URL if provided
       publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${filePath}`;
     } else {
-      // Construct URL based on the bucket endpoint (bucket name is in the host for virtual-hosted style URLs)
+      // Construct URL based on the bucket endpoint
       publicUrl = `${endpoint}/${filePath}`;
     }
-    
-    console.log(`S3 upload successful. Public URL: ${publicUrl}`);
     
     return {
       success: true,

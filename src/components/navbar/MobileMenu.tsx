@@ -37,20 +37,20 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             <div className="absolute right-4 top-4">
               <button
                 type="button"
-                className="text-gray-dark hover:text-gold dark:text-gray-light dark:hover:text-gold"
+                className="text-foreground hover:text-gold dark:text-gray-light dark:hover:text-gold"
                 onClick={onClose}
               >
                 <X className="h-6 w-6" aria-hidden="true" />
               </button>
             </div>
 
-            <div className="mt-8">
+            <div className="mt-12">
               <nav className="flex flex-col space-y-6">
                 {items.map((item) => (
                   <Link
                     key={item.href}
                     to={item.href}
-                    className="text-lg font-medium text-gray-dark hover:text-gold dark:text-gray-light dark:hover:text-gold text-center"
+                    className="text-lg font-medium text-foreground hover:text-gold dark:text-gray-light dark:hover:text-gold text-center"
                     onClick={onClose}
                   >
                     {item.label}

@@ -24,7 +24,6 @@ export const compressImage = async (
 
   // If file is already smaller than maxSizeKB, return the original file
   if (file.size <= maxSizeKB * 1024) {
-    console.log('Image already smaller than target size, skipping compression');
     return file;
   }
 
@@ -76,7 +75,6 @@ export const compressImage = async (
           { type: file.type, lastModified: Date.now() }
         );
         
-        console.log(`Image compressed from ${(file.size / 1024).toFixed(2)}KB to ${(compressedFile.size / 1024).toFixed(2)}KB`);
         resolve(compressedFile);
       }, file.type, quality);
     };

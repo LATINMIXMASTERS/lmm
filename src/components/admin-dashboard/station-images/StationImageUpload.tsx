@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { FileUpload } from '@/models/RadioStation';
 import { compressImage } from '@/utils/imageUtils';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface StationImageUploadProps {
   stationId: string;
@@ -24,6 +25,7 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
   const [isCompressing, setIsCompressing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   const triggerFileInputClick = () => {
     if (fileInputRef.current) {
@@ -49,8 +51,8 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
       return;
     }
     
-    // Original file size check (we'll let the parent component handle other validations)
-    if (file.size > 10 * 1024 * 1024) { // 10MB max for original file
+    // Original file size check
+    if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "File too large",
         description: "Image size should be less than 10MB",
@@ -69,15 +71,14 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
         maxSizeKB: 800
       });
       
-      // Create a FileList-like object with our compressed file
+      // Create a FileList-like object with compressed file
       const dataTransfer = new DataTransfer();
       dataTransfer.items.add(compressedFile);
-      const compressedFileList = dataTransfer.files;
       
       // Pass the compressed file to the parent component
-      onFileChange(stationId, compressedFileList);
+      onFileChange(stationId, dataTransfer.files);
       
-      // Show compression info if the file was actually compressed
+      // Show compression info
       if (compressedFile.size < file.size) {
         const originalSizeKB = (file.size / 1024).toFixed(1);
         const compressedSizeKB = (compressedFile.size / 1024).toFixed(1);
@@ -127,8 +128,7 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
     setIsDragging(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      processFile(file);
+      processFile(e.dataTransfer.files[0]);
     }
   };
   
@@ -137,7 +137,7 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
       <Label className="mb-2 block">Image Upload</Label>
       <div className="flex items-center gap-2">
         <div 
-          className={`w-full ${isDragging ? 'bg-blue-50 border-blue' : ''}`}
+          className={`w-full ${isDragging ? 'bg-blue-50 border-blue dark:bg-blue-950' : ''}`}
           onDragEnter={handleDragEnter}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -147,11 +147,11 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
             type="button"
             variant="outline"
             onClick={triggerFileInputClick}
-            className={`w-full flex justify-center py-6 transition-colors ${isDragging ? 'border-dashed border-blue bg-blue-50' : 'border-dashed'}`}
+            className={`w-full flex justify-center py-5 transition-colors ${isDragging ? 'border-dashed border-blue bg-blue-50 dark:bg-blue-950' : 'border-dashed'}`}
             disabled={isCompressing}
           >
             <Upload className="w-5 h-5 mr-2" />
-            {isCompressing ? 'Compressing...' : isDragging ? 'Drop Image Here' : 'Choose Image File or Drag & Drop'}
+            {isCompressing ? 'Compressing...' : isDragging ? 'Drop Image Here' : isMobile ? 'Upload Image' : 'Choose Image File or Drag & Drop'}
           </Button>
         </div>
         <input
@@ -166,7 +166,7 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
       
       {uploadPreview && (
         <div className="mt-2 mb-4 flex items-center gap-2">
-          <div className="flex-1 bg-blue-50 rounded p-2 flex items-center">
+          <div className="flex-1 bg-blue-50 dark:bg-blue-950 rounded p-2 flex items-center">
             <div className="w-8 h-8 mr-2 rounded overflow-hidden">
               <img 
                 src={uploadPreview.dataUrl} 
@@ -176,7 +176,7 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
             </div>
             <span className="text-sm truncate">
               {uploadPreview.file.name} 
-              <span className="text-gray-500 ml-1">
+              <span className="text-gray-500 dark:text-gray-400 ml-1">
                 ({(uploadPreview.file.size / 1024).toFixed(1)}KB)
               </span>
             </span>
