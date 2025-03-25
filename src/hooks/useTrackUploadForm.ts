@@ -60,6 +60,16 @@ export const useTrackUploadForm = () => {
       return;
     }
     
+    // Verify that the user is only uploading as themselves or they are an admin
+    if (selectedArtistId !== user.id && !user.isAdmin) {
+      toast({
+        title: "Permission denied",
+        description: "You can only upload tracks to your own profile",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
       console.log('Starting upload process...');
       // Find the selected artist name

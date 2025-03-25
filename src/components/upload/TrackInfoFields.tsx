@@ -23,11 +23,21 @@ const TrackInfoFields: React.FC<TrackInfoFieldsProps> = ({
   selectedGenre,
   setSelectedGenre
 }) => {
-  const { users } = useAuth();
+  const { users, user, isAuthenticated } = useAuth();
   const { genres } = useTrack();
   
   // Get list of approved hosts
-  const hostUsers = users.filter(u => u.isRadioHost && u.approved);
+  // If user is admin, they can see all hosts, otherwise just their own profile
+  const hostUsers = user?.isAdmin 
+    ? users.filter(u => u.isRadioHost && u.approved)
+    : users.filter(u => u.id === user?.id && u.isRadioHost && u.approved);
+  
+  // If the user is authenticated but not yet selected an artist, auto-select themselves
+  React.useEffect(() => {
+    if (isAuthenticated && user && !selectedArtistId) {
+      setSelectedArtistId(user.id);
+    }
+  }, [isAuthenticated, user, selectedArtistId, setSelectedArtistId]);
   
   return (
     <>
@@ -49,6 +59,7 @@ const TrackInfoFields: React.FC<TrackInfoFieldsProps> = ({
         <Select
           value={selectedArtistId}
           onValueChange={setSelectedArtistId}
+          disabled={!user?.isAdmin && hostUsers.length === 1}
         >
           <SelectTrigger id="artist">
             <SelectValue placeholder="Select a DJ" />
@@ -61,6 +72,11 @@ const TrackInfoFields: React.FC<TrackInfoFieldsProps> = ({
             ))}
           </SelectContent>
         </Select>
+        {!user?.isAdmin && (
+          <p className="text-xs text-muted-foreground mt-1">
+            You can only upload tracks to your own profile
+          </p>
+        )}
       </div>
       
       {/* Genre selection */}

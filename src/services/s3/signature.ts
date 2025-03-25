@@ -139,37 +139,40 @@ export async function createAwsSignature(
   filePath: string,
   onProgress?: (progress: number) => void
 ): Promise<S3UploadResult> {
-  // Determine the endpoint URL, removing any trailing slashes
-  const endpoint = config.endpoint?.replace(/\/$/, '') || 
-    `https://s3.${config.region}.wasabisys.com`;
-  const host = new URL(endpoint).host;
-  
-  // Prepare headers for signature
-  const headers: Record<string, string> = {
-    'Host': host,
-    'Content-Type': file.type || 'application/octet-stream',
-    // Ensure proper cache control
-    'Cache-Control': 'public, max-age=31536000'
-  };
-  
-  // Use 'UNSIGNED-PAYLOAD' for browser compatibility
-  const payloadHash = 'UNSIGNED-PAYLOAD';
-  
-  // Generate AWS signature v4
-  const signedHeaders = await createSignatureV4(
-    config,
-    'PUT',
-    filePath,
-    config.region,
-    's3',
-    payloadHash,
-    headers
-  );
-  
-  // Upload URL
-  const uploadUrl = `${endpoint}/${filePath}`;
-  
   try {
+    // Determine the endpoint URL, removing any trailing slashes
+    const endpoint = config.endpoint?.replace(/\/$/, '') || 
+      `https://s3.${config.region}.wasabisys.com`;
+    const host = new URL(endpoint).host;
+    
+    // Prepare headers for signature
+    const headers: Record<string, string> = {
+      'Host': host,
+      'Content-Type': file.type || 'application/octet-stream',
+      // Ensure proper cache control
+      'Cache-Control': 'public, max-age=31536000'
+    };
+    
+    // Use 'UNSIGNED-PAYLOAD' for browser compatibility
+    const payloadHash = 'UNSIGNED-PAYLOAD';
+    
+    // Generate AWS signature v4
+    const signedHeaders = await createSignatureV4(
+      config,
+      'PUT',
+      `${config.bucketName}/${filePath}`,
+      config.region,
+      's3',
+      payloadHash,
+      headers
+    );
+    
+    // Upload URL
+    const uploadUrl = `${endpoint}/${config.bucketName}/${filePath}`;
+    
+    console.log('Uploading to URL:', uploadUrl);
+    console.log('With headers:', signedHeaders);
+    
     // Upload the file to S3 using fetch API
     const response = await fetch(uploadUrl, {
       method: 'PUT',
@@ -191,7 +194,7 @@ export async function createAwsSignature(
       publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${filePath}`;
     } else {
       // Construct URL based on the bucket endpoint
-      publicUrl = `${endpoint}/${filePath}`;
+      publicUrl = `${endpoint}/${config.bucketName}/${filePath}`;
     }
     
     return {

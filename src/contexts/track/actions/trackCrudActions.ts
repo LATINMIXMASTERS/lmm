@@ -14,6 +14,25 @@ export const createTrackCrudActions = (
 ) => {
   // Add a new track
   const addTrack = (trackData: Omit<Track, 'id' | 'likes' | 'uploadDate'>) => {
+    if (!userInfo || !userInfo.id) {
+      toast({
+        title: "Authentication required",
+        description: "You must be logged in to upload tracks",
+        variant: "destructive"
+      });
+      throw new Error("Authentication required");
+    }
+    
+    // Ensure the track is uploaded by the current user
+    if (trackData.uploadedBy !== userInfo.id) {
+      toast({
+        title: "Permission denied",
+        description: "You can only upload tracks to your own profile",
+        variant: "destructive"
+      });
+      throw new Error("Permission denied");
+    }
+    
     if (trackData.fileSize > 262144000) {
       toast({
         title: "File too large",
@@ -34,7 +53,35 @@ export const createTrackCrudActions = (
     };
     
     dispatch({ type: 'ADD_TRACK', payload: newTrack });
-    localStorage.setItem('latinmixmasters_tracks', JSON.stringify([...state.tracks, newTrack]));
+    
+    try {
+      // Use a more efficient approach to store tracks
+      // Instead of storing all tracks, store only the recent ones (last 20)
+      // This helps prevent exceeding localStorage quota
+      const tracksToStore = [...state.tracks.slice(-19), newTrack];
+      localStorage.setItem('latinmixmasters_tracks', JSON.stringify(tracksToStore));
+    } catch (error) {
+      console.error('Error storing tracks in localStorage:', error);
+      // Fallback: Remove oldest tracks to make space
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        try {
+          const reducedTracks = [...state.tracks.slice(-10), newTrack];
+          localStorage.setItem('latinmixmasters_tracks', JSON.stringify(reducedTracks));
+          toast({
+            title: "Track uploaded",
+            description: "Your track was uploaded, but some older tracks were removed from local storage due to space constraints.",
+          });
+          return newTrack;
+        } catch (fallbackError) {
+          console.error('Fallback storage also failed:', fallbackError);
+          toast({
+            title: "Track uploaded",
+            description: "Your track was uploaded but couldn't be saved to local storage due to space constraints.",
+          });
+          return newTrack;
+        }
+      }
+    }
     
     toast({
       title: "Track uploaded",
