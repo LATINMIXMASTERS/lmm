@@ -16,9 +16,13 @@ interface VideoPlayerProps {
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ streamUrl, isVisible, onClose }) => {
   const { toast } = useToast();
   
-  // Log props for debugging
+  // Enhanced logging for debugging
   useEffect(() => {
-    console.log("VideoPlayer props:", { streamUrl, isVisible });
+    console.log("VideoPlayer rendered with props:", { 
+      streamUrl, 
+      isVisible, 
+      streamUrlValid: !!streamUrl && streamUrl.length > 0 
+    });
   }, [streamUrl, isVisible]);
   
   const {
@@ -43,7 +47,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ streamUrl, isVisible, onClose
   });
 
   // Don't render anything if not visible
-  if (!isVisible) return null;
+  if (!isVisible) {
+    console.log("VideoPlayer not rendering because isVisible is false");
+    return null;
+  }
   
   // Don't render if no stream URL
   if (!streamUrl) {
@@ -60,7 +67,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ streamUrl, isVisible, onClose
     <div 
       ref={containerRef}
       className={cn(
-        "fixed bottom-20 left-0 right-0 mx-auto max-w-3xl bg-black z-50 rounded-lg overflow-hidden shadow-xl",
+        "fixed bottom-20 left-0 right-0 mx-auto max-w-3xl bg-black z-50 rounded-lg overflow-hidden shadow-xl border-2 border-primary",
         isFullscreen ? "w-screen h-screen max-w-none rounded-none" : "max-h-[40vh]"
       )}
     >
@@ -74,9 +81,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ streamUrl, isVisible, onClose
           onDurationChange={handleDurationChange}
           onError={(e) => {
             console.error("Video error:", e);
+            // Get more details about the error
+            const videoElement = e.currentTarget;
+            const errorCode = videoElement.error ? videoElement.error.code : 'unknown';
+            const errorMessage = videoElement.error ? videoElement.error.message : 'Unknown error';
+            
+            console.error("Video error details:", { 
+              errorCode, 
+              errorMessage,
+              networkState: videoElement.networkState,
+              readyState: videoElement.readyState
+            });
+            
             toast({
               title: "Video Error",
-              description: "There was an error playing this video stream",
+              description: `Error playing video: ${errorMessage} (code: ${errorCode})`,
               variant: "destructive"
             });
           }}

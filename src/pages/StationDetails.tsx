@@ -40,15 +40,31 @@ const StationDetails: React.FC = () => {
   // Check if user is admin or host (privileged users)
   const isPrivilegedUser = user?.isAdmin || user?.isRadioHost;
 
+  // Debug logging for initial state
+  useEffect(() => {
+    console.log("StationDetails initializing with ID:", id);
+  }, [id]);
+
   useEffect(() => {
     if (id) {
+      console.log("Looking for station with ID:", id);
+      console.log("Available stations:", stations.map(s => ({ id: s.id, name: s.name })));
+      
       const foundStation = stations.find(s => s.id === id);
       if (foundStation) {
+        console.log("Found station:", {
+          id: foundStation.id,
+          name: foundStation.name,
+          isLive: foundStation.isLive,
+          videoStreamUrl: foundStation.videoStreamUrl
+        });
+        
         setStation(foundStation);
         // Get this station's bookings
         const bookings = getBookingsForStation(id);
         setStationBookings(bookings.filter(b => b.approved && !b.rejected));
       } else {
+        console.error("Station not found with ID:", id);
         navigate('/stations');
         toast({
           title: "Station not found",
@@ -86,7 +102,14 @@ const StationDetails: React.FC = () => {
   // For demo/testing purposes, admin users can toggle live status
   const handleToggleLiveStatus = () => {
     if (isPrivilegedUser) {
-      setStationLiveStatus(station.id, !station.isLive, station.chatEnabled || false);
+      const newLiveStatus = !station.isLive;
+      console.log(`Toggling station ${station.id} live status to:`, newLiveStatus);
+      setStationLiveStatus(station.id, newLiveStatus, station.chatEnabled || false);
+      
+      // If turning off live status, also hide video player
+      if (!newLiveStatus && showVideoPlayer) {
+        setShowVideoPlayer(false);
+      }
     }
   };
   
@@ -105,8 +128,23 @@ const StationDetails: React.FC = () => {
     }
   };
 
-  // Handle video toggle
+  // Handle video toggle with enhanced logging
   const handleToggleVideo = () => {
+    console.log("Toggle video called. Current state:", {
+      showVideoPlayer,
+      videoStreamUrl: station.videoStreamUrl,
+      isLive: station.isLive
+    });
+    
+    if (!station.isLive) {
+      toast({
+        title: "Station Not Live",
+        description: "Video streaming is only available when the station is live.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (station.videoStreamUrl) {
       setShowVideoPlayer(!showVideoPlayer);
       
@@ -169,13 +207,20 @@ const StationDetails: React.FC = () => {
         </Card>
       </div>
       
-      {/* Video Player Component - always render it but control visibility */}
+      {/* Video Player Component - conditionally render with extra debug info */}
       {station.videoStreamUrl && (
-        <VideoPlayer 
-          streamUrl={station.videoStreamUrl}
-          isVisible={showVideoPlayer}
-          onClose={() => setShowVideoPlayer(false)}
-        />
+        <>
+          <VideoPlayer 
+            streamUrl={station.videoStreamUrl}
+            isVisible={showVideoPlayer}
+            onClose={() => setShowVideoPlayer(false)}
+          />
+          {/* Debug info in the console */}
+          {console.log("Video player state:", {
+            streamUrl: station.videoStreamUrl,
+            isVisible: showVideoPlayer
+          })}
+        </>
       )}
     </MainLayout>
   );
