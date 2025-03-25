@@ -12,6 +12,11 @@ export const uploadFileToS3 = async (
   folder: string = 'audio',
   onProgress?: (progress: number) => void
 ): Promise<S3UploadResult> => {
+  // Initialize progress reporting
+  if (onProgress) {
+    onProgress(0);
+  }
+  
   const config = getS3Config();
   
   if (!config || !isS3Configured()) {
@@ -24,19 +29,17 @@ export const uploadFileToS3 = async (
     const fileName = generateS3FileName(file);
     const filePath = `${folder}/${fileName}`;
     
-    // Initialize progress reporting
-    if (onProgress) {
-      onProgress(0);
-    }
-    
     // Determine the endpoint URL, removing any trailing slashes
-    const endpoint = config.endpoint?.replace(/\/$/, '') || `https://s3.${config.region}.wasabisys.com`;
+    const endpoint = config.endpoint?.replace(/\/$/, '') || 
+      `https://s3.${config.region}.wasabisys.com`;
     const host = new URL(endpoint).host;
     
     // Prepare headers for signature
     const headers: Record<string, string> = {
       'Host': host,
-      'Content-Type': file.type || 'application/octet-stream'
+      'Content-Type': file.type || 'application/octet-stream',
+      // Ensure proper cache control
+      'Cache-Control': 'public, max-age=31536000'
     };
     
     // Use 'UNSIGNED-PAYLOAD' for browser compatibility
@@ -53,7 +56,7 @@ export const uploadFileToS3 = async (
       headers
     );
     
-    // Upload URL without bucket in path (Wasabi virtual-hosted style)
+    // Upload URL - simplify to use bucket in path
     const uploadUrl = `${endpoint}/${filePath}`;
     
     // Upload the file to S3 using fetch API
@@ -90,6 +93,12 @@ export const uploadFileToS3 = async (
     };
   } catch (error) {
     console.error('Error uploading to S3:', error);
+    
+    // Ensure we return 0 progress on error
+    if (onProgress) {
+      onProgress(0);
+    }
+    
     return {
       success: false,
       url: '',
