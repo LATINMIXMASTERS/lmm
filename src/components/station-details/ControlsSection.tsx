@@ -1,8 +1,6 @@
 
 import React, { useEffect } from 'react';
 import StationControls from '@/components/station-details/StationControls';
-import VideoToggle from '@/components/station-details/VideoToggle';
-import { useToast } from '@/hooks/use-toast';
 
 interface ControlsSectionProps {
   isPlaying: boolean;
@@ -37,26 +35,13 @@ const ControlsSection: React.FC<ControlsSectionProps> = ({
   }, [station, showVideoPlayer]);
 
   return (
-    <>
-      <StationControls
-        isPlaying={isPlaying}
-        listeners={listeners}
-        isPrivilegedUser={isPrivilegedUser}
-        onPlayToggle={onPlayToggle}
-        onBookShow={onBookShow}
-      />
-      
-      {/* Video Toggle Button - always render for better discoverability */}
-      <div className="mt-4 border-t pt-4">
-        <h3 className="text-sm font-medium text-center mb-2">Video Stream</h3>
-        <VideoToggle 
-          isLive={station?.isLive || false}
-          hasVideoStream={!!station?.videoStreamUrl}
-          showVideoPlayer={showVideoPlayer}
-          onToggleVideo={onToggleVideo}
-        />
-      </div>
-    </>
+    <StationControls
+      isPlaying={isPlaying}
+      listeners={listeners}
+      isPrivilegedUser={isPrivilegedUser}
+      onPlayToggle={onPlayToggle}
+      onBookShow={onBookShow}
+    />
   );
 };
 

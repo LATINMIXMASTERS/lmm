@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/layout/MainLayout';
@@ -25,7 +24,8 @@ const StationDetails: React.FC = () => {
     getChatMessagesForStation,
     sendChatMessage,
     setStationLiveStatus,
-    toggleChatEnabled
+    toggleChatEnabled,
+    updateVideoStreamUrl
   } = useRadio();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -128,27 +128,31 @@ const StationDetails: React.FC = () => {
       isLive: station.isLive
     });
     
+    if (!station.isLive && !showVideoPlayer) {
+      toast({
+        title: "Station Not Live",
+        description: "The video stream is only available when the station is live",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setShowVideoPlayer(!showVideoPlayer);
     
     if (!showVideoPlayer) {
-      if (station.videoStreamUrl) {
-        toast({
-          title: "Video stream enabled",
-          description: "Loading video stream for this station"
-        });
-      } else if (isPrivilegedUser) {
+      if (!station.videoStreamUrl && isPrivilegedUser) {
         toast({
           title: "No Video Stream Configured",
-          description: "As a privileged user, you can add a stream URL in the host dashboard",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "No Video Stream Available",
-          description: "This station doesn't have a video stream configured yet",
+          description: "Please add an M3U8 stream URL in the broadcast controls section",
           variant: "destructive"
         });
       }
+    }
+  };
+
+  const handleUpdateVideoStreamUrl = (url: string) => {
+    if (isPrivilegedUser && id) {
+      updateVideoStreamUrl(id, url);
     }
   };
 
@@ -185,26 +189,25 @@ const StationDetails: React.FC = () => {
               stationBookings={stationBookings}
               isPrivilegedUser={isPrivilegedUser}
               chatMessages={chatMessages}
+              showVideoPlayer={showVideoPlayer}
               onSendMessage={handleSendMessage}
               onToggleLiveStatus={handleToggleLiveStatus}
               onToggleChat={handleToggleChat}
+              onToggleVideo={handleToggleVideo}
+              onUpdateVideoStreamUrl={handleUpdateVideoStreamUrl}
             />
           </CardContent>
         </Card>
       </div>
       
-      <VideoPlayer 
-        streamUrl={station.videoStreamUrl || ''}
-        isVisible={showVideoPlayer}
-        onClose={() => setShowVideoPlayer(false)}
-      />
-      {/* Move console.log statements outside of JSX or wrap in empty fragments */}
-      <>{
-        console.log("Video player state:", {
-          streamUrl: station.videoStreamUrl || 'none',
-          isVisible: showVideoPlayer
-        })
-      }</>
+      {!showVideoPlayer && (
+        <>{
+          console.log("Video player state:", {
+            streamUrl: station.videoStreamUrl || 'none',
+            isVisible: showVideoPlayer
+          })
+        }</>
+      )}
     </MainLayout>
   );
 };

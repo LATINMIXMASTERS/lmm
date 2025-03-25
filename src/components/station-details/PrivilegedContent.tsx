@@ -3,19 +3,26 @@ import React from 'react';
 import StreamDetails from '@/components/station-details/StreamDetails';
 import StreamingInstructions from '@/components/station-details/StreamingInstructions';
 import LiveControls from '@/components/station-details/LiveControls';
+import { useRadio } from '@/hooks/useRadioContext';
 
 interface PrivilegedContentProps {
   station: any;
   isPrivilegedUser: boolean;
+  showVideoPlayer: boolean;
   onToggleLiveStatus: () => void;
   onToggleChat: () => void;
+  onToggleVideo: () => void;
+  onUpdateVideoStreamUrl: (url: string) => void;
 }
 
 const PrivilegedContent: React.FC<PrivilegedContentProps> = ({
   station,
   isPrivilegedUser,
+  showVideoPlayer,
   onToggleLiveStatus,
-  onToggleChat
+  onToggleChat,
+  onToggleVideo,
+  onUpdateVideoStreamUrl
 }) => {
   if (!isPrivilegedUser) return null;
   
@@ -39,8 +46,12 @@ const PrivilegedContent: React.FC<PrivilegedContentProps> = ({
         stationId={station.id}
         isLive={station.isLive}
         chatEnabled={station.chatEnabled}
+        videoStreamUrl={station.videoStreamUrl || ''}
+        showVideoPlayer={showVideoPlayer}
         onToggleLiveStatus={onToggleLiveStatus}
         onToggleChat={onToggleChat}
+        onToggleVideo={onToggleVideo}
+        onUpdateVideoStreamUrl={onUpdateVideoStreamUrl}
       />
     </>
   );
