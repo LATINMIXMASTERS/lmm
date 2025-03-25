@@ -169,31 +169,37 @@ export async function createAwsSignature(
   // Upload URL
   const uploadUrl = `${endpoint}/${filePath}`;
   
-  // Upload the file to S3 using fetch API
-  const response = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: signedHeaders,
-    body: file
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`S3 upload failed with status ${response.status}: ${errorText}`);
+  try {
+    // Upload the file to S3 using fetch API
+    const response = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: signedHeaders,
+      body: file
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('S3 error response:', errorText);
+      throw new Error(`S3 upload failed with status ${response.status}: ${errorText}`);
+    }
+    
+    // Construct the public URL
+    let publicUrl;
+    
+    if (config.publicUrlBase) {
+      // Use the configured public base URL if provided
+      publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${filePath}`;
+    } else {
+      // Construct URL based on the bucket endpoint
+      publicUrl = `${endpoint}/${filePath}`;
+    }
+    
+    return {
+      success: true,
+      url: publicUrl
+    };
+  } catch (error) {
+    console.error('S3 upload error details:', error);
+    throw error;
   }
-  
-  // Construct the public URL
-  let publicUrl;
-  
-  if (config.publicUrlBase) {
-    // Use the configured public base URL if provided
-    publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${filePath}`;
-  } else {
-    // Construct URL based on the bucket endpoint
-    publicUrl = `${endpoint}/${filePath}`;
-  }
-  
-  return {
-    success: true,
-    url: publicUrl
-  };
 }

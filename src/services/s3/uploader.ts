@@ -17,7 +17,15 @@ export const uploadFileToS3 = async (
     onProgress(0);
   }
   
+  // Get S3 configuration
   const config = getS3Config();
+  console.log('S3 config loaded:', { 
+    hasBucket: config?.bucketName, 
+    hasRegion: config?.region,
+    hasEndpoint: config?.endpoint,
+    hasAccessKey: !!config?.accessKeyId,
+    hasSecretKey: !!config?.secretAccessKey 
+  });
   
   if (!config || !isS3Configured()) {
     console.warn('S3 storage is not configured properly. Using fallback storage method.');
@@ -28,6 +36,7 @@ export const uploadFileToS3 = async (
     // Generate a unique file name for S3
     const fileName = generateS3FileName(file);
     const filePath = `${folder}/${fileName}`;
+    console.log('Uploading to S3 path:', filePath);
     
     // Upload to S3 using the proper signature method
     const result = await createAwsSignature(config, file, filePath, onProgress);
@@ -37,6 +46,7 @@ export const uploadFileToS3 = async (
       onProgress(100);
     }
     
+    console.log('S3 upload successful, URL:', result.url);
     return result;
   } catch (error) {
     console.error('Error uploading to S3:', error);
@@ -46,10 +56,17 @@ export const uploadFileToS3 = async (
       onProgress(0);
     }
     
-    return {
-      success: false,
-      url: '',
-      error: error instanceof Error ? error.message : 'Unknown upload error'
-    };
+    // Fallback to local storage on error if possible
+    try {
+      console.log('Attempting fallback to local storage due to S3 error');
+      return await uploadToLocalStorage(file, folder, onProgress);
+    } catch (fallbackError) {
+      console.error('Fallback upload also failed:', fallbackError);
+      return {
+        success: false,
+        url: '',
+        error: error instanceof Error ? error.message : 'Unknown upload error'
+      };
+    }
   }
 };

@@ -19,9 +19,17 @@ export const testS3Connection = async (
     
     console.log("Testing S3 connection with endpoint:", endpoint);
     console.log("Bucket:", config.bucketName);
+    console.log("Region:", config.region);
     
     // Get auth headers for the request
     const headers = await createAuthHeaders(config, 'GET', '');
+    
+    // Display headers for debugging (removing secret key)
+    const debugHeaders = {...headers};
+    if (debugHeaders.Authorization) {
+      debugHeaders.Authorization = debugHeaders.Authorization.substring(0, 50) + '...';
+    }
+    console.log("Auth headers:", debugHeaders);
     
     // Make a GET request to check bucket location
     const response = await fetch(`${endpoint}/${config.bucketName}?location`, {

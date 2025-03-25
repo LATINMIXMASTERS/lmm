@@ -10,7 +10,7 @@ export const getWasabiCorsConfig = (): string => {
     "AllowedHeaders": ["*"],
     "AllowedMethods": ["GET", "PUT", "POST", "DELETE"],
     "AllowedOrigins": ["*"],
-    "ExposeHeaders": ["ETag"]
+    "ExposeHeaders": ["ETag", "x-amz-meta-*"]
   }
 ]`;
 };
@@ -26,11 +26,21 @@ export const applyWasabiRegionSettings = (
   
   if (!selectedRegion) return config;
   
+  // Construct endpoints correctly for Wasabi
+  const endpoint = `https://${selectedRegion.endpoint}`;
+  const publicUrlBase = config.bucketName ? 
+    `https://${config.bucketName}.${selectedRegion.endpoint}` : '';
+  
+  console.log('Applying Wasabi region settings:', {
+    region: selectedRegion.value,
+    endpoint,
+    publicUrlBase
+  });
+    
   return {
     ...config,
     region: selectedRegion.value,
-    endpoint: `https://${selectedRegion.endpoint}`,
-    publicUrlBase: config.bucketName ? 
-      `https://${config.bucketName}.${selectedRegion.endpoint}` : ''
+    endpoint,
+    publicUrlBase
   };
 };
