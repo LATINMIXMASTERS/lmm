@@ -62,7 +62,9 @@ const Navbar: React.FC = () => {
         <DesktopNav items={navItems} />
 
         {/* User Menu (Desktop) */}
-        <UserMenu />
+        <div className="hidden md:flex">
+          <UserMenu />
+        </div>
 
         {/* Mobile Menu Toggle */}
         <MobileMenuToggle 

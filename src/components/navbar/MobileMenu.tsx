@@ -20,6 +20,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   onClose,
   className
 }) => {
+  // Return null if menu is not open
   if (!isOpen) return null;
 
   return (
