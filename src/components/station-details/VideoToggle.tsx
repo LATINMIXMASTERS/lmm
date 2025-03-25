@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Video } from 'lucide-react';
+import { Video, VideoOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface VideoToggleProps {
@@ -22,12 +22,21 @@ const VideoToggle: React.FC<VideoToggleProps> = ({
   return (
     <div className="mt-4 flex justify-center">
       <Button 
-        variant="outline" 
+        variant={showVideoPlayer ? "default" : "outline"}
         onClick={onToggleVideo}
-        className={showVideoPlayer ? "bg-primary text-primary-foreground" : ""}
+        className="flex items-center gap-2"
       >
-        <Video className="mr-2 h-4 w-4" />
-        {showVideoPlayer ? "Hide Video" : "Show Video Stream"}
+        {showVideoPlayer ? (
+          <>
+            <VideoOff className="h-4 w-4" />
+            Hide Video
+          </>
+        ) : (
+          <>
+            <Video className="h-4 w-4" />
+            Show Video Stream
+          </>
+        )}
       </Button>
     </div>
   );

@@ -21,6 +21,9 @@ import StationDetailSkeleton from '@/components/station-details/StationDetailSke
 import useRandomListeners from '@/hooks/useRandomListeners';
 
 const StationDetails: React.FC = () => {
+  // Call useRandomListeners hook unconditionally at the top level
+  useRandomListeners();
+  
   const { id } = useParams<{ id: string }>();
   const { 
     stations, 
@@ -40,9 +43,6 @@ const StationDetails: React.FC = () => {
   const [stationBookings, setStationBookings] = useState<any[]>([]);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const isPlaying = currentPlayingStation === id;
-  
-  // Call useRandomListeners hook unconditionally at the top level
-  useRandomListeners();
   
   // Check if user is admin or host (privileged users)
   const isPrivilegedUser = user?.isAdmin || user?.isRadioHost;
@@ -116,6 +116,14 @@ const StationDetails: React.FC = () => {
   const handleToggleVideo = () => {
     if (station.videoStreamUrl) {
       setShowVideoPlayer(!showVideoPlayer);
+      
+      // If turning on video, show a toast notification
+      if (!showVideoPlayer) {
+        toast({
+          title: "Video stream enabled",
+          description: "Loading video stream for this station"
+        });
+      }
     } else {
       toast({
         title: "No Video Stream",
@@ -213,7 +221,7 @@ const StationDetails: React.FC = () => {
         </Card>
       </div>
       
-      {/* Video Player Component */}
+      {/* Video Player Component - always render it but control visibility */}
       {station.videoStreamUrl && (
         <VideoPlayer 
           streamUrl={station.videoStreamUrl}
