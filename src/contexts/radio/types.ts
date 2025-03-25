@@ -26,6 +26,7 @@ export interface RadioContextType {
   updateStationS3Image: (stationId: string, s3ImageUrl: string) => void;
   updateStationMetadata: (stationId: string, metadata: RadioMetadata) => void;
   updateStationListeners: (stationId: string, listeners: number) => void;
+  updateVideoStreamUrl: (stationId: string, videoStreamUrl: string) => void; // Added method
   currentPlayingStation: string | null;
   setCurrentPlayingStation: (stationId: string | null) => void;
   hasBookingConflict: (stationId: string, startTime: Date, endTime: Date, excludeBookingId?: string) => boolean;

@@ -119,5 +119,23 @@ export const stationReducers = {
       ...state,
       stations: updatedStations
     };
+  },
+  
+  updateVideoStreamUrl: (state: RadioState, action: Extract<RadioAction, { type: 'UPDATE_VIDEO_STREAM_URL' }>): RadioState => {
+    const { stationId, videoStreamUrl } = action.payload;
+    
+    const updatedStations = state.stations.map(station => 
+      station.id === stationId 
+        ? { ...station, videoStreamUrl } 
+        : station
+    );
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+    
+    return {
+      ...state,
+      stations: updatedStations
+    };
   }
 };

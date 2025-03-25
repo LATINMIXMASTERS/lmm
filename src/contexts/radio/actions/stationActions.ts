@@ -49,7 +49,6 @@ export const useStationActions = (
   
   const uploadStationImageImpl = async (stationId: string, file: File): Promise<void> => {
     try {
-      // For demo, we're just creating a data URL - in a real app, upload to S3 or similar
       const reader = new FileReader();
       
       const promise = new Promise<string>((resolve, reject) => {
@@ -103,7 +102,6 @@ export const useStationActions = (
       payload: { stationId, metadata } 
     });
     
-    // Don't show a toast for metadata updates - happens too frequently
     console.log(`Updated metadata for station ${stationId}:`, metadata);
   };
 
@@ -116,6 +114,18 @@ export const useStationActions = (
     console.log(`Updated listeners for station ${stationId} to ${listeners}`);
   };
 
+  const updateVideoStreamUrlImpl = (stationId: string, videoStreamUrl: string) => {
+    dispatch({ 
+      type: 'UPDATE_VIDEO_STREAM_URL', 
+      payload: { stationId, videoStreamUrl } 
+    });
+    
+    toast({
+      title: "Video stream URL updated",
+      description: "The video streaming URL has been updated."
+    });
+  };
+
   return {
     updateStreamDetails: updateStreamDetailsImpl,
     updateStreamUrl: updateStreamUrlImpl,
@@ -123,6 +133,7 @@ export const useStationActions = (
     uploadStationImage: uploadStationImageImpl,
     updateStationS3Image: updateStationS3ImageImpl,
     updateStationMetadata: updateStationMetadataImpl,
-    updateStationListeners: updateStationListenersImpl
+    updateStationListeners: updateStationListenersImpl,
+    updateVideoStreamUrl: updateVideoStreamUrlImpl
   };
 };

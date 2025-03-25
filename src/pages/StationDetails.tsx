@@ -8,6 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Video } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import StationHeader from '@/components/station-details/StationHeader';
 import StationControls from '@/components/station-details/StationControls';
 import StationDescription from '@/components/station-details/StationDescription';
@@ -15,6 +17,7 @@ import StreamDetails from '@/components/station-details/StreamDetails';
 import StreamingInstructions from '@/components/station-details/StreamingInstructions';
 import UpcomingShows from '@/components/station-details/UpcomingShows';
 import ChatRoom from '@/components/station-details/ChatRoom';
+import VideoPlayer from '@/components/station-details/VideoPlayer';
 
 const StationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +37,7 @@ const StationDetails: React.FC = () => {
   
   const [station, setStation] = useState<any>(null);
   const [stationBookings, setStationBookings] = useState<any[]>([]);
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const isPlaying = currentPlayingStation === id;
   
   // Check if user is admin or host (privileged users)
@@ -110,6 +114,19 @@ const StationDetails: React.FC = () => {
     }
   };
 
+  // Handle video toggle
+  const handleToggleVideo = () => {
+    if (station.videoStreamUrl) {
+      setShowVideoPlayer(!showVideoPlayer);
+    } else {
+      toast({
+        title: "No Video Stream",
+        description: "This station doesn't have a video stream URL configured.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Get chat messages for this station
   const chatMessages = getChatMessagesForStation(station.id);
 
@@ -136,6 +153,20 @@ const StationDetails: React.FC = () => {
               onPlayToggle={handlePlayToggle}
               onBookShow={handleBookShow}
             />
+            
+            {/* Video Toggle Button */}
+            {station.isLive && station.videoStreamUrl && (
+              <div className="mt-4 flex justify-center">
+                <Button 
+                  variant="outline" 
+                  onClick={handleToggleVideo}
+                  className={showVideoPlayer ? "bg-primary text-primary-foreground" : ""}
+                >
+                  <Video className="mr-2 h-4 w-4" />
+                  {showVideoPlayer ? "Hide Video" : "Show Video Stream"}
+                </Button>
+              </div>
+            )}
             
             <div className="prose prose-slate dark:prose-invert max-w-none">
               <StationDescription
@@ -232,6 +263,15 @@ const StationDetails: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Video Player Component */}
+      {station.videoStreamUrl && (
+        <VideoPlayer 
+          streamUrl={station.videoStreamUrl}
+          isVisible={showVideoPlayer}
+          onClose={() => setShowVideoPlayer(false)}
+        />
+      )}
     </MainLayout>
   );
 };

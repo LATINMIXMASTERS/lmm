@@ -1,23 +1,23 @@
-
 export interface RadioStation {
   id: string;
   name: string;
   genre: string;
-  description: string;
   image: string;
-  listeners: number;
+  description?: string;
+  listeners?: number;
   isLive?: boolean;
   chatEnabled?: boolean;
-  streamUrl?: string;
-  broadcastTime?: string;
-  hosts?: string[];
   streamDetails?: {
     url: string;
     port: string;
     password: string;
   };
-  s3Image?: string; // S3 storage URL for station image
-  currentMetadata?: RadioMetadata; // Current track metadata
+  streamUrl?: string;
+  videoStreamUrl?: string;
+  currentMetadata?: RadioMetadata;
+  s3Image?: string;
+  hosts?: string[];
+  broadcastTime?: string;
 }
 
 export interface RadioMetadata {
@@ -62,7 +62,7 @@ export interface AudioState {
   isMuted: boolean;
   currentTrack: string | null;
   currentStation: string | null;
-  currentMetadata?: RadioMetadata; // Added metadata field
+  currentMetadata?: RadioMetadata;
 }
 
 export interface ProfileUpdate {
@@ -81,29 +81,28 @@ export interface S3StorageConfig {
   bucketName: string;
   region: string;
   accessKeyId?: string;
-  secretAccessKey?: string;  // Added missing property
+  secretAccessKey?: string;
   endpoint?: string;
   publicUrlBase?: string;
-  secretKey?: string;        // Added for backward compatibility if needed
+  secretKey?: string;
 }
 
 export interface S3FileReference {
-  key: string;          // S3 object key
-  bucketName: string;   // Bucket name
-  fileName: string;     // Original file name
-  fileType: string;     // MIME type
-  fileSize: number;     // File size in bytes
-  publicUrl: string;    // Public accessible URL
-  uploadedAt: Date;     // Upload timestamp
-  metadata?: {          // Additional metadata
+  key: string;
+  bucketName: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  publicUrl: string;
+  uploadedAt: Date;
+  metadata?: {
     [key: string]: string;
   };
 }
 
-// Track storage info specifically for audio files
 export interface TrackStorageInfo extends S3FileReference {
-  duration?: number;    // Track duration in seconds
-  waveformData?: number[]; // Processed waveform data
-  transcoded?: boolean; // Whether the file has been transcoded
-  transcodedFormats?: string[]; // Available transcoded formats
+  duration?: number;
+  waveformData?: number[];
+  transcoded?: boolean;
+  transcodedFormats?: string[];
 }
