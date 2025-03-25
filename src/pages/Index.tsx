@@ -10,6 +10,7 @@ import FeaturedMixes from '@/components/home/FeaturedMixes';
 import LiveRadioSection from '@/components/home/LiveRadioSection';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
 import CommunitySection from '@/components/home/CommunitySection';
+import useRandomListeners from '@/hooks/useRandomListeners';
 
 const Index: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -18,6 +19,9 @@ const Index: React.FC = () => {
   const { toast } = useToast();
 
   const [featuredStations, setFeaturedStations] = useState(stations.slice(0, 3));
+  
+  // Use the hook to simulate random listener counts
+  useRandomListeners();
 
   useEffect(() => {
     if (stations.length > 0) {

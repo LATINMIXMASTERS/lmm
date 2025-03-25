@@ -8,6 +8,7 @@ import { useRadio } from '@/hooks/useRadioContext';
 import StationCard from '@/components/StationCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import useRandomListeners from '@/hooks/useRandomListeners';
 
 const Stations: React.FC = () => {
   const { stations, currentPlayingStation, setCurrentPlayingStation, setAudioState, audioState } = useRadio();
@@ -15,6 +16,9 @@ const Stations: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGenre, setFilterGenre] = useState('All');
+  
+  // Use the hook to simulate random listener counts
+  useRandomListeners();
 
   const handleStationClick = (stationId: string) => {
     navigate(`/stations/${stationId}`);
