@@ -1,31 +1,19 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { RefreshCw, Globe, Clipboard, Check, Terminal, Server } from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { updateScripts, copyToClipboard } from './updateScripts';
+import { copyToClipboard } from './updateScripts';
+import WebhookUpdateTab from './WebhookUpdateTab';
+import ManualUpdateTab from './ManualUpdateTab';
 
 const SystemUpdateCard: React.FC = () => {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
-  const [webhookUrl, setWebhookUrl] = useState('');
-  const [secretToken, setSecretToken] = useState('');
-  const [scriptType, setScriptType] = useState<'standard' | 'pm2'>('standard');
   const [copied, setCopied] = useState(false);
 
-  const handleSystemUpdate = async () => {
-    if (!webhookUrl) {
-      toast({
-        title: "Webhook URL Required",
-        description: "Please enter the webhook URL to trigger the system update.",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const handleSystemUpdate = async (webhookUrl: string, secretToken: string) => {
     setIsUpdating(true);
     try {
       // Call the webhook with Authorization header
@@ -68,8 +56,8 @@ const SystemUpdateCard: React.FC = () => {
     }
   };
 
-  const handleCopyScript = async () => {
-    const success = await copyToClipboard(updateScripts[scriptType]);
+  const handleCopyScript = async (script: string) => {
+    const success = await copyToClipboard(script);
     if (success) {
       setCopied(true);
       toast({
@@ -101,111 +89,18 @@ const SystemUpdateCard: React.FC = () => {
             <TabsTrigger value="manual">Manual Update</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="webhook" className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="webhookUrl" className="text-sm font-medium text-foreground">
-                Webhook URL
-              </label>
-              <Input
-                id="webhookUrl"
-                placeholder="https://your-domain.com/hooks/update-app"
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-                disabled={isUpdating}
-                className="bg-background text-foreground"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="secretToken" className="text-sm font-medium text-foreground">
-                Secret Token (Optional)
-              </label>
-              <Input
-                id="secretToken"
-                placeholder="your-secret-token"
-                type="password"
-                value={secretToken}
-                onChange={(e) => setSecretToken(e.target.value)}
-                disabled={isUpdating}
-                className="bg-background text-foreground"
-              />
-              <p className="text-xs text-muted-foreground">
-                This will be sent as the Authorization header
-              </p>
-            </div>
-            
-            <Button 
-              variant="default" 
-              className="w-full" 
-              onClick={handleSystemUpdate}
-              disabled={isUpdating}
-            >
-              <RefreshCw className={`mr-2 ${isUpdating ? 'animate-spin' : ''}`} />
-              {isUpdating ? 'Updating...' : 'Update System'}
-            </Button>
+          <TabsContent value="webhook">
+            <WebhookUpdateTab 
+              onUpdate={handleSystemUpdate}
+              isUpdating={isUpdating}
+            />
           </TabsContent>
           
-          <TabsContent value="manual" className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                Server Type
-              </label>
-              <div className="flex space-x-2">
-                <Button 
-                  variant={scriptType === 'standard' ? 'default' : 'outline'} 
-                  className="flex-1"
-                  onClick={() => setScriptType('standard')}
-                >
-                  <Server className="w-4 h-4 mr-2" />
-                  Systemd
-                </Button>
-                <Button 
-                  variant={scriptType === 'pm2' ? 'default' : 'outline'} 
-                  className="flex-1"
-                  onClick={() => setScriptType('pm2')}
-                >
-                  <Terminal className="w-4 h-4 mr-2" />
-                  PM2
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                Manual Update Script
-              </label>
-              <div className="relative">
-                <pre className="p-4 rounded-md bg-muted text-xs overflow-x-auto max-h-48 overflow-y-auto text-foreground">
-                  {updateScripts[scriptType]}
-                </pre>
-                <Button 
-                  size="sm" 
-                  className="absolute top-2 right-2" 
-                  onClick={handleCopyScript}
-                  variant="secondary"
-                >
-                  {copied ? (
-                    <><Check className="w-4 h-4 mr-1" /> Copied</>
-                  ) : (
-                    <><Clipboard className="w-4 h-4 mr-1" /> Copy</>
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Copy this script and run it on your VPS to update manually
-              </p>
-            </div>
-            
-            <div className="p-3 rounded-md bg-muted">
-              <h4 className="text-sm font-medium mb-2 text-foreground">Manual Update Instructions:</h4>
-              <ol className="text-xs space-y-1 list-decimal list-inside text-muted-foreground">
-                <li>SSH into your server: <code className="bg-background px-1 rounded">ssh user@your-server</code></li>
-                <li>Navigate to your application directory: <code className="bg-background px-1 rounded">cd /var/www/latinmixmasters</code></li>
-                <li>Copy the script above into a file: <code className="bg-background px-1 rounded">nano update.sh</code></li>
-                <li>Make the script executable: <code className="bg-background px-1 rounded">chmod +x update.sh</code></li>
-                <li>Run the script: <code className="bg-background px-1 rounded">./update.sh</code></li>
-              </ol>
-            </div>
+          <TabsContent value="manual">
+            <ManualUpdateTab 
+              onCopyScript={handleCopyScript} 
+              copied={copied} 
+            />
           </TabsContent>
         </Tabs>
       </CardContent>
