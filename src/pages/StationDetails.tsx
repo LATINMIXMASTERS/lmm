@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/layout/MainLayout';
@@ -197,10 +198,13 @@ const StationDetails: React.FC = () => {
         isVisible={showVideoPlayer}
         onClose={() => setShowVideoPlayer(false)}
       />
-      {console.log("Video player state:", {
-        streamUrl: station.videoStreamUrl || 'none',
-        isVisible: showVideoPlayer
-      })}
+      {/* Move console.log statements outside of JSX or wrap in empty fragments */}
+      <>{
+        console.log("Video player state:", {
+          streamUrl: station.videoStreamUrl || 'none',
+          isVisible: showVideoPlayer
+        })
+      }</>
     </MainLayout>
   );
 };
