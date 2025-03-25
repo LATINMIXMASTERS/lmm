@@ -46,7 +46,7 @@ const ControlsSection: React.FC<ControlsSectionProps> = ({
         onBookShow={onBookShow}
       />
       
-      {/* Video Toggle Button - always render for debugging */}
+      {/* Video Toggle Button - always render for better discoverability */}
       <div className="mt-4 border-t pt-4">
         <h3 className="text-sm font-medium text-center mb-2">Video Stream</h3>
         <VideoToggle 
@@ -55,17 +55,6 @@ const ControlsSection: React.FC<ControlsSectionProps> = ({
           showVideoPlayer={showVideoPlayer}
           onToggleVideo={onToggleVideo}
         />
-        
-        {/* Debug info - remove in production */}
-        <div className="mt-2 text-xs text-muted-foreground text-center">
-          Station Live: {station?.isLive ? 'Yes' : 'No'} | 
-          Has Video: {!!station?.videoStreamUrl ? 'Yes' : 'No'} |
-          Video URL: {station?.videoStreamUrl ? 
-            (station.videoStreamUrl.length > 20 ? 
-              `${station.videoStreamUrl.substring(0, 20)}...` : 
-              station.videoStreamUrl) : 
-            'None'}
-        </div>
       </div>
     </>
   );

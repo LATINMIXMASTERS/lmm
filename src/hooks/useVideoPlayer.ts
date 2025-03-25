@@ -10,6 +10,7 @@ interface UseVideoPlayerProps {
 export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [volume, setVolume] = useState(0.7);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -20,9 +21,14 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
   
   // Log when component initializes with stream URL
   useEffect(() => {
-    console.log("VideoPlayer initialized with stream URL:", streamUrl);
-    console.log("VideoPlayer visibility:", isVisible);
-  }, []);
+    console.log("useVideoPlayer hook initialized with stream URL:", streamUrl);
+    console.log("Video visibility:", isVisible);
+    
+    // Reset loading state when visibility changes
+    if (isVisible) {
+      setIsLoading(true);
+    }
+  }, [isVisible, streamUrl]);
 
   // Handle play state updates
   useEffect(() => {
@@ -31,6 +37,7 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
         console.log("Attempting to play video with URL:", streamUrl);
         videoRef.current.play().catch(err => {
           console.error("Error playing video:", err);
+          setIsPlaying(false);
           toast({
             title: "Video Playback Error",
             description: `Could not play video: ${err.message}`,
@@ -58,6 +65,7 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
       // Ensure we have a valid stream URL
       if (!streamUrl) {
         console.error("No stream URL provided");
+        setIsLoading(false);
         toast({
           title: "No video stream available",
           description: "The station doesn't have a valid video stream URL",
@@ -66,11 +74,8 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
         return;
       }
       
+      setIsLoading(true);
       videoRef.current.load();
-      toast({
-        title: "Loading video stream",
-        description: "Connecting to the station's video stream..."
-      });
       
       const playPromise = videoRef.current.play();
       if (playPromise !== undefined) {
@@ -79,12 +84,12 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
           console.log("Video playback started successfully");
         }).catch(err => {
           console.error("Error auto-playing video:", err);
+          setIsPlaying(false);
           toast({
             title: "Video Playback Error",
             description: `Could not auto-play video: ${err.message}`,
             variant: "destructive"
           });
-          setIsPlaying(false);
         });
       }
     }
@@ -147,6 +152,16 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
     }
   };
 
+  const handleLoadStart = () => {
+    console.log("Video load started");
+    setIsLoading(true);
+  };
+
+  const handleCanPlay = () => {
+    console.log("Video can play now");
+    setIsLoading(false);
+  };
+
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
@@ -157,6 +172,7 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
     videoRef,
     containerRef,
     isPlaying,
+    isLoading,
     volume,
     isMuted,
     isFullscreen,
@@ -168,6 +184,8 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
     handleTimeUpdate,
     handleDurationChange,
     handleVolumeChange,
+    handleLoadStart,
+    handleCanPlay,
     formatTime
   };
 }

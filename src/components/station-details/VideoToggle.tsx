@@ -19,9 +19,6 @@ const VideoToggle: React.FC<VideoToggleProps> = ({
 }) => {
   const { toast } = useToast();
   
-  // Always show the toggle now for debugging purposes, we'll comment the condition
-  // if (!isLive || !hasVideoStream) return null;
-  
   const handleToggleClick = () => {
     // Log the current state for debugging
     console.log("Video toggle clicked. Current state:", { isLive, hasVideoStream, showVideoPlayer });
@@ -35,39 +32,40 @@ const VideoToggle: React.FC<VideoToggleProps> = ({
       return;
     }
     
-    if (!hasVideoStream) {
-      toast({
-        title: "No Video Stream",
-        description: "This station doesn't have a video stream configured",
-        variant: "destructive"
-      });
-      return;
-    }
-    
+    // Even if there's no video stream, try to toggle - the host might have just added one
     onToggleVideo();
+    
+    // Show toast based on new state
+    if (!showVideoPlayer) {
+      toast({
+        title: "Video Stream Enabled",
+        description: hasVideoStream ? "Loading video stream..." : "No video stream URL configured. Please add a stream URL in your dashboard.",
+      });
+    }
   };
-  
-  // Determine if the button should be disabled
-  const isDisabled = !isLive || !hasVideoStream;
   
   return (
     <div className="mt-4 flex justify-center">
       <Button 
         variant={showVideoPlayer ? "default" : "outline"}
         onClick={handleToggleClick}
-        className="flex items-center gap-2"
-        disabled={isDisabled}
+        className="flex items-center gap-2 relative"
       >
         {showVideoPlayer ? (
           <>
             <VideoOff className="h-4 w-4" />
-            Hide Video
+            Hide Video Stream
           </>
         ) : (
           <>
             <Video className="h-4 w-4" />
             Show Video Stream
           </>
+        )}
+        
+        {/* Add a status indicator dot */}
+        {isLive && hasVideoStream && (
+          <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-green-500 transform translate-x-1 -translate-y-1" />
         )}
       </Button>
       
