@@ -1,8 +1,8 @@
 
-import { S3StorageConfig, S3UploadResult } from './types';
-import { createSignatureV4 } from './signature';
+import { S3UploadResult } from './types';
 import { uploadToLocalStorage } from './fallbackUpload';
 import { generateS3FileName, getS3Config, isS3Configured } from './config';
+import { createAwsSignature } from './signature';
 
 /**
  * Upload a file to S3-compatible storage using fetch API
@@ -29,68 +29,15 @@ export const uploadFileToS3 = async (
     const fileName = generateS3FileName(file);
     const filePath = `${folder}/${fileName}`;
     
-    // Determine the endpoint URL, removing any trailing slashes
-    const endpoint = config.endpoint?.replace(/\/$/, '') || 
-      `https://s3.${config.region}.wasabisys.com`;
-    const host = new URL(endpoint).host;
-    
-    // Prepare headers for signature
-    const headers: Record<string, string> = {
-      'Host': host,
-      'Content-Type': file.type || 'application/octet-stream',
-      // Ensure proper cache control
-      'Cache-Control': 'public, max-age=31536000'
-    };
-    
-    // Use 'UNSIGNED-PAYLOAD' for browser compatibility
-    const payloadHash = 'UNSIGNED-PAYLOAD';
-    
-    // Generate AWS signature v4
-    const signedHeaders = await createSignatureV4(
-      config,
-      'PUT',
-      filePath,
-      config.region,
-      's3',
-      payloadHash,
-      headers
-    );
-    
-    // Upload URL - simplify to use bucket in path
-    const uploadUrl = `${endpoint}/${filePath}`;
-    
-    // Upload the file to S3 using fetch API
-    const response = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: signedHeaders,
-      body: file
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`S3 upload failed with status ${response.status}: ${errorText}`);
-    }
+    // Upload to S3 using the proper signature method
+    const result = await createAwsSignature(config, file, filePath, onProgress);
     
     // Update progress to 100% on successful upload
-    if (onProgress) {
+    if (onProgress && result.success) {
       onProgress(100);
     }
     
-    // Construct the public URL
-    let publicUrl;
-    
-    if (config.publicUrlBase) {
-      // Use the configured public base URL if provided
-      publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${filePath}`;
-    } else {
-      // Construct URL based on the bucket endpoint
-      publicUrl = `${endpoint}/${filePath}`;
-    }
-    
-    return {
-      success: true,
-      url: publicUrl
-    };
+    return result;
   } catch (error) {
     console.error('Error uploading to S3:', error);
     
