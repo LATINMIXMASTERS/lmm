@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -50,7 +49,7 @@ const LiveControls: React.FC<LiveControlsProps> = ({
       toast({
         title: "Warning: URL Format",
         description: "The URL doesn't end with .m3u8, which is the expected format for HLS streams",
-        variant: "warning"
+        variant: "destructive"
       });
     }
     
