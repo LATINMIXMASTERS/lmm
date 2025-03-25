@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { Save, TestTube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Save, TestTube } from 'lucide-react';
 
 interface S3ActionButtonsProps {
   onSave: () => void;
@@ -17,19 +17,20 @@ const S3ActionButtons: React.FC<S3ActionButtonsProps> = ({
   isValidForTesting
 }) => {
   return (
-    <div className="flex flex-wrap gap-3 mt-6">
+    <div className="flex gap-4 mt-6">
       <Button 
         onClick={onSave} 
-        className="bg-blue hover:bg-blue-600"
+        className="flex-1"
       >
         <Save className="w-4 h-4 mr-2" />
         Save Configuration
       </Button>
       
-      <Button 
-        variant="outline" 
+      <Button
         onClick={onTest}
         disabled={isTestingConnection || !isValidForTesting}
+        variant="outline"
+        className="flex-1"
       >
         <TestTube className="w-4 h-4 mr-2" />
         {isTestingConnection ? 'Testing...' : 'Test Connection'}

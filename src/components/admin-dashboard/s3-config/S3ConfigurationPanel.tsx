@@ -11,7 +11,7 @@ import {
   isConfigComplete, 
   applyWasabiRegionSettings, 
   testS3Connection 
-} from './S3ConfigUtils';
+} from './utils';
 
 import { S3HeaderSection, S3InfoBox, S3ActionButtons } from './components';
 import GeneralSettingsTab from './GeneralSettingsTab';
