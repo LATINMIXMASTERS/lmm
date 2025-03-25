@@ -25,7 +25,7 @@ export const uploadFileToS3 = async (
   try {
     // Generate a unique file name for S3
     const fileName = generateS3FileName(file);
-    const s3Path = `${folder}/${fileName}`;
+    const s3Path = `${config.bucketName}/${folder}/${fileName}`;
     
     // Initialize progress reporting
     if (onProgress) {
@@ -36,8 +36,9 @@ export const uploadFileToS3 = async (
     const endpoint = config.endpoint?.replace(/\/$/, '') || `https://s3.${config.region}.wasabisys.com`;
     const host = new URL(endpoint).host;
     
-    // Prepare the request URL
-    const uploadUrl = `${endpoint}/${s3Path}`;
+    // Prepare the full upload path (without bucket name in the URL, only in the path)
+    const filePath = `${folder}/${fileName}`;
+    const uploadUrl = `${endpoint}/${filePath}`;
     console.log(`Uploading to S3 URL: ${uploadUrl}`);
     
     // Prepare headers for signature
@@ -46,14 +47,18 @@ export const uploadFileToS3 = async (
       'Content-Type': file.type || 'application/octet-stream'
     };
     
+    // Create a hash of the file content
+    // For simplicity and browser compatibility, we use 'UNSIGNED-PAYLOAD'
+    const payloadHash = 'UNSIGNED-PAYLOAD';
+    
     // Generate AWS signature v4
     const signedHeaders = await createSignatureV4(
       config,
       'PUT',
-      s3Path,
+      filePath,
       config.region,
       's3',
-      'UNSIGNED-PAYLOAD',
+      payloadHash,
       headers
     );
     
@@ -84,10 +89,10 @@ export const uploadFileToS3 = async (
     
     if (config.publicUrlBase) {
       // Use the configured public base URL if provided
-      publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${s3Path}`;
+      publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${filePath}`;
     } else {
-      // Construct URL based on the bucket endpoint
-      publicUrl = `${endpoint}/${config.bucketName}/${s3Path}`;
+      // Construct URL based on the bucket endpoint (bucket name is in the host for virtual-hosted style URLs)
+      publicUrl = `${endpoint}/${filePath}`;
     }
     
     console.log(`S3 upload successful. Public URL: ${publicUrl}`);

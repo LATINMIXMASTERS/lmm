@@ -74,6 +74,13 @@ const UserMenu: React.FC = () => {
       {/* Mobile menu items - shown in the mobile menu */}
       {isMobile && isAuthenticated && (
         <div className="md:hidden flex flex-col w-full mt-4 space-y-4 border-t pt-4">
+          <div className="flex items-center space-x-2 px-4 py-2">
+            <div className="w-8 h-8 bg-gold/10 rounded-full flex items-center justify-center">
+              <User className="w-4 h-4 text-gold" />
+            </div>
+            <span className="text-sm font-medium">{user?.username}</span>
+          </div>
+          
           <Link
             to={user?.isRadioHost ? `/host/${user.id}` : `/profile/${user.id}`}
             className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-lightest rounded-lg"

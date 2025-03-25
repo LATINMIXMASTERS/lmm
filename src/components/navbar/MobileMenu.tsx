@@ -25,14 +25,14 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   return (
     <div
       className={cn(
-        'fixed inset-0 z-50 bg-background md:hidden',
+        'fixed inset-0 z-50 bg-background/95 backdrop-blur-sm md:hidden',
         className
       )}
     >
       <div className="fixed inset-0 overflow-y-auto">
-        <div className="flex min-h-full items-end justify-center p-0 text-center sm:items-center sm:p-0">
+        <div className="flex min-h-full items-start justify-center p-0 text-center">
           <div
-            className="relative transform overflow-hidden rounded-t-xl bg-background px-5 py-6 w-full transition-all sm:rounded-xl"
+            className="relative transform overflow-hidden rounded-b-xl bg-background px-5 py-6 w-full transition-all"
           >
             <div className="absolute right-4 top-4">
               <button
@@ -44,8 +44,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               </button>
             </div>
 
-            <div className="mt-5 sm:mt-6">
-              <nav className="flex flex-col space-y-8">
+            <div className="mt-8">
+              <nav className="flex flex-col space-y-6">
                 {items.map((item) => (
                   <Link
                     key={item.href}
@@ -56,11 +56,11 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
                     {item.label}
                   </Link>
                 ))}
-                <div className="flex justify-center mt-4">
+                <div className="flex justify-center my-4">
                   <ThemeToggle />
                 </div>
                 
-                {/* Add User Menu for mobile */}
+                {/* User Menu for mobile */}
                 <UserMenu />
               </nav>
             </div>
