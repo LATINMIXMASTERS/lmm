@@ -36,10 +36,16 @@ sudo mkdir -p /var/www/latinmixmasters
 sudo chown -R $USER:$USER /var/www/latinmixmasters
 cd /var/www/latinmixmasters
 
-# Clone repository or copy files
-echo -e "\n>>> Setting up application files..."
-# (Uncomment this if using git)
-# git clone https://github.com/yourusername/latinmixmasters.git .
+# Check if package.json exists
+if [ ! -f "package.json" ]; then
+    echo -e "\n>>> ERROR: package.json not found!"
+    echo "You need to upload your application files to this directory before running this script."
+    echo "Please use SCP, SFTP, or git to upload your application files."
+    echo "Example SCP command: scp -r /local/path/to/your/app/* user@your-server:/var/www/latinmixmasters/"
+    echo "Or use git: git clone https://github.com/yourusername/latinmixmasters.git ."
+    echo "Then run this script again."
+    exit 1
+fi
 
 echo -e "\n>>> Cleaning npm cache..."
 npm cache clean --force
