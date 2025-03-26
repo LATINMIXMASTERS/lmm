@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChatMessage } from '@/models/RadioStation';
@@ -7,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
-import { Send, WiFiOff } from 'lucide-react';
+import { Send, WifiOff } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRadio } from '@/hooks/useRadioContext';
 
@@ -108,7 +107,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
           <CardTitle className="text-lg">Live Chat</CardTitle>
           {!isOnline && (
             <div className="flex items-center text-destructive text-xs">
-              <WiFiOff className="h-3 w-3 mr-1" />
+              <WifiOff className="h-3 w-3 mr-1" />
               Offline
             </div>
           )}
