@@ -15,7 +15,13 @@ export const testS3Connection = async (
   
   try {
     // Determine the endpoint URL
-    const endpoint = config.endpoint || `https://s3.${config.region}.wasabisys.com`;
+    let endpoint = config.endpoint || `https://s3.${config.region}.wasabisys.com`;
+    
+    // For Wasabi, ensure we have the correct domain format
+    if (!endpoint.includes('wasabisys.com') && config.region && !endpoint.includes(config.region)) {
+      endpoint = `https://s3.${config.region}.wasabisys.com`;
+      console.log("Corrected Wasabi endpoint for testing:", endpoint);
+    }
     
     console.log("Testing S3 connection with endpoint:", endpoint);
     console.log("Bucket:", config.bucketName);

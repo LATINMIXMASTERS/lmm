@@ -20,11 +20,12 @@ export const uploadFileToS3 = async (
   // Get S3 configuration
   const config = getS3Config();
   console.log('S3 config loaded:', { 
-    hasBucket: config?.bucketName, 
-    hasRegion: config?.region,
-    hasEndpoint: config?.endpoint,
+    hasBucket: !!config?.bucketName, 
+    hasRegion: !!config?.region,
+    hasEndpoint: !!config?.endpoint,
     hasAccessKey: !!config?.accessKeyId,
-    hasSecretKey: !!config?.secretAccessKey 
+    hasSecretKey: !!config?.secretAccessKey,
+    publicUrlBase: config?.publicUrlBase || 'not set'
   });
   
   if (!config || !isS3Configured()) {

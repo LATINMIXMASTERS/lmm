@@ -13,8 +13,15 @@ export async function createAwsSignature(
 ): Promise<S3UploadResult> {
   try {
     // Determine the endpoint URL, removing any trailing slashes
-    const endpoint = config.endpoint?.replace(/\/$/, '') || 
+    let endpoint = config.endpoint?.replace(/\/$/, '') || 
       `https://s3.${config.region}.wasabisys.com`;
+    
+    // For Wasabi, ensure we have the correct domain format
+    if (!endpoint.includes('wasabisys.com') && config.region && !endpoint.includes(config.region)) {
+      endpoint = `https://s3.${config.region}.wasabisys.com`;
+      console.log("Corrected Wasabi endpoint:", endpoint);
+    }
+    
     const host = new URL(endpoint).host;
     
     // Prepare headers for signature
@@ -47,7 +54,7 @@ export async function createAwsSignature(
     const uploadUrl = `${endpoint}/${config.bucketName}/${filePath}`;
     
     console.log('Uploading to URL:', uploadUrl);
-    console.log('With headers:', signedHeaders);
+    console.log('With headers:', Object.keys(signedHeaders).join(', '));
     
     // Upload the file to S3 using fetch API with progress tracking
     const xhr = new XMLHttpRequest();

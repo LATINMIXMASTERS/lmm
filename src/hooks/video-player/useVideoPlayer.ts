@@ -46,7 +46,7 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
       // Known problematic domains or URL patterns that need special handling
       const problematicPatterns = [
         'lmmappstore.com',
-        '.m3u8'  // Many m3u8 streams have CORS or format compatibility issues
+        '.m3u8'  // All m3u8 streams should use our specialized fallback player
       ];
       
       // Check if URL matches any problematic patterns
@@ -55,7 +55,7 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
       );
       
       if (needsSpecialHandling) {
-        console.log("Stream URL may require special handling:", streamUrl);
+        console.log("Stream URL requires special handling:", streamUrl);
         setShouldUseFallback(true);
       }
     }
