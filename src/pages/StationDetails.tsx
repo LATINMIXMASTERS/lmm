@@ -34,20 +34,20 @@ const StationDetails: React.FC = () => {
     handleSendMessage
   } = useStationDetails(id);
 
-  // Periodically sync chat messages to ensure consistency across devices
+  // Set up more aggressive sync when chat is visible and enabled
   useEffect(() => {
-    if (!id) return;
+    if (!id || !station?.isLive || !station?.chatEnabled) return;
     
-    // Initial sync
+    // Initial sync on page load
     syncChatMessagesFromStorage();
     
-    // Set up periodic sync
+    // Set up periodic sync with a short interval when chat is active
     const syncInterval = setInterval(() => {
       syncChatMessagesFromStorage();
-    }, 10000); // Sync every 10 seconds
+    }, 3000); // Sync every 3 seconds when chat is active
     
     return () => clearInterval(syncInterval);
-  }, [id, syncChatMessagesFromStorage]);
+  }, [id, syncChatMessagesFromStorage, station?.isLive, station?.chatEnabled]);
 
   // Handle connection issues
   useEffect(() => {
@@ -76,15 +76,31 @@ const StationDetails: React.FC = () => {
     };
   }, [toast, syncChatMessagesFromStorage]);
 
+  // Automatically clean up chat messages on component unmount if not live
+  useEffect(() => {
+    return () => {
+      if (id && !station?.isLive && syncChatMessagesFromStorage) {
+        // Clear messages for this station when user leaves the page and station is not live
+        const chatData = localStorage.getItem('latinmixmasters_chat_messages');
+        if (chatData) {
+          try {
+            const parsedData = JSON.parse(chatData);
+            if (parsedData[id]) {
+              delete parsedData[id];
+              localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify(parsedData));
+              console.log(`Cleaned up chat messages for station ${id} on page leave`);
+            }
+          } catch (error) {
+            console.error("Failed to clean up chat messages:", error);
+          }
+        }
+      }
+    };
+  }, [id, station?.isLive]);
+
   if (!station) {
     return <StationDetailSkeleton />;
   }
-
-  // Log video player state outside of JSX
-  console.log("Video player state:", {
-    streamUrl: station.videoStreamUrl || 'none',
-    isVisible: showVideoPlayer
-  });
 
   return (
     <MainLayout>

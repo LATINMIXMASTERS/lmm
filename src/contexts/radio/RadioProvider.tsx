@@ -52,12 +52,29 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify({}));
     }
     
+    // Setup storage sync listener
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'latinmixmasters_chat_messages' && e.newValue) {
+        try {
+          dispatch({ type: 'SET_CHAT_MESSAGES', payload: JSON.parse(e.newValue) });
+          console.log("Chat messages updated from storage event", new Date().toISOString());
+        } catch (error) {
+          console.error("Failed to parse updated chat messages:", error);
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
     // Set up periodic sync for chat messages
     const syncInterval = setInterval(() => {
       actions.syncChatMessagesFromStorage?.();
-    }, 30000); // Sync every 30 seconds
+    }, 5000); // Sync every 5 seconds
     
-    return () => clearInterval(syncInterval);
+    return () => {
+      clearInterval(syncInterval);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [actions]);
 
   return (

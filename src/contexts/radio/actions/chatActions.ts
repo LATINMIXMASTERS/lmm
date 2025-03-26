@@ -11,7 +11,7 @@ export const useChatActions = (
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Add a sync mechanism to ensure consistent data
+  // Enhanced sync mechanism with better error handling and feedback
   const syncChatMessagesFromStorage = () => {
     try {
       const storedMessages = localStorage.getItem('latinmixmasters_chat_messages');
@@ -21,10 +21,12 @@ export const useChatActions = (
           type: 'SET_CHAT_MESSAGES', 
           payload: parsedMessages 
         });
-        console.log("Chat messages synchronized from localStorage");
+        console.log("Chat messages synchronized from localStorage", new Date().toISOString());
       }
     } catch (error) {
       console.error("Failed to sync chat messages from localStorage:", error);
+      // Create an empty chat messages object if parsing fails
+      localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify({}));
     }
   };
 
@@ -46,7 +48,7 @@ export const useChatActions = (
 
     if (!message.trim()) return;
 
-    // Create a new message
+    // Create a new message with precise timestamp
     const newMessage: ChatMessage = {
       id: uuidv4(),
       stationId,
@@ -80,10 +82,18 @@ export const useChatActions = (
       payload: newMessage
     });
     
+    // Force an additional sync in case multiple clients are sending messages
+    setTimeout(() => syncChatMessagesFromStorage(), 500);
+    
     console.log(`Sent chat message to station ${stationId}:`, newMessage);
   };
 
   const setStationLiveStatusImpl = (stationId: string, isLive: boolean, enableChat: boolean = false): void => {
+    // Clean up chat data when station goes offline
+    if (!isLive && state.stations.find(s => s.id === stationId)?.isLive) {
+      clearChatMessagesForStationImpl(stationId);
+    }
+    
     dispatch({
       type: 'SET_STATION_LIVE_STATUS',
       payload: { stationId, isLive, chatEnabled: enableChat }
@@ -109,6 +119,11 @@ export const useChatActions = (
   };
 
   const toggleChatEnabledImpl = (stationId: string, enabled: boolean): void => {
+    // If disabling chat, clean up the messages
+    if (!enabled && state.stations.find(s => s.id === stationId)?.chatEnabled) {
+      clearChatMessagesForStationImpl(stationId);
+    }
+    
     dispatch({
       type: 'TOGGLE_CHAT_ENABLED',
       payload: { stationId, enabled }
@@ -129,11 +144,32 @@ export const useChatActions = (
     });
   };
 
+  // New function to clear chat messages for a specific station
+  const clearChatMessagesForStationImpl = (stationId: string): void => {
+    // First sync to get the latest data
+    syncChatMessagesFromStorage();
+    
+    // Remove chat messages for this station
+    const { [stationId]: _, ...remainingMessages } = state.chatMessages;
+    
+    // Update localStorage
+    localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify(remainingMessages));
+    
+    // Update state
+    dispatch({ 
+      type: 'SET_CHAT_MESSAGES', 
+      payload: remainingMessages 
+    });
+    
+    console.log(`Cleared chat messages for station ${stationId}`);
+  };
+
   return {
     getChatMessagesForStation: getChatMessagesForStationImpl,
     sendChatMessage: sendChatMessageImpl,
     setStationLiveStatus: setStationLiveStatusImpl,
     toggleChatEnabled: toggleChatEnabledImpl,
-    syncChatMessagesFromStorage
+    syncChatMessagesFromStorage,
+    clearChatMessagesForStation: clearChatMessagesForStationImpl
   };
 };

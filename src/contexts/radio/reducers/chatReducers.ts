@@ -12,6 +12,11 @@ export const chatReducers = {
     const stationId = action.payload.stationId;
     const currentMessages = state.chatMessages[stationId] || [];
     
+    // Prevent duplicate messages (same id)
+    if (currentMessages.some(msg => msg.id === action.payload.id)) {
+      return state;
+    }
+    
     return {
       ...state,
       chatMessages: {

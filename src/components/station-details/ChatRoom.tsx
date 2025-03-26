@@ -7,8 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
-import { Send } from 'lucide-react';
+import { Send, WiFiOff } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useRadio } from '@/hooks/useRadioContext';
 
 interface ChatRoomProps {
   stationId: string;
@@ -18,39 +19,78 @@ interface ChatRoomProps {
 
 const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage }) => {
   const { user } = useAuth();
+  const { syncChatMessagesFromStorage } = useRadio();
   const [message, setMessage] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const chatContentRef = useRef<HTMLDivElement>(null);
   const isAnonymous = !user;
   const isMobile = useIsMobile();
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [lastSync, setLastSync] = useState<Date>(new Date());
+  
+  // Handle online/offline status
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      syncChatMessagesFromStorage();
+      setLastSync(new Date());
+    };
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [syncChatMessagesFromStorage]);
   
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
+    
+    if (chatContentRef.current) {
+      const scrollElement = chatContentRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight;
+      }
+    }
   }, [messages]);
 
-  // Poll for new messages every 5 seconds to ensure sync across devices
+  // Regular polling for sync - more aggressive than the parent component
   useEffect(() => {
+    if (!isOnline) return;
+    
     // This will force a re-fetch of messages from the shared localStorage
     const intervalId = setInterval(() => {
-      // The actual refresh logic is handled in the parent component
-      // This is just to trigger the effect
-      console.log("Refreshing chat messages for synchronization");
-      
-      // Force scroll to bottom after refresh
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
-    }, 5000);
+      syncChatMessagesFromStorage();
+      setLastSync(new Date());
+    }, 2000); // Sync every 2 seconds
+    
+    // Force scroll to bottom after refresh
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
     
     return () => clearInterval(intervalId);
-  }, [stationId]);
+  }, [stationId, isOnline, syncChatMessagesFromStorage]);
 
   const handleSendMessage = () => {
     if (message.trim() && user) {
       onSendMessage(message);
       setMessage('');
+      
+      // Force sync after a short delay to make sure the message is stored in localStorage
+      setTimeout(() => {
+        syncChatMessagesFromStorage();
+        setLastSync(new Date());
+      }, 500);
     }
   };
 
@@ -64,10 +104,18 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
   return (
     <Card className={`mt-6 ${isMobile ? 'h-[400px]' : 'h-[500px]'} flex flex-col`}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Live Chat</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-lg">Live Chat</CardTitle>
+          {!isOnline && (
+            <div className="flex items-center text-destructive text-xs">
+              <WiFiOff className="h-3 w-3 mr-1" />
+              Offline
+            </div>
+          )}
+        </div>
       </CardHeader>
       
-      <CardContent className="flex-grow flex flex-col p-3 h-full">
+      <CardContent className="flex-grow flex flex-col p-3 h-full" ref={chatContentRef}>
         <ScrollArea className="flex-grow mb-4 pr-4" ref={scrollRef}>
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
@@ -124,16 +172,21 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
               onKeyDown={handleKeyDown}
               className="min-h-[60px] resize-none"
               maxLength={500}
+              disabled={!isOnline}
             />
             <Button 
               onClick={handleSendMessage} 
-              disabled={!message.trim()} 
+              disabled={!message.trim() || !isOnline} 
               className="h-10 w-10 p-0"
             >
               <Send className="h-4 w-4" />
             </Button>
           </div>
         )}
+        
+        <div className="mt-2 text-xs text-muted-foreground text-right">
+          Last sync: {format(lastSync, 'h:mm:ss a')}
+        </div>
       </CardContent>
     </Card>
   );
