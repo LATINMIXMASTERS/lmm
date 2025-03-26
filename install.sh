@@ -30,20 +30,11 @@ echo -e "\n>>> Verifying Node.js and npm installation..."
 node -v
 npm -v
 
-# Set up application directory
-echo -e "\n>>> Creating application directory..."
-sudo mkdir -p /var/www/latinmixmasters
-sudo chown -R $USER:$USER /var/www/latinmixmasters
-cd /var/www/latinmixmasters
-
 # Check if package.json exists
 if [ ! -f "package.json" ]; then
     echo -e "\n>>> ERROR: package.json not found!"
-    echo "You need to upload your application files to this directory before running this script."
-    echo "Please use SCP, SFTP, or git to upload your application files."
-    echo "Example SCP command: scp -r /local/path/to/your/app/* user@your-server:/var/www/latinmixmasters/"
-    echo "Or use git: git clone https://github.com/yourusername/latinmixmasters.git ."
-    echo "Then run this script again."
+    echo "The GitHub repository might not have been cloned correctly."
+    echo "Please check your GitHub URL and make sure it contains a valid React application."
     exit 1
 fi
 
@@ -110,3 +101,4 @@ echo "Next steps:"
 echo "1. Set up SSL with: sudo apt install -y certbot python3-certbot-nginx"
 echo "2. Generate certificates: sudo certbot --nginx -d lmmapp.latinmixmasters.com -d www.lmmapp.latinmixmasters.com"
 echo "3. Visit your site at: http://lmmapp.latinmixmasters.com"
+

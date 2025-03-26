@@ -1,7 +1,7 @@
 
 #!/bin/bash
 chmod +x install.sh
-chmod +x upload-app.sh
+chmod +x deploy-from-github.sh
 echo "Installation scripts are now executable."
-echo "To upload your app: ./upload-app.sh username@your-server-ip"
-echo "After uploading, run: ./install.sh (on the server)"
+echo "To deploy from GitHub: ./deploy-from-github.sh username@your-server-ip your-github-repo-url"
+echo "Example: ./deploy-from-github.sh root@123.456.789.10 https://github.com/yourusername/latinmixmasters.git"
