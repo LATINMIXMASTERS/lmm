@@ -27,7 +27,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [lastSync, setLastSync] = useState<Date>(new Date());
   
-  // Handle online/offline status
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
@@ -48,7 +47,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
     };
   }, [syncChatMessagesFromStorage]);
   
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -62,17 +60,14 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
     }
   }, [messages]);
 
-  // Regular polling for sync - more aggressive than the parent component
   useEffect(() => {
     if (!isOnline) return;
     
-    // This will force a re-fetch of messages from the shared localStorage
     const intervalId = setInterval(() => {
       syncChatMessagesFromStorage();
       setLastSync(new Date());
-    }, 2000); // Sync every 2 seconds
+    }, 2000);
     
-    // Force scroll to bottom after refresh
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
@@ -85,7 +80,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
       onSendMessage(message);
       setMessage('');
       
-      // Force sync after a short delay to make sure the message is stored in localStorage
       setTimeout(() => {
         syncChatMessagesFromStorage();
         setLastSync(new Date());
