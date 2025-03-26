@@ -11,7 +11,26 @@ export const useChatActions = (
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Add a sync mechanism to ensure consistent data
+  const syncChatMessagesFromStorage = () => {
+    try {
+      const storedMessages = localStorage.getItem('latinmixmasters_chat_messages');
+      if (storedMessages) {
+        const parsedMessages = JSON.parse(storedMessages);
+        dispatch({ 
+          type: 'SET_CHAT_MESSAGES', 
+          payload: parsedMessages 
+        });
+        console.log("Chat messages synchronized from localStorage");
+      }
+    } catch (error) {
+      console.error("Failed to sync chat messages from localStorage:", error);
+    }
+  };
+
   const getChatMessagesForStationImpl = (stationId: string): ChatMessage[] => {
+    // First, sync from localStorage to ensure we have the latest data
+    syncChatMessagesFromStorage();
     return state.chatMessages[stationId] || [];
   };
 
@@ -37,13 +56,10 @@ export const useChatActions = (
       timestamp: new Date().toISOString()
     };
 
-    // Dispatch action to add message
-    dispatch({ 
-      type: 'ADD_CHAT_MESSAGE', 
-      payload: newMessage
-    });
+    // First sync to get the latest data
+    syncChatMessagesFromStorage();
 
-    // Update localStorage
+    // Get current messages after sync
     const currentMessages = state.chatMessages[stationId] || [];
     const updatedMessages = [...currentMessages, newMessage];
     
@@ -55,7 +71,14 @@ export const useChatActions = (
       [stationId]: limitedMessages
     };
     
+    // Update localStorage with the latest messages
     localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify(allChatMessages));
+    
+    // Dispatch action to add message
+    dispatch({ 
+      type: 'ADD_CHAT_MESSAGE', 
+      payload: newMessage
+    });
     
     console.log(`Sent chat message to station ${stationId}:`, newMessage);
   };
@@ -110,6 +133,7 @@ export const useChatActions = (
     getChatMessagesForStation: getChatMessagesForStationImpl,
     sendChatMessage: sendChatMessageImpl,
     setStationLiveStatus: setStationLiveStatusImpl,
-    toggleChatEnabled: toggleChatEnabledImpl
+    toggleChatEnabled: toggleChatEnabledImpl,
+    syncChatMessagesFromStorage
   };
 };

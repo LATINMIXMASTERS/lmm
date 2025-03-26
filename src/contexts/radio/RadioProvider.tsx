@@ -14,7 +14,13 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // Check if we have stations saved in localStorage
     const savedStations = localStorage.getItem('latinmixmasters_stations');
     if (savedStations) {
-      dispatch({ type: 'SET_STATIONS', payload: JSON.parse(savedStations) });
+      try {
+        dispatch({ type: 'SET_STATIONS', payload: JSON.parse(savedStations) });
+      } catch (error) {
+        console.error("Failed to parse saved stations:", error);
+        dispatch({ type: 'SET_STATIONS', payload: initialStations });
+        localStorage.setItem('latinmixmasters_stations', JSON.stringify(initialStations));
+      }
     } else {
       // Initialize with default stations if not in localStorage
       dispatch({ type: 'SET_STATIONS', payload: initialStations });
@@ -23,7 +29,12 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     
     const savedBookings = localStorage.getItem('latinmixmasters_bookings');
     if (savedBookings) {
-      dispatch({ type: 'SET_BOOKINGS', payload: JSON.parse(savedBookings) });
+      try {
+        dispatch({ type: 'SET_BOOKINGS', payload: JSON.parse(savedBookings) });
+      } catch (error) {
+        console.error("Failed to parse saved bookings:", error);
+        localStorage.setItem('latinmixmasters_bookings', JSON.stringify([]));
+      }
     } else {
       localStorage.setItem('latinmixmasters_bookings', JSON.stringify([]));
     }
@@ -31,11 +42,23 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // Load chat messages from localStorage
     const savedChatMessages = localStorage.getItem('latinmixmasters_chat_messages');
     if (savedChatMessages) {
-      dispatch({ type: 'SET_CHAT_MESSAGES', payload: JSON.parse(savedChatMessages) });
+      try {
+        dispatch({ type: 'SET_CHAT_MESSAGES', payload: JSON.parse(savedChatMessages) });
+      } catch (error) {
+        console.error("Failed to parse saved chat messages:", error);
+        localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify({}));
+      }
     } else {
       localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify({}));
     }
-  }, []);
+    
+    // Set up periodic sync for chat messages
+    const syncInterval = setInterval(() => {
+      actions.syncChatMessagesFromStorage?.();
+    }, 30000); // Sync every 30 seconds
+    
+    return () => clearInterval(syncInterval);
+  }, [actions]);
 
   return (
     <RadioContext.Provider value={{

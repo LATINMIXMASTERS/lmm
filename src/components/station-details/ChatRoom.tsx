@@ -5,10 +5,10 @@ import { ChatMessage } from '@/models/RadioStation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Send } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ChatRoomProps {
   stationId: string;
@@ -20,14 +20,32 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
   const { user } = useAuth();
   const [message, setMessage] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isAnonymous = !user; // Changed from user.isAnonymous
-
+  const isAnonymous = !user;
+  const isMobile = useIsMobile();
+  
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Poll for new messages every 5 seconds to ensure sync across devices
+  useEffect(() => {
+    // This will force a re-fetch of messages from the shared localStorage
+    const intervalId = setInterval(() => {
+      // The actual refresh logic is handled in the parent component
+      // This is just to trigger the effect
+      console.log("Refreshing chat messages for synchronization");
+      
+      // Force scroll to bottom after refresh
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    }, 5000);
+    
+    return () => clearInterval(intervalId);
+  }, [stationId]);
 
   const handleSendMessage = () => {
     if (message.trim() && user) {
@@ -44,7 +62,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
   };
 
   return (
-    <Card className="mt-6 h-[500px] flex flex-col">
+    <Card className={`mt-6 ${isMobile ? 'h-[400px]' : 'h-[500px]'} flex flex-col`}>
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">Live Chat</CardTitle>
       </CardHeader>

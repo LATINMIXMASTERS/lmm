@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import MainLayout from '@/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,10 +9,15 @@ import ControlsSection from '@/components/station-details/ControlsSection';
 import StationContent from '@/components/station-details/StationContent';
 import useStationDetails from '@/hooks/useStationDetails';
 import useRandomListeners from '@/hooks/useRandomListeners';
+import { useToast } from '@/hooks/use-toast';
+import { useRadio } from '@/hooks/useRadioContext';
 
 const StationDetails: React.FC = () => {
   useRandomListeners();
   const { id } = useParams<{ id: string }>();
+  const { toast } = useToast();
+  const { syncChatMessagesFromStorage } = useRadio();
+  
   const {
     station,
     stationBookings,
@@ -28,6 +33,48 @@ const StationDetails: React.FC = () => {
     handleUpdateVideoStreamUrl,
     handleSendMessage
   } = useStationDetails(id);
+
+  // Periodically sync chat messages to ensure consistency across devices
+  useEffect(() => {
+    if (!id) return;
+    
+    // Initial sync
+    syncChatMessagesFromStorage();
+    
+    // Set up periodic sync
+    const syncInterval = setInterval(() => {
+      syncChatMessagesFromStorage();
+    }, 10000); // Sync every 10 seconds
+    
+    return () => clearInterval(syncInterval);
+  }, [id, syncChatMessagesFromStorage]);
+
+  // Handle connection issues
+  useEffect(() => {
+    const handleOffline = () => {
+      toast({
+        title: "Connection Lost",
+        description: "You are currently offline. Chat messages may not sync properly.",
+        variant: "destructive"
+      });
+    };
+    
+    const handleOnline = () => {
+      toast({
+        title: "Connection Restored",
+        description: "You're back online. Syncing chat messages...",
+      });
+      syncChatMessagesFromStorage();
+    };
+    
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+    
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [toast, syncChatMessagesFromStorage]);
 
   if (!station) {
     return <StationDetailSkeleton />;

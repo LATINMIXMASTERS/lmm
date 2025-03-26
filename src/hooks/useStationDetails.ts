@@ -15,7 +15,8 @@ export const useStationDetails = (stationId: string | undefined) => {
     sendChatMessage,
     setStationLiveStatus,
     toggleChatEnabled,
-    updateVideoStreamUrl
+    updateVideoStreamUrl,
+    syncChatMessagesFromStorage
   } = useRadio();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ export const useStationDetails = (stationId: string | undefined) => {
   const [station, setStation] = useState<any>(null);
   const [stationBookings, setStationBookings] = useState<any[]>([]);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date>(new Date());
   
   const isPlaying = currentPlayingStation === stationId;
   const isPrivilegedUser = user?.isAdmin || user?.isRadioHost;
@@ -32,6 +34,7 @@ export const useStationDetails = (stationId: string | undefined) => {
     console.log("StationDetails initializing with ID:", stationId);
   }, [stationId]);
 
+  // Fetch and update station data
   useEffect(() => {
     if (stationId) {
       console.log("Looking for station with ID:", stationId);
@@ -60,6 +63,16 @@ export const useStationDetails = (stationId: string | undefined) => {
       }
     }
   }, [stationId, stations, getBookingsForStation, navigate, toast]);
+
+  // Sync chat messages periodically
+  useEffect(() => {
+    if (!stationId) return;
+    
+    // Force refresh chat messages when component mounts
+    syncChatMessagesFromStorage();
+    setLastSyncTime(new Date());
+    
+  }, [stationId, syncChatMessagesFromStorage]);
 
   const handlePlayToggle = () => {
     if (isPlaying) {
@@ -143,9 +156,14 @@ export const useStationDetails = (stationId: string | undefined) => {
   };
 
   const handleSendMessage = (message: string) => {
-    sendChatMessage(station.id, message);
+    if (station) {
+      // Sync before sending to get the latest messages
+      syncChatMessagesFromStorage();
+      sendChatMessage(station.id, message);
+    }
   };
 
+  // Get chat messages with forced refresh
   const chatMessages = station ? getChatMessagesForStation(station.id) : [];
 
   return {
@@ -162,7 +180,8 @@ export const useStationDetails = (stationId: string | undefined) => {
     handleToggleVideo,
     handleUpdateVideoStreamUrl,
     handleSendMessage,
-    setShowVideoPlayer
+    setShowVideoPlayer,
+    lastSyncTime
   };
 };
 

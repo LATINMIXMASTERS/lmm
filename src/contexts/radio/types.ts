@@ -26,7 +26,7 @@ export interface RadioContextType {
   updateStationS3Image: (stationId: string, s3ImageUrl: string) => void;
   updateStationMetadata: (stationId: string, metadata: RadioMetadata) => void;
   updateStationListeners: (stationId: string, listeners: number) => void;
-  updateVideoStreamUrl: (stationId: string, videoStreamUrl: string) => void; // Added method
+  updateVideoStreamUrl: (stationId: string, videoStreamUrl: string) => void;
   currentPlayingStation: string | null;
   setCurrentPlayingStation: (stationId: string | null) => void;
   hasBookingConflict: (stationId: string, startTime: Date, endTime: Date, excludeBookingId?: string) => boolean;
@@ -39,4 +39,5 @@ export interface RadioContextType {
   sendChatMessage: (stationId: string, message: string) => void;
   setStationLiveStatus: (stationId: string, isLive: boolean, enableChat?: boolean) => void;
   toggleChatEnabled: (stationId: string, enabled: boolean) => void;
+  syncChatMessagesFromStorage: () => void;
 }
