@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Download, Globe, Trash2 } from 'lucide-react';
+import { Settings, Download, Globe, Trash2, FileText } from 'lucide-react';
 import WebhookUpdateTab from './WebhookUpdateTab';
 import ManualUpdateTab from './ManualUpdateTab';
 import CacheCleanupTab from './CacheCleanupTab';
+import InstructionsGenerator from './InstructionsGenerator';
 import { useToast } from '@/hooks/use-toast';
 import { updateScripts, copyToClipboard } from './updateScripts';
 
@@ -103,6 +104,10 @@ const SystemUpdatePanel: React.FC = () => {
                 <Trash2 className="mr-2 h-4 w-4" />
                 Cache Cleanup
               </TabsTrigger>
+              <TabsTrigger value="instructions" className="flex items-center">
+                <FileText className="mr-2 h-4 w-4" />
+                Installation Guide
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="webhook">
@@ -121,6 +126,10 @@ const SystemUpdatePanel: React.FC = () => {
             
             <TabsContent value="cache">
               <CacheCleanupTab />
+            </TabsContent>
+            
+            <TabsContent value="instructions">
+              <InstructionsGenerator />
             </TabsContent>
           </Tabs>
         </CardContent>

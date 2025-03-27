@@ -1,151 +1,90 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Trash2, RotateCcw, Check, AlertTriangle } from 'lucide-react';
-import { clearApplicationCache, calculateStorageUsage, formatBytes } from '@/utils/cacheCleanup';
+import { Trash2, Check, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { clearBrowserCache } from '@/utils/cacheCleanup';
 
 const CacheCleanupTab: React.FC = () => {
   const [isCleaning, setIsCleaning] = useState(false);
-  const [storageUsage, setStorageUsage] = useState<string | null>(null);
-  const [lastCleanupResult, setLastCleanupResult] = useState<{
-    success: boolean;
-    message: string;
-  } | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
   const { toast } = useToast();
-  
-  // Calculate current storage usage
-  const calculateCurrentUsage = () => {
-    const bytes = calculateStorageUsage();
-    setStorageUsage(formatBytes(bytes));
-  };
-  
-  // Run cleanup process
-  const handleCleanup = async () => {
+
+  const handleClearCache = async () => {
     setIsCleaning(true);
+    setIsSuccess(false);
     
     try {
-      // Get storage usage before cleanup
-      const beforeBytes = calculateStorageUsage();
+      // Clear application cache
+      await clearBrowserCache();
       
-      // Perform cleanup
-      const result = await clearApplicationCache();
-      
-      // Get storage usage after cleanup
-      const afterBytes = calculateStorageUsage();
-      const freedBytes = beforeBytes - afterBytes;
-      
-      // Update state with result
-      setLastCleanupResult({
-        success: result.success,
-        message: result.message
-      });
-      
-      // Update storage usage display
-      setStorageUsage(formatBytes(afterBytes));
-      
-      // Show toast notification
+      // Show success message
+      setIsSuccess(true);
       toast({
-        title: result.success ? "Cache Cleanup Successful" : "Cache Cleanup Failed",
-        description: result.success 
-          ? `Freed up ${formatBytes(freedBytes)} of storage space.`
-          : result.message,
-        variant: result.success ? "default" : "destructive"
+        title: "Cache Cleared",
+        description: "Application cache has been successfully cleared.",
       });
+      
+      // Reset success state after 3 seconds
+      setTimeout(() => setIsSuccess(false), 3000);
     } catch (error) {
-      console.error('Error during cache cleanup:', error);
-      setLastCleanupResult({
-        success: false,
-        message: error instanceof Error ? error.message : 'Unknown error during cleanup'
-      });
-      
+      console.error("Cache clearing error:", error);
       toast({
-        title: "Cache Cleanup Failed",
-        description: "An unexpected error occurred during cleanup.",
+        title: "Failed to Clear Cache",
+        description: error instanceof Error ? error.message : "There was an error clearing the cache.",
         variant: "destructive"
       });
     } finally {
       setIsCleaning(false);
     }
   };
-  
-  // Check storage usage when component mounts
-  React.useEffect(() => {
-    calculateCurrentUsage();
-  }, []);
-  
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl flex items-center">
-          <Trash2 className="mr-2 h-5 w-5 text-muted-foreground" />
-          Cache & Storage Cleanup
-        </CardTitle>
-        <CardDescription>
-          Clear browser storage and caches to improve application performance
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        <div className="flex justify-between items-center p-4 bg-muted rounded-md">
-          <div>
-            <p className="font-medium">Current Storage Usage</p>
-            <p className="text-muted-foreground">{storageUsage || 'Calculating...'}</p>
+    <div className="space-y-4">
+      <div className="p-4 bg-muted rounded-md">
+        <h4 className="font-medium mb-2">Cache Management</h4>
+        <p className="text-sm text-muted-foreground mb-4">
+          Clear application cache to resolve issues with outdated data or to free up storage space on your server.
+        </p>
+        
+        <div className="space-y-4">
+          <div className="flex justify-between items-center p-3 border rounded-md bg-background">
+            <div>
+              <h5 className="text-sm font-medium">Application Cache</h5>
+              <p className="text-xs text-muted-foreground">
+                Clears temporary files and application cache
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleClearCache}
+              disabled={isCleaning}
+              className={isSuccess ? "bg-green-500 text-white hover:bg-green-600" : ""}
+            >
+              {isCleaning ? (
+                <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+              ) : isSuccess ? (
+                <Check className="h-4 w-4 mr-1" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-1" />
+              )}
+              {isCleaning ? "Clearing..." : isSuccess ? "Cleared" : "Clear Cache"}
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={calculateCurrentUsage}
-          >
-            <RotateCcw className="h-4 w-4 mr-1" />
-            Refresh
-          </Button>
-        </div>
-        
-        {lastCleanupResult && (
-          <Alert variant={lastCleanupResult.success ? "default" : "destructive"}>
-            {lastCleanupResult.success ? (
-              <Check className="h-4 w-4" />
-            ) : (
-              <AlertTriangle className="h-4 w-4" />
-            )}
-            <AlertTitle>
-              {lastCleanupResult.success ? "Cleanup Successful" : "Cleanup Failed"}
-            </AlertTitle>
-            <AlertDescription>
-              {lastCleanupResult.message}
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Clearing the cache can help fix storage quota errors and improve application performance.
-            This will remove unused data and temporary files.
-          </p>
           
-          <Button 
-            onClick={handleCleanup} 
-            disabled={isCleaning}
-            className="w-full"
-          >
-            {isCleaning ? (
-              <>
-                <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
-                Cleaning...
-              </>
-            ) : (
-              <>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Clean Up Cache & Storage
-              </>
-            )}
-          </Button>
+          <div className="p-3 rounded-md bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800">
+            <h5 className="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-1">Server Maintenance Tips</h5>
+            <ul className="list-disc list-inside text-xs text-yellow-700 dark:text-yellow-400 space-y-1">
+              <li>Clear server-side cache regularly to improve performance</li>
+              <li>Use the update scripts in the Manual Update tab for full system updates</li>
+              <li>Consider setting up a cron job for automated updates</li>
+              <li>Monitor server disk space to prevent storage issues</li>
+            </ul>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
