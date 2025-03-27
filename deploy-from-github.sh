@@ -19,7 +19,7 @@ echo -e "\n>>> Creating remote directory..."
 ssh $SERVER "sudo mkdir -p /var/www/latinmixmasters && sudo chown -R \$USER:\$USER /var/www/latinmixmasters"
 
 echo -e "\n>>> Setting up remote repository..."
-ssh $SERVER "cd /var/www/latinmixmasters && git clone $GITHUB_REPO ."
+ssh $SERVER "cd /var/www/latinmixmasters && git clone $GITHUB_REPO . || (git fetch --all && git reset --hard origin/main)"
 
 echo -e "\n>>> Making install script executable..."
 ssh $SERVER "cd /var/www/latinmixmasters && chmod +x install.sh"
@@ -29,4 +29,3 @@ echo "Now connect to your server and run the install script:"
 echo "ssh $SERVER"
 echo "cd /var/www/latinmixmasters"
 echo "./install.sh"
-
