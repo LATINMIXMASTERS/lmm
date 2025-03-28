@@ -32,7 +32,7 @@ const StreamConfigForm: React.FC<StreamConfigFormProps> = ({
       <CardHeader>
         <CardTitle>Stream Configuration</CardTitle>
         <CardDescription>
-          Set up the streaming details for {currentStation?.name}
+          Set up the streaming details for {currentStation?.name || 'your station'}
         </CardDescription>
       </CardHeader>
       <CardContent>

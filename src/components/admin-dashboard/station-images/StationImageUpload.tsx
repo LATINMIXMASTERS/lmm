@@ -64,40 +64,40 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
     try {
       setIsCompressing(true);
       
-      // Compress the image (max 800KB, 1200px max dimension, 70% quality)
-      const compressedFile = await compressImage(file, {
-        maxWidthOrHeight: 1200,
-        quality: 0.7,
-        maxSizeKB: 800
-      });
-      
-      // Create a FileList-like object with compressed file
+      // Create a FileList-like object with the file
       const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(compressedFile);
       
-      // Pass the compressed file to the parent component
-      onFileChange(stationId, dataTransfer.files);
-      
-      // Show compression info
-      if (compressedFile.size < file.size) {
-        const originalSizeKB = (file.size / 1024).toFixed(1);
-        const compressedSizeKB = (compressedFile.size / 1024).toFixed(1);
-        toast({
-          title: "Image compressed",
-          description: `Reduced from ${originalSizeKB}KB to ${compressedSizeKB}KB`,
+      // Compress the image if needed
+      if (file.size > 500 * 1024) {
+        const compressedFile = await compressImage(file, {
+          maxWidthOrHeight: 1200,
+          quality: 0.7,
+          maxSizeKB: 800
         });
+        dataTransfer.items.add(compressedFile);
+        
+        // Show compression info
+        if (compressedFile.size < file.size) {
+          const originalSizeKB = (file.size / 1024).toFixed(1);
+          const compressedSizeKB = (compressedFile.size / 1024).toFixed(1);
+          toast({
+            title: "Image compressed",
+            description: `Reduced from ${originalSizeKB}KB to ${compressedSizeKB}KB`,
+          });
+        }
+      } else {
+        dataTransfer.items.add(file);
       }
+      
+      // Pass the file to the parent component
+      onFileChange(stationId, dataTransfer.files);
     } catch (error) {
-      console.error("Error compressing image:", error);
+      console.error("Error processing image:", error);
       toast({
-        title: "Compression failed",
-        description: "Using original file instead",
+        title: "Processing failed",
+        description: "Unable to process the image file. Please try again.",
         variant: "destructive"
       });
-      // Fall back to original file
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(file);
-      onFileChange(stationId, dataTransfer.files);
     } finally {
       setIsCompressing(false);
     }

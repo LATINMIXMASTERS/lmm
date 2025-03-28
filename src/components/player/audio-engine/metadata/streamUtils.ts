@@ -12,48 +12,56 @@ export const extractStreamUrl = (rawUrl: string): string => {
     streamUrl = `https://${streamUrl}`;
   }
   
-  // Handle Shoutcast specific URLs with better patterns
-  if (isShoutcastUrl(streamUrl)) {
-    // Handle lmmradiocast.com URLs specifically
-    if (streamUrl.includes('lmmradiocast.com')) {
-      console.log('Special handling for lmmradiocast URL');
-      // Format specifically for lmmradiocast.com URLs
-      if (streamUrl.endsWith('/lmmradio') || streamUrl.endsWith('/lmmradio/')) {
-        // URL is already in the correct format
-        streamUrl = streamUrl.endsWith('/') ? streamUrl.slice(0, -1) : streamUrl;
-      } else if (!streamUrl.includes('/lmmradio')) {
-        // Add /lmmradio if it's missing
-        streamUrl = streamUrl.endsWith('/') 
-          ? `${streamUrl}lmmradio` 
-          : `${streamUrl}/lmmradio`;
+  try {
+    // Handle Shoutcast specific URLs with better patterns
+    if (isShoutcastUrl(streamUrl)) {
+      // Handle lmmradiocast.com URLs specifically
+      if (streamUrl.includes('lmmradiocast.com')) {
+        console.log('Special handling for lmmradiocast URL');
+        // Format specifically for lmmradiocast.com URLs
+        if (streamUrl.endsWith('/lmmradio') || streamUrl.endsWith('/lmmradio/')) {
+          // URL is already in the correct format
+          streamUrl = streamUrl.endsWith('/') ? streamUrl.slice(0, -1) : streamUrl;
+        } else if (!streamUrl.includes('/lmmradio')) {
+          // Add /lmmradio if it's missing
+          streamUrl = streamUrl.endsWith('/') 
+            ? `${streamUrl}lmmradio` 
+            : `${streamUrl}/lmmradio`;
+        }
+        return streamUrl;
       }
-      return streamUrl;
-    }
-    
-    // For other Shoutcast servers
-    if (!streamUrl.endsWith('/stream') && 
-        !streamUrl.includes(';stream.') && 
-        !streamUrl.endsWith('/listen') &&
-        !streamUrl.endsWith('.mp3') &&
-        !streamUrl.endsWith('/1')) {
       
+      // For other Shoutcast servers
+      if (!streamUrl.endsWith('/stream') && 
+          !streamUrl.includes(';stream.') && 
+          !streamUrl.endsWith('/listen') &&
+          !streamUrl.endsWith('.mp3') &&
+          !streamUrl.endsWith('/1')) {
+        
+        streamUrl = streamUrl.endsWith('/') 
+          ? `${streamUrl}stream` 
+          : `${streamUrl}/stream`;
+      }
+    }
+    // Handle Icecast streams
+    else if (streamUrl.includes('icecast') && !streamUrl.endsWith('/stream')) {
       streamUrl = streamUrl.endsWith('/') 
         ? `${streamUrl}stream` 
         : `${streamUrl}/stream`;
     }
+    
+    // Remove any extra query parameters for .m3u8 streams (HLS)
+    if (streamUrl.includes('.m3u8?')) {
+      streamUrl = streamUrl.split('?')[0];
+    }
+    
+    console.log('Extracted stream URL:', streamUrl);
+    return streamUrl;
+  } catch (error) {
+    console.error("Error in extractStreamUrl:", error);
+    // Return the original URL with https:// prepended if necessary
+    return streamUrl;
   }
-  // Handle Icecast streams
-  else if (streamUrl.includes('icecast') && !streamUrl.endsWith('/stream')) {
-    streamUrl = `${streamUrl}/stream`;
-  }
-  
-  // Remove any extra query parameters for .m3u8 streams (HLS)
-  if (streamUrl.includes('.m3u8?')) {
-    streamUrl = streamUrl.split('?')[0];
-  }
-  
-  console.log('Extracted stream URL:', streamUrl);
-  return streamUrl;
 };
 
 /**

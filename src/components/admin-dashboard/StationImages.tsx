@@ -48,31 +48,18 @@ const StationImages: React.FC = () => {
       const file = files[0];
       console.log("File selected:", file.name, file.type, file.size);
       
-      // Compress the image if it's larger than 500KB
-      let processedFile = file;
-      let dataUrl: string;
-      
-      if (file.size > 500 * 1024 && file.type.startsWith('image/')) {
-        console.log("Compressing image...");
-        processedFile = await compressImage(file, {
-          maxWidthOrHeight: 800,
-          quality: 0.7
-        });
-        console.log("Compressed file size:", processedFile.size);
-      }
-      
       // Convert to data URL for preview
-      dataUrl = await new Promise((resolve, reject) => {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = reject;
-        reader.readAsDataURL(processedFile);
+        reader.readAsDataURL(file);
       });
       
       setStationImageUploads(prev => ({
         ...prev,
         [stationId]: {
-          file: processedFile,
+          file: file,
           dataUrl
         }
       }));
@@ -118,20 +105,26 @@ const StationImages: React.FC = () => {
       if (upload?.file) {
         console.log("Uploading file for station:", stationId);
         await uploadStationImage(stationId, upload.file);
+        
         // Clear the upload preview after successful upload
         setStationImageUploads(prev => ({
           ...prev,
           [stationId]: null
         }));
+        
+        toast({
+          title: "Image Uploaded",
+          description: "The station image file has been uploaded successfully.",
+        });
       } else if (imageUrl) {
         console.log("Saving image URL for station:", stationId, imageUrl);
         updateStationImage(stationId, imageUrl);
+        
+        toast({
+          title: "Image URL Saved",
+          description: "The station image URL has been updated successfully.",
+        });
       }
-      
-      toast({
-        title: "Image Updated",
-        description: "The station image has been updated successfully.",
-      });
     } catch (error) {
       console.error("Error saving image:", error);
       toast({

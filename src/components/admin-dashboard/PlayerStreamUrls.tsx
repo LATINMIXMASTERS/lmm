@@ -39,10 +39,15 @@ const PlayerStreamUrls: React.FC = () => {
     
     // Show extracted URL preview
     if (url) {
-      setShowExtracted(prev => ({
-        ...prev,
-        [stationId]: extractStreamUrl(url)
-      }));
+      try {
+        const extracted = extractStreamUrl(url);
+        setShowExtracted(prev => ({
+          ...prev,
+          [stationId]: extracted
+        }));
+      } catch (error) {
+        console.error("Error extracting URL:", error);
+      }
     } else {
       setShowExtracted(prev => {
         const newState = { ...prev };
@@ -69,18 +74,27 @@ const PlayerStreamUrls: React.FC = () => {
       formattedUrl = `https://${formattedUrl}`;
     }
     
-    updateStreamUrl(stationId, formattedUrl);
-    
-    // Update the extracted URL preview
-    setShowExtracted(prev => ({
-      ...prev,
-      [stationId]: extractStreamUrl(formattedUrl)
-    }));
-    
-    toast({
-      title: "Player Stream URL Updated",
-      description: "The listener streaming URL has been updated successfully."
-    });
+    try {
+      updateStreamUrl(stationId, formattedUrl);
+      
+      // Update the extracted URL preview
+      setShowExtracted(prev => ({
+        ...prev,
+        [stationId]: extractStreamUrl(formattedUrl)
+      }));
+      
+      toast({
+        title: "Player Stream URL Updated",
+        description: "The listener streaming URL has been updated successfully."
+      });
+    } catch (error) {
+      console.error("Error saving stream URL:", error);
+      toast({
+        title: "Error Saving URL",
+        description: "There was an error saving the stream URL. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   
   return (
