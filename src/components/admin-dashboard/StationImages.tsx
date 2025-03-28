@@ -31,106 +31,109 @@ const StationImages: React.FC = () => {
       [stationId]: imageUrl
     }));
     
+    // When a URL is entered, clear any file upload for that station
     setStationImageUploads(prev => ({
       ...prev,
       [stationId]: null
     }));
   };
   
-  const handleStationImageFileChange = (stationId: string, files: FileList | null) => {
-    if (!files || !files.length) return;
+  const handleStationFileChange = async (stationId: string, files: FileList | null) => {
+    if (!files || files.length === 0) {
+      console.log("No files selected");
+      return;
+    }
     
-    const file = files[0];
-    
-    if (!file.type.startsWith('image/')) {
+    try {
+      const file = files[0];
+      console.log("File selected:", file.name, file.type, file.size);
+      
+      // Compress the image if it's larger than 500KB
+      let processedFile = file;
+      let dataUrl: string;
+      
+      if (file.size > 500 * 1024 && file.type.startsWith('image/')) {
+        console.log("Compressing image...");
+        processedFile = await compressImage(file, 800);
+        console.log("Compressed file size:", processedFile.size);
+      }
+      
+      // Convert to data URL for preview
+      dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(processedFile);
+      });
+      
+      setStationImageUploads(prev => ({
+        ...prev,
+        [stationId]: {
+          file: processedFile,
+          dataUrl
+        }
+      }));
+      
+      // Clear any URL input when a file is uploaded
+      setStationImages(prev => ({
+        ...prev,
+        [stationId]: ''
+      }));
+      
+      console.log("File prepared for upload:", stationId);
+    } catch (error) {
+      console.error("Error processing file:", error);
       toast({
-        title: "Invalid file type",
-        description: "Please upload an image file (JPEG, PNG, etc).",
+        title: "Error Processing File",
+        description: "There was an error preparing the file for upload. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleClearUpload = (stationId: string) => {
+    setStationImageUploads(prev => ({
+      ...prev,
+      [stationId]: null
+    }));
+  };
+  
+  const handleSaveImage = async (stationId: string) => {
+    const upload = stationImageUploads[stationId];
+    const imageUrl = stationImages[stationId];
+    
+    if (!upload && !imageUrl) {
+      toast({
+        title: "No Image Selected",
+        description: "Please either enter an image URL or upload an image file.",
         variant: "destructive"
       });
       return;
     }
     
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      setStationImageUploads(prev => ({
-        ...prev,
-        [stationId]: { file, dataUrl }
-      }));
-    };
-    reader.readAsDataURL(file);
-  };
-  
-  const handleClearStationImageUpload = (stationId: string) => {
-    setStationImageUploads(prev => ({
-      ...prev,
-      [stationId]: null
-    }));
-  };
-
-  const handleSaveStationImage = async (stationId: string) => {
     try {
-      const upload = stationImageUploads[stationId];
-      
-      if (upload && upload.file) {
-        // Try to compress the image before uploading
-        try {
-          const compressedFile = await compressImage(upload.file, {
-            maxWidthOrHeight: 1200,
-            quality: 0.8,
-            maxSizeKB: 500
-          });
-          
-          await uploadStationImage(stationId, compressedFile);
-          
-          toast({
-            title: "Station Image Updated",
-            description: "The station cover image has been uploaded successfully."
-          });
-          
-          handleClearStationImageUpload(stationId);
-        } catch (error) {
-          console.error("Failed to compress image:", error);
-          // Try with the original file as fallback
-          await uploadStationImage(stationId, upload.file);
-          
-          toast({
-            title: "Station Image Updated",
-            description: "The station cover image has been uploaded successfully."
-          });
-          
-          handleClearStationImageUpload(stationId);
-        }
-      } else if (stationImages[stationId]) {
-        const imageUrl = stationImages[stationId];
-        
-        if (!imageUrl) {
-          toast({
-            title: "Validation Error",
-            description: "Image URL is required.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
+      if (upload?.file) {
+        console.log("Uploading file for station:", stationId);
+        await uploadStationImage(stationId, upload.file);
+        // Clear the upload preview after successful upload
+        setStationImageUploads(prev => ({
+          ...prev,
+          [stationId]: null
+        }));
+      } else if (imageUrl) {
+        console.log("Saving image URL for station:", stationId, imageUrl);
         updateStationImage(stationId, imageUrl);
-        
-        toast({
-          title: "Station Image Updated",
-          description: "The station cover image has been updated successfully."
-        });
-      } else {
-        toast({
-          title: "No changes",
-          description: "Please provide an image URL or upload a file.",
-          variant: "destructive"
-        });
       }
-    } catch (error) {
+      
       toast({
-        title: "Error",
-        description: "Failed to update station image. Please try again.",
+        title: "Image Updated",
+        description: "The station image has been updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error saving image:", error);
+      toast({
+        title: "Error Saving Image",
+        description: "There was an error saving the image. Please try again.",
         variant: "destructive"
       });
     }
@@ -142,21 +145,13 @@ const StationImages: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <ImageIcon className="w-5 h-5 mr-2 text-blue" />
-            Station Cover Images
+            Station Images
           </CardTitle>
           <CardDescription>
-            Update the cover images for each radio station
+            Upload or set image URLs for each radio station
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="bg-blue-50 rounded-md p-3 mb-6 flex items-start">
-            <ImageIcon className="w-5 h-5 text-blue mr-2 mt-0.5" />
-            <div>
-              <p className="text-sm text-blue-800">For best results, use images with a <strong>16:9 aspect ratio</strong> like <strong>1280×720</strong> or <strong>1920×1080</strong> pixels.</p>
-              <p className="text-sm text-blue-800 mt-1">Images will be displayed on the station page and in the player when the station is playing.</p>
-            </div>
-          </div>
-          
           <div className="space-y-6">
             {stations.map((station) => (
               <StationImageCard
@@ -165,9 +160,9 @@ const StationImages: React.FC = () => {
                 imageUrl={stationImages[station.id] || ''}
                 uploadPreview={stationImageUploads[station.id] || null}
                 onImageChange={handleStationImageChange}
-                onFileChange={handleStationImageFileChange}
-                onClearUpload={handleClearStationImageUpload}
-                onSaveImage={handleSaveStationImage}
+                onFileChange={handleStationFileChange}
+                onClearUpload={handleClearUpload}
+                onSaveImage={handleSaveImage}
               />
             ))}
           </div>

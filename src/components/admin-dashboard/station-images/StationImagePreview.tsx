@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ImageIcon } from 'lucide-react';
 import { FileUpload } from '@/models/RadioStation';
 
@@ -29,7 +29,7 @@ const StationImagePreview: React.FC<StationImagePreviewProps> = ({
   };
   
   // Reset error state when source changes
-  React.useEffect(() => {
+  useEffect(() => {
     setImageError(false);
   }, [imageUrl, uploadPreview, currentImage]);
   
