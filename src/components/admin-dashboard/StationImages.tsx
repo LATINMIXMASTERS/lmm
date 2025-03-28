@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ImageIcon } from 'lucide-react';
 import { useRadio } from '@/hooks/useRadioContext';
@@ -5,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileUpload } from '@/models/RadioStation';
 import { StationImageCard } from './station-images';
+import { compressImage } from '@/utils/imageUtils';
 
 const StationImages: React.FC = () => {
   const { stations, updateStationImage, uploadStationImage } = useRadio();
@@ -36,25 +38,14 @@ const StationImages: React.FC = () => {
   };
   
   const handleStationImageFileChange = (stationId: string, files: FileList | null) => {
-    if (!files || files.length === 0) return;
+    if (!files || !files.length) return;
     
     const file = files[0];
     
     if (!file.type.startsWith('image/')) {
       toast({
         title: "Invalid file type",
-        description: "Please select an image file (JPEG, PNG, etc.)",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Since files are now pre-compressed in the StationImageUpload component,
-    // we can increase the size limit here or keep it for additional safety
-    if (file.size > 2 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Image size should be less than 2MB",
+        description: "Please upload an image file (JPEG, PNG, etc).",
         variant: "destructive"
       });
       return;
@@ -83,14 +74,34 @@ const StationImages: React.FC = () => {
       const upload = stationImageUploads[stationId];
       
       if (upload && upload.file) {
-        await uploadStationImage(stationId, upload.file);
-        
-        toast({
-          title: "Station Image Updated",
-          description: "The station cover image has been uploaded successfully."
-        });
-        
-        handleClearStationImageUpload(stationId);
+        // Try to compress the image before uploading
+        try {
+          const compressedFile = await compressImage(upload.file, {
+            maxWidthOrHeight: 1200,
+            quality: 0.8,
+            maxSizeKB: 500
+          });
+          
+          await uploadStationImage(stationId, compressedFile);
+          
+          toast({
+            title: "Station Image Updated",
+            description: "The station cover image has been uploaded successfully."
+          });
+          
+          handleClearStationImageUpload(stationId);
+        } catch (error) {
+          console.error("Failed to compress image:", error);
+          // Try with the original file as fallback
+          await uploadStationImage(stationId, upload.file);
+          
+          toast({
+            title: "Station Image Updated",
+            description: "The station cover image has been uploaded successfully."
+          });
+          
+          handleClearStationImageUpload(stationId);
+        }
       } else if (stationImages[stationId]) {
         const imageUrl = stationImages[stationId];
         
@@ -140,13 +151,12 @@ const StationImages: React.FC = () => {
         <CardContent>
           <div className="bg-blue-50 rounded-md p-3 mb-6 flex items-start">
             <ImageIcon className="w-5 h-5 text-blue mr-2 mt-0.5" />
-            <div className="text-sm text-blue-800">
-              These images will be displayed on the stations page and in the player when the station is playing.
-              <br/>
-              <strong>Note:</strong> For best results, use high-quality images with a 16:9 aspect ratio. Maximum file size: 2MB.
+            <div>
+              <p className="text-sm text-blue-800">For best results, use images with a <strong>16:9 aspect ratio</strong> like <strong>1280×720</strong> or <strong>1920×1080</strong> pixels.</p>
+              <p className="text-sm text-blue-800 mt-1">Images will be displayed on the station page and in the player when the station is playing.</p>
             </div>
           </div>
-        
+          
           <div className="space-y-6">
             {stations.map((station) => (
               <StationImageCard

@@ -17,9 +17,12 @@ const StationHeader: React.FC<StationHeaderProps> = ({
     <div className="relative max-w-3xl mx-auto">
       <AspectRatio ratio={16 / 9} className="bg-gray-100">
         <img 
-          src={imageUrl} 
+          src={imageUrl || '/placeholder.svg'} 
           alt={stationName} 
           className="w-full h-full object-cover"
+          onError={(e) => {
+            e.currentTarget.src = '/placeholder.svg';
+          }}
         />
       </AspectRatio>
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
