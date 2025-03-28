@@ -54,7 +54,10 @@ const StationImages: React.FC = () => {
       
       if (file.size > 500 * 1024 && file.type.startsWith('image/')) {
         console.log("Compressing image...");
-        processedFile = await compressImage(file, 800);
+        processedFile = await compressImage(file, {
+          maxWidthOrHeight: 800,
+          quality: 0.7
+        });
         console.log("Compressed file size:", processedFile.size);
       }
       
