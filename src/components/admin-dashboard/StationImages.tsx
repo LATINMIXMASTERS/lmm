@@ -14,17 +14,21 @@ const StationImages: React.FC = () => {
   
   const [stationImages, setStationImages] = useState<Record<string, string>>({});
   const [stationImageUploads, setStationImageUploads] = useState<Record<string, FileUpload | null>>({});
+  const [initialized, setInitialized] = useState(false);
   
-  // Fix: Added stations as a dependency and only initialize once
+  // Initialize once to prevent loops
   useEffect(() => {
-    const initialStationImages: Record<string, string> = {};
-    
-    stations.forEach(station => {
-      initialStationImages[station.id] = station.image || '';
-    });
-    
-    setStationImages(initialStationImages);
-  }, [stations]);
+    if (!initialized && stations.length > 0) {
+      const initialStationImages: Record<string, string> = {};
+      
+      stations.forEach(station => {
+        initialStationImages[station.id] = '';
+      });
+      
+      setStationImages(initialStationImages);
+      setInitialized(true);
+    }
+  }, [stations, initialized]);
   
   const handleStationImageChange = (stationId: string, imageUrl: string) => {
     setStationImages(prev => ({
@@ -105,12 +109,29 @@ const StationImages: React.FC = () => {
     try {
       if (upload?.file) {
         console.log("Uploading file for station:", stationId);
-        await uploadStationImage(stationId, upload.file);
+        
+        // If file is larger than 500KB, compress it
+        let fileToUpload = upload.file;
+        if (fileToUpload.size > 500 * 1024) {
+          fileToUpload = await compressImage(fileToUpload, {
+            maxWidthOrHeight: 1200,
+            quality: 0.7,
+            maxSizeKB: 500
+          });
+        }
+        
+        await uploadStationImage(stationId, fileToUpload);
         
         // Clear the upload preview after successful upload
         setStationImageUploads(prev => ({
           ...prev,
           [stationId]: null
+        }));
+        
+        // Also clear the URL input
+        setStationImages(prev => ({
+          ...prev,
+          [stationId]: ''
         }));
         
         toast({
@@ -120,6 +141,12 @@ const StationImages: React.FC = () => {
       } else if (imageUrl) {
         console.log("Saving image URL for station:", stationId, imageUrl);
         updateStationImage(stationId, imageUrl);
+        
+        // Clear the URL input after save
+        setStationImages(prev => ({
+          ...prev,
+          [stationId]: ''
+        }));
         
         toast({
           title: "Image URL Saved",

@@ -16,28 +16,26 @@ const PlayerStreamUrls: React.FC = () => {
   const [streamUrls, setStreamUrls] = useState<Record<string, string>>({});
   const [showExtracted, setShowExtracted] = useState<Record<string, string>>({});
   const [isFormDirty, setIsFormDirty] = useState<Record<string, boolean>>({});
+  const [initialized, setInitialized] = useState(false);
   
   useEffect(() => {
-    const initialStreamUrls: Record<string, string> = {};
-    const initialExtracted: Record<string, string> = {};
-    const initialDirtyState: Record<string, boolean> = {};
-    
-    stations.forEach(station => {
-      initialStreamUrls[station.id] = station.streamUrl || '';
-      initialDirtyState[station.id] = false;
-      if (station.streamUrl) {
-        try {
-          initialExtracted[station.id] = extractStreamUrl(station.streamUrl);
-        } catch (error) {
-          console.error("Error extracting URL during initialization:", error);
-        }
-      }
-    });
-    
-    setStreamUrls(initialStreamUrls);
-    setShowExtracted(initialExtracted);
-    setIsFormDirty(initialDirtyState);
-  }, [stations]);
+    if (!initialized && stations.length > 0) {
+      const initialStreamUrls: Record<string, string> = {};
+      const initialExtracted: Record<string, string> = {};
+      const initialDirtyState: Record<string, boolean> = {};
+      
+      stations.forEach(station => {
+        // Initialize with empty strings to allow changing
+        initialStreamUrls[station.id] = '';
+        initialDirtyState[station.id] = false;
+      });
+      
+      setStreamUrls(initialStreamUrls);
+      setShowExtracted(initialExtracted);
+      setIsFormDirty(initialDirtyState);
+      setInitialized(true);
+    }
+  }, [stations, initialized]);
   
   const handleStreamUrlChange = (stationId: string, url: string) => {
     setStreamUrls(prev => ({
@@ -60,6 +58,11 @@ const PlayerStreamUrls: React.FC = () => {
         }));
       } catch (error) {
         console.error("Error extracting URL:", error);
+        setShowExtracted(prev => {
+          const newState = { ...prev };
+          delete newState[stationId];
+          return newState;
+        });
       }
     } else {
       setShowExtracted(prev => {
@@ -91,15 +94,22 @@ const PlayerStreamUrls: React.FC = () => {
       updateStreamUrl(stationId, formattedUrl);
       
       // Update the extracted URL preview
+      const extracted = extractStreamUrl(formattedUrl);
       setShowExtracted(prev => ({
         ...prev,
-        [stationId]: extractStreamUrl(formattedUrl)
+        [stationId]: extracted
       }));
       
       // Reset form dirty state
       setIsFormDirty(prev => ({
         ...prev,
         [stationId]: false
+      }));
+      
+      // Clear the input field after successful save
+      setStreamUrls(prev => ({
+        ...prev,
+        [stationId]: ''
       }));
       
       toast({
@@ -178,8 +188,8 @@ const PlayerStreamUrls: React.FC = () => {
                 </div>
                 
                 {station.streamUrl && (
-                  <div className="mt-3 text-sm text-gray-600">
-                    Current URL: <span className="font-mono bg-gray-100 dark:bg-gray-800 p-1 rounded">{station.streamUrl}</span>
+                  <div className="mt-3 text-sm">
+                    Current URL: <span className="font-mono bg-gray-100 dark:bg-gray-800 p-1 rounded text-xs">{station.streamUrl}</span>
                   </div>
                 )}
               </div>

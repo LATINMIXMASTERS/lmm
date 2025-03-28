@@ -19,7 +19,7 @@ const StationImageUrlInput: React.FC<StationImageUrlInputProps> = ({
   return (
     <div className="flex flex-col gap-2">
       <Label htmlFor={`station-image-${stationId}`} className="mb-2 block">
-        Or Enter Image URL
+        Enter Image URL
       </Label>
       <Input
         id={`station-image-${stationId}`}

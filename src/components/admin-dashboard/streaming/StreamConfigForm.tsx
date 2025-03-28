@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -29,21 +29,47 @@ const StreamConfigForm: React.FC<StreamConfigFormProps> = ({
 }) => {
   // Add validation state
   const [isFormDirty, setIsFormDirty] = useState(false);
+  const [formValues, setFormValues] = useState({
+    url: '',
+    port: '',
+    password: ''
+  });
+  
+  // Update form values when station changes
+  useEffect(() => {
+    setFormValues({
+      url: streamUrl,
+      port: streamPort,
+      password: streamPassword
+    });
+  }, [streamUrl, streamPort, streamPassword, currentStation]);
   
   // Wrap the setters to track changes
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStreamUrl(e.target.value);
+    const newValue = e.target.value;
+    setFormValues(prev => ({ ...prev, url: newValue }));
+    setStreamUrl(newValue);
     setIsFormDirty(true);
   };
   
   const handlePortChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStreamPort(e.target.value);
+    const newValue = e.target.value;
+    setFormValues(prev => ({ ...prev, port: newValue }));
+    setStreamPort(newValue);
     setIsFormDirty(true);
   };
   
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStreamPassword(e.target.value);
+    const newValue = e.target.value;
+    setFormValues(prev => ({ ...prev, password: newValue }));
+    setStreamPassword(newValue);
     setIsFormDirty(true);
+  };
+  
+  const onSubmit = (e: React.FormEvent) => {
+    handleSubmit(e);
+    // Reset the form dirty state after submission
+    setIsFormDirty(false);
   };
   
   return (
@@ -55,12 +81,12 @@ const StreamConfigForm: React.FC<StreamConfigFormProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form id="stream-config-form" onSubmit={handleSubmit} className="space-y-4">
+        <form id="stream-config-form" onSubmit={onSubmit} className="space-y-4">
           <div>
             <Label htmlFor="streamUrl">Stream URL</Label>
             <Input
               id="streamUrl"
-              value={streamUrl}
+              value={formValues.url}
               onChange={handleUrlChange}
               placeholder="e.g., cast.yourstreamingservice.com"
             />
@@ -73,7 +99,7 @@ const StreamConfigForm: React.FC<StreamConfigFormProps> = ({
             <Label htmlFor="streamPort">Port</Label>
             <Input
               id="streamPort"
-              value={streamPort}
+              value={formValues.port}
               onChange={handlePortChange}
               placeholder="e.g., 8000"
             />
@@ -84,7 +110,7 @@ const StreamConfigForm: React.FC<StreamConfigFormProps> = ({
             <Input
               id="streamPassword"
               type="password"
-              value={streamPassword}
+              value={formValues.password}
               onChange={handlePasswordChange}
               placeholder="Your stream password"
             />
