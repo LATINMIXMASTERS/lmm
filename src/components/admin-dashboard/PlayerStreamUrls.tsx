@@ -15,26 +15,39 @@ const PlayerStreamUrls: React.FC = () => {
   
   const [streamUrls, setStreamUrls] = useState<Record<string, string>>({});
   const [showExtracted, setShowExtracted] = useState<Record<string, string>>({});
+  const [isFormDirty, setIsFormDirty] = useState<Record<string, boolean>>({});
   
   useEffect(() => {
     const initialStreamUrls: Record<string, string> = {};
     const initialExtracted: Record<string, string> = {};
+    const initialDirtyState: Record<string, boolean> = {};
     
     stations.forEach(station => {
       initialStreamUrls[station.id] = station.streamUrl || '';
+      initialDirtyState[station.id] = false;
       if (station.streamUrl) {
-        initialExtracted[station.id] = extractStreamUrl(station.streamUrl);
+        try {
+          initialExtracted[station.id] = extractStreamUrl(station.streamUrl);
+        } catch (error) {
+          console.error("Error extracting URL during initialization:", error);
+        }
       }
     });
     
     setStreamUrls(initialStreamUrls);
     setShowExtracted(initialExtracted);
+    setIsFormDirty(initialDirtyState);
   }, [stations]);
   
   const handleStreamUrlChange = (stationId: string, url: string) => {
     setStreamUrls(prev => ({
       ...prev,
       [stationId]: url
+    }));
+    
+    setIsFormDirty(prev => ({
+      ...prev,
+      [stationId]: true
     }));
     
     // Show extracted URL preview
@@ -81,6 +94,12 @@ const PlayerStreamUrls: React.FC = () => {
       setShowExtracted(prev => ({
         ...prev,
         [stationId]: extractStreamUrl(formattedUrl)
+      }));
+      
+      // Reset form dirty state
+      setIsFormDirty(prev => ({
+        ...prev,
+        [stationId]: false
       }));
       
       toast({
@@ -151,6 +170,7 @@ const PlayerStreamUrls: React.FC = () => {
                   <Button 
                     onClick={() => handleSaveStreamUrl(station.id)}
                     className="bg-blue hover:bg-blue-dark"
+                    disabled={!isFormDirty[station.id]}
                   >
                     <Save className="w-4 h-4 mr-2" />
                     Save URL

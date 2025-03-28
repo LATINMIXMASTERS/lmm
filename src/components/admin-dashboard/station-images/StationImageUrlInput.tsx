@@ -23,7 +23,7 @@ const StationImageUrlInput: React.FC<StationImageUrlInputProps> = ({
       </Label>
       <Input
         id={`station-image-${stationId}`}
-        value={imageUrl || ''}
+        value={imageUrl}
         onChange={(e) => onChange(stationId, e.target.value)}
         placeholder="https://example.com/image.jpg"
         className="w-full"

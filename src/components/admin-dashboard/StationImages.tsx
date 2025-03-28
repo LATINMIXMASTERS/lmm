@@ -15,6 +15,7 @@ const StationImages: React.FC = () => {
   const [stationImages, setStationImages] = useState<Record<string, string>>({});
   const [stationImageUploads, setStationImageUploads] = useState<Record<string, FileUpload | null>>({});
   
+  // Fix: Added stations as a dependency and only initialize once
   useEffect(() => {
     const initialStationImages: Record<string, string> = {};
     

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,25 @@ const StreamConfigForm: React.FC<StreamConfigFormProps> = ({
   setStreamPassword,
   handleSubmit
 }) => {
+  // Add validation state
+  const [isFormDirty, setIsFormDirty] = useState(false);
+  
+  // Wrap the setters to track changes
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStreamUrl(e.target.value);
+    setIsFormDirty(true);
+  };
+  
+  const handlePortChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStreamPort(e.target.value);
+    setIsFormDirty(true);
+  };
+  
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStreamPassword(e.target.value);
+    setIsFormDirty(true);
+  };
+  
   return (
     <Card>
       <CardHeader>
@@ -42,7 +61,7 @@ const StreamConfigForm: React.FC<StreamConfigFormProps> = ({
             <Input
               id="streamUrl"
               value={streamUrl}
-              onChange={(e) => setStreamUrl(e.target.value)}
+              onChange={handleUrlChange}
               placeholder="e.g., cast.yourstreamingservice.com"
             />
             <p className="text-xs text-muted-foreground mt-1">
@@ -55,7 +74,7 @@ const StreamConfigForm: React.FC<StreamConfigFormProps> = ({
             <Input
               id="streamPort"
               value={streamPort}
-              onChange={(e) => setStreamPort(e.target.value)}
+              onChange={handlePortChange}
               placeholder="e.g., 8000"
             />
           </div>
@@ -66,14 +85,18 @@ const StreamConfigForm: React.FC<StreamConfigFormProps> = ({
               id="streamPassword"
               type="password"
               value={streamPassword}
-              onChange={(e) => setStreamPassword(e.target.value)}
+              onChange={handlePasswordChange}
               placeholder="Your stream password"
             />
           </div>
         </form>
       </CardContent>
       <CardFooter>
-        <Button type="submit" form="stream-config-form">
+        <Button 
+          type="submit" 
+          form="stream-config-form"
+          disabled={!isFormDirty}
+        >
           Save Streaming Settings
         </Button>
       </CardFooter>
