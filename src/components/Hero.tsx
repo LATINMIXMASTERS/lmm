@@ -8,13 +8,35 @@ interface HeroProps {
   className?: string;
 }
 
+interface SiteStats {
+  radioStationsCount: string;
+  djsCount: string;
+  listenersCount: string;
+}
+
 const Hero: React.FC<HeroProps> = ({ className }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [stats, setStats] = useState<SiteStats>({
+    radioStationsCount: '7+',
+    djsCount: '20+',
+    listenersCount: '1M+'
+  });
   
   useEffect(() => {
+    // Animation timing
     const timer = setTimeout(() => {
       setIsVisible(true);
     }, 100);
+    
+    // Load statistics from localStorage
+    const savedStats = localStorage.getItem('latinmixmasters_site_stats');
+    if (savedStats) {
+      try {
+        setStats(JSON.parse(savedStats));
+      } catch (error) {
+        console.error('Failed to parse saved statistics:', error);
+      }
+    }
     
     return () => clearTimeout(timer);
   }, []);
@@ -112,9 +134,9 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
           style={{ animationDelay: "0.9s" }}
         >
           {[
-            { label: "Radio Stations", value: "7+" },
-            { label: "DJs", value: "20+" },
-            { label: "Active Listeners", value: "1M+" }
+            { label: "Radio Stations", value: stats.radioStationsCount },
+            { label: "DJs", value: stats.djsCount },
+            { label: "Active Listeners", value: stats.listenersCount }
           ].map((stat, index) => (
             <div key={index} className="backdrop-blur-md bg-gold/10 dark:bg-gold/5 rounded-xl p-6 border border-gold/20">
               <div className="text-3xl sm:text-4xl font-bold text-gold">{stat.value}</div>

@@ -1,7 +1,10 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Mic, Volume2, ImageIcon, Users, Calendar as CalendarIcon, DatabaseBackup, Share2, Activity, Settings } from 'lucide-react';
+import { 
+  Shield, Mic, Volume2, ImageIcon, Users, Calendar as CalendarIcon, 
+  DatabaseBackup, Share2, Activity, Settings, BarChart2 
+} from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +20,7 @@ import S3ConfigurationPanel from '@/components/admin-dashboard/S3StorageConfig';
 import SocialMediaConfig from '@/components/admin-dashboard/SocialMediaConfig';
 import ListenersManagement from '@/components/admin-dashboard/ListenersManagement';
 import SystemUpdate from '@/components/admin-dashboard/SystemUpdate';
+import SiteStatisticsManagement from '@/components/admin-dashboard/SiteStatisticsManagement';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -71,6 +75,10 @@ const AdminDashboard: React.FC = () => {
               <Activity className="w-4 h-4 mr-2" />
               Listener Counts
             </TabsTrigger>
+            <TabsTrigger value="site-stats" className="flex items-center">
+              <BarChart2 className="w-4 h-4 mr-2" />
+              Site Statistics
+            </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center">
               <Users className="w-4 h-4 mr-2" />
               Manage Users
@@ -117,6 +125,10 @@ const AdminDashboard: React.FC = () => {
           
           <TabsContent value="listeners">
             <ListenersManagement />
+          </TabsContent>
+          
+          <TabsContent value="site-stats">
+            <SiteStatisticsManagement />
           </TabsContent>
           
           <TabsContent value="users">
