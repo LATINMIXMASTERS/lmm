@@ -1,32 +1,40 @@
 
 import { RadioMetadata } from '@/models/RadioStation';
-import { extractArtistAndTitle } from './parseMetadata';
 
-// Sample tracks for simulation
-const SAMPLE_TRACKS = [
-  "DJ Lobo - Bachata Mix 2025",
-  "Marc Anthony - Vivir Mi Vida",
-  "Bad Bunny - Tití Me Preguntó",
-  "Romeo Santos - Propuesta Indecente",
-  "Daddy Yankee - Gasolina (Club Mix)",
-  "Luis Fonsi - Despacito (Radio Edit)",
-  "Aventura - Obsesión",
-  "Rauw Alejandro - Todo de Ti"
+// Sample artists and titles for simulated metadata
+const sampleArtists = [
+  'DJ Ramirez', 'LATINMIXMASTERS Crew', 'DJ Latino', 'Salsa Kings',
+  'Reggaeton Masters', 'Cumbia Collective', 'Bachata Legends', 'Latin House DJs'
+];
+
+const sampleTitles = [
+  'Summer Vibes Mix', 'Latin Party Anthems', 'Reggaeton Hits 2023',
+  'Salsa Classics Remix', 'Tropical House Session', 'Bachata Love Songs',
+  'Cumbia Revolution', 'Urban Latino Mix'
 ];
 
 /**
- * Generates random metadata for simulation purposes
- * @returns A random track with metadata
+ * Generates simulated metadata for stations without real metadata
  */
-export const generateSimulatedMetadata = (): { trackString: string, metadata: RadioMetadata } => {
-  const randomTrack = SAMPLE_TRACKS[Math.floor(Math.random() * SAMPLE_TRACKS.length)];
-  const { artist, title } = extractArtistAndTitle(randomTrack);
+export const generateSimulatedMetadata = (): {
+  trackString: string;
+  metadata: RadioMetadata;
+} => {
+  const artist = sampleArtists[Math.floor(Math.random() * sampleArtists.length)];
+  const title = sampleTitles[Math.floor(Math.random() * sampleTitles.length)];
   
-  const metadata: RadioMetadata = {
-    title,
-    artist,
-    startedAt: new Date()
+  // Add a timestamp to avoid the same metadata appearing multiple times
+  const now = new Date();
+  const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+  return {
+    trackString: `${artist} - ${title} (${timestamp})`,
+    metadata: {
+      artist,
+      title: `${title} (${timestamp})`,
+      startedAt: now,
+      album: 'LATINMIXMASTERS Radio',
+      coverArt: `https://picsum.photos/seed/${Math.random().toString(36).substring(7)}/300/300`
+    }
   };
-  
-  return { trackString: randomTrack, metadata };
 };

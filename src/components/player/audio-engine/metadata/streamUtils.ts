@@ -1,30 +1,50 @@
 
 /**
- * Utility function to extract and format stream URLs from different formats
- * @param streamUrl - The raw stream URL
- * @returns A properly formatted stream URL
+ * Extracts the base stream URL from various formats
  */
-export const extractStreamUrl = (streamUrl: string): string => {
-  // Handle different URL formats
-  if (streamUrl.includes('.m3u') || streamUrl.includes('.pls')) {
-    // For playlist files, we should technically download and parse them
-    // But since we can't do that easily with CORS issues, return as is for now
-    return streamUrl;
-  }
+export const extractStreamUrl = (rawUrl: string): string => {
+  if (!rawUrl) return '';
   
-  // Clean up the URL if needed
+  let streamUrl = rawUrl.trim();
+  
+  // Handle missing protocol
   if (!streamUrl.startsWith('http://') && !streamUrl.startsWith('https://')) {
-    return `https://${streamUrl}`;
+    streamUrl = `https://${streamUrl}`;
   }
   
+  // Handle special URLs based on stream type
+  // Icecast streams often end with /stream
+  if (streamUrl.includes('icecast') && !streamUrl.endsWith('/stream')) {
+    streamUrl = `${streamUrl}/stream`;
+  }
+  
+  // Handle SHOUTcast streams
+  if (streamUrl.includes('shoutcast') && !streamUrl.includes('/stream') && !streamUrl.includes(';')) {
+    streamUrl = `${streamUrl}/stream`;
+  }
+  
+  // Remove any extra query parameters for .m3u8 streams (HLS)
+  if (streamUrl.includes('.m3u8?')) {
+    streamUrl = streamUrl.split('?')[0];
+  }
+  
+  console.log('Extracted stream URL:', streamUrl);
   return streamUrl;
 };
 
 /**
- * Determines if a URL is valid for metadata fetching
- * @param url - The URL to check
- * @returns Boolean indicating if the URL is valid
+ * Checks if a URL is a valid stream URL
  */
 export const isValidStreamUrl = (url: string): boolean => {
-  return Boolean(url && (url.startsWith('http://') || url.startsWith('https://')));
+  if (!url) return false;
+  
+  const validPatterns = [
+    /^https?:\/\//i,                   // Must start with http:// or https://
+    /\.(mp3|aac|ogg|m3u8|pls)$/i,      // Common audio formats
+    /\/(stream|listen)(\?|\/|$)/i,     // Common stream endpoints
+    /(icecast|shoutcast|radio)/i,      // Common streaming server types
+  ];
+  
+  // Check if at least one pattern matches
+  return validPatterns.some(pattern => pattern.test(url));
 };
