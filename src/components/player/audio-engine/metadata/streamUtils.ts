@@ -12,14 +12,34 @@ export const extractStreamUrl = (rawUrl: string): string => {
     streamUrl = `https://${streamUrl}`;
   }
   
-  // Handle special URLs based on stream type
-  // Icecast streams often end with /stream
-  if (streamUrl.includes('icecast') && !streamUrl.endsWith('/stream')) {
-    streamUrl = `${streamUrl}/stream`;
+  // Handle Shoutcast specific URLs with better patterns
+  if (isShoutcastUrl(streamUrl)) {
+    // If URL already ends with /stream or /;stream.mp3, don't modify
+    if (!streamUrl.endsWith('/stream') && 
+        !streamUrl.includes(';stream.') && 
+        !streamUrl.endsWith('/listen') &&
+        !streamUrl.endsWith('.mp3') &&
+        !streamUrl.endsWith('/1')) {
+      
+      // Check for lmmradiocast.com or similar
+      if (streamUrl.includes('lmmradiocast.com')) {
+        console.log('Special handling for lmmradiocast URL');
+        // Only add /lmmradio if not already in the URL
+        if (!streamUrl.endsWith('/lmmradio')) {
+          streamUrl = streamUrl.endsWith('/') 
+            ? `${streamUrl}lmmradio` 
+            : `${streamUrl}/lmmradio`;
+        }
+      } else {
+        // Generic shoutcast URL, add /stream suffix
+        streamUrl = streamUrl.endsWith('/') 
+          ? `${streamUrl}stream` 
+          : `${streamUrl}/stream`;
+      }
+    }
   }
-  
-  // Handle SHOUTcast streams
-  if (streamUrl.includes('shoutcast') && !streamUrl.includes('/stream') && !streamUrl.includes(';')) {
+  // Handle Icecast streams
+  else if (streamUrl.includes('icecast') && !streamUrl.endsWith('/stream')) {
     streamUrl = `${streamUrl}/stream`;
   }
   
@@ -48,3 +68,15 @@ export const isValidStreamUrl = (url: string): boolean => {
   // Check if at least one pattern matches
   return validPatterns.some(pattern => pattern.test(url));
 };
+
+/**
+ * Detects if a URL is likely a Shoutcast server
+ */
+export const isShoutcastUrl = (url: string): boolean => {
+  return url.includes('shoutcast') || 
+         url.includes('radionomy') || 
+         url.includes('radiocast') || 
+         url.includes('lmmradio') ||
+         url.includes('lmmradiocast.com') ||
+         /:\d+\//.test(url); // Often Shoutcast uses port numbers
+}

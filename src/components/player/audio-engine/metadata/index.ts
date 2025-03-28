@@ -4,10 +4,10 @@ import { RadioMetadata } from '@/models/RadioStation';
 import { useRadio } from '@/hooks/useRadioContext';
 import { fetchStreamMetadata } from './fetchMetadata';
 import { generateSimulatedMetadata } from './simulateMetadata';
-import { isValidStreamUrl, extractStreamUrl } from './streamUtils';
+import { isValidStreamUrl, extractStreamUrl, isShoutcastUrl } from './streamUtils';
 
 // Re-export utility functions for external use
-export { extractStreamUrl } from './streamUtils';
+export { extractStreamUrl, isShoutcastUrl } from './streamUtils';
 export { fetchStreamMetadata } from './fetchMetadata';
 export { generateSimulatedMetadata } from './simulateMetadata';
 export { extractArtistAndTitle } from './parseMetadata';
@@ -109,6 +109,11 @@ export const setupMetadataPolling = (
   // Initial metadata fetch - do this immediately
   fetchMetadata();
   
-  // Set up polling with shorter interval for better responsiveness (now every 10 seconds)
-  metadataTimerRef.current = window.setInterval(fetchMetadata, 10000);
+  // Determine the polling interval based on the stream type
+  // Shoutcast stations update more frequently
+  const pollingInterval = isShoutcastUrl(formattedStreamUrl) ? 5000 : 10000;
+  console.log(`Setting up metadata polling every ${pollingInterval/1000} seconds for ${formattedStreamUrl}`);
+  
+  // Set up polling with an appropriate interval
+  metadataTimerRef.current = window.setInterval(fetchMetadata, pollingInterval);
 };

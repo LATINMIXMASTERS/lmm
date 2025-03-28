@@ -17,6 +17,87 @@ export const fetchStreamMetadata = async (streamUrl: string): Promise<Partial<Ra
       streamUrl // Direct access as fallback
     ];
 
+    // Special handling for Shoutcast URLs
+    if (streamUrl.includes('lmmradiocast.com') || isShoutcastUrl(streamUrl)) {
+      console.log('Detected Shoutcast URL, trying to fetch status data');
+      
+      // For Shoutcast, we need to use the /status-json.xsl endpoint
+      const statusUrl = streamUrl.endsWith('/') 
+        ? `${streamUrl}status-json.xsl` 
+        : `${streamUrl}/status-json.xsl`;
+      
+      try {
+        console.log('Fetching from Shoutcast status URL:', statusUrl);
+        const statusResponse = await fetch(statusUrl, { 
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          console.log('Shoutcast status data:', statusData);
+          
+          // Extract data from Shoutcast response
+          if (statusData.streams && statusData.streams.length > 0) {
+            // Try to get from the first stream
+            const stream = statusData.streams[0];
+            
+            // Get the current song title from the stream
+            if (stream.songtitle) {
+              const { artist, title } = extractArtistAndTitle(stream.songtitle);
+              return { 
+                artist: artist || stream.artist || '',
+                title: title || stream.songtitle || '',
+                album: stream.station_name || ''
+              };
+            }
+          } else if (statusData.songtitle || statusData.servertitle) {
+            // Alternative format
+            const songInfo = statusData.songtitle || statusData.servertitle || '';
+            const { artist, title } = extractArtistAndTitle(songInfo);
+            
+            return { 
+              artist: artist || statusData.artist || '',
+              title: title || songInfo,
+              album: statusData.servertitle || ''
+            };
+          }
+        }
+      } catch (statusError) {
+        console.log('Error fetching Shoutcast status:', statusError);
+        // Continue with other methods if this fails
+      }
+      
+      // If status-json.xsl fails, try the /7.html endpoint (legacy Shoutcast v1)
+      try {
+        const legacyUrl = streamUrl.endsWith('/') 
+          ? `${streamUrl}7.html` 
+          : `${streamUrl}/7.html`;
+        
+        console.log('Trying legacy Shoutcast endpoint:', legacyUrl);
+        const legacyResponse = await fetch(legacyUrl, { 
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        
+        if (legacyResponse.ok) {
+          const htmlText = await legacyResponse.text();
+          // Parse the HTML to extract current song
+          const songMatch = htmlText.match(/<body>(.*?)<\/body>/i);
+          if (songMatch && songMatch[1]) {
+            const songText = songMatch[1].trim();
+            const { artist, title } = extractArtistAndTitle(songText);
+            
+            return { 
+              artist: artist || '',
+              title: title || songText,
+              album: 'Live Stream'
+            };
+          }
+        }
+      } catch (legacyError) {
+        console.log('Error fetching from legacy Shoutcast endpoint:', legacyError);
+      }
+    }
+
     // Try different proxies in sequence until one works
     for (const url of corsProxyUrls) {
       try {
@@ -58,34 +139,6 @@ export const fetchStreamMetadata = async (streamUrl: string): Promise<Partial<Ra
           };
         }
         
-        // For SHOUTcast stations, try to access status information
-        if (url.includes('shoutcast')) {
-          const statusUrl = url.replace('/stream', '/status-json.xsl');
-          console.log('Trying SHOUTcast status URL:', statusUrl);
-          
-          try {
-            // Attempt to fetch SHOUTcast status information
-            const statusController = new AbortController();
-            const statusTimeoutId = setTimeout(() => statusController.abort(), 2000);
-            
-            const statusResponse = await fetch(statusUrl, { 
-              signal: statusController.signal 
-            });
-            
-            clearTimeout(statusTimeoutId);
-            
-            if (statusResponse.ok) {
-              const statusData = await statusResponse.json();
-              if (statusData.songtitle) {
-                const { artist, title } = extractArtistAndTitle(statusData.songtitle);
-                return { artist, title };
-              }
-            }
-          } catch (statusError) {
-            console.log('Error fetching SHOUTcast status:', statusError);
-          }
-        }
-        
         // We got a successful response but no metadata, extract what we can
         const contentType = response.headers.get('content-type') || '';
         
@@ -113,3 +166,12 @@ export const fetchStreamMetadata = async (streamUrl: string): Promise<Partial<Ra
     };
   }
 };
+
+// Helper function to identify Shoutcast URLs
+function isShoutcastUrl(url: string): boolean {
+  return url.includes('shoutcast') || 
+         url.includes('radionomy') || 
+         url.includes('radiocast') || 
+         url.includes('lmmradio') ||
+         /:\d+\//.test(url); // Often Shoutcast uses port numbers
+}
