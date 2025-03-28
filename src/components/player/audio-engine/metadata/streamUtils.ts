@@ -14,28 +14,32 @@ export const extractStreamUrl = (rawUrl: string): string => {
   
   // Handle Shoutcast specific URLs with better patterns
   if (isShoutcastUrl(streamUrl)) {
-    // If URL already ends with /stream or /;stream.mp3, don't modify
+    // Handle lmmradiocast.com URLs specifically
+    if (streamUrl.includes('lmmradiocast.com')) {
+      console.log('Special handling for lmmradiocast URL');
+      // Format specifically for lmmradiocast.com URLs
+      if (streamUrl.endsWith('/lmmradio') || streamUrl.endsWith('/lmmradio/')) {
+        // URL is already in the correct format
+        streamUrl = streamUrl.endsWith('/') ? streamUrl.slice(0, -1) : streamUrl;
+      } else if (!streamUrl.includes('/lmmradio')) {
+        // Add /lmmradio if it's missing
+        streamUrl = streamUrl.endsWith('/') 
+          ? `${streamUrl}lmmradio` 
+          : `${streamUrl}/lmmradio`;
+      }
+      return streamUrl;
+    }
+    
+    // For other Shoutcast servers
     if (!streamUrl.endsWith('/stream') && 
         !streamUrl.includes(';stream.') && 
         !streamUrl.endsWith('/listen') &&
         !streamUrl.endsWith('.mp3') &&
         !streamUrl.endsWith('/1')) {
       
-      // Check for lmmradiocast.com or similar
-      if (streamUrl.includes('lmmradiocast.com')) {
-        console.log('Special handling for lmmradiocast URL');
-        // Only add /lmmradio if not already in the URL
-        if (!streamUrl.endsWith('/lmmradio')) {
-          streamUrl = streamUrl.endsWith('/') 
-            ? `${streamUrl}lmmradio` 
-            : `${streamUrl}/lmmradio`;
-        }
-      } else {
-        // Generic shoutcast URL, add /stream suffix
-        streamUrl = streamUrl.endsWith('/') 
-          ? `${streamUrl}stream` 
-          : `${streamUrl}/stream`;
-      }
+      streamUrl = streamUrl.endsWith('/') 
+        ? `${streamUrl}stream` 
+        : `${streamUrl}/stream`;
     }
   }
   // Handle Icecast streams
@@ -61,8 +65,9 @@ export const isValidStreamUrl = (url: string): boolean => {
   const validPatterns = [
     /^https?:\/\//i,                   // Must start with http:// or https://
     /\.(mp3|aac|ogg|m3u8|pls)$/i,      // Common audio formats
-    /\/(stream|listen)(\?|\/|$)/i,     // Common stream endpoints
+    /\/(stream|listen|lmmradio)(\?|\/|$)/i,  // Common stream endpoints
     /(icecast|shoutcast|radio)/i,      // Common streaming server types
+    /:\d+\//                           // URLs with port numbers (common for streams)
   ];
   
   // Check if at least one pattern matches

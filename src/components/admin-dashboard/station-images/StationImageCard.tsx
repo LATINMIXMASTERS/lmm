@@ -56,6 +56,12 @@ const StationImageCard: React.FC<StationImageCardProps> = ({
             <ImageIcon className="w-4 h-4 mr-2" />
             Save Image
           </Button>
+          
+          {station.image && (
+            <div className="mt-2 text-xs text-gray-500">
+              Current URL: <span className="font-mono break-all">{station.image}</span>
+            </div>
+          )}
         </div>
         
         <StationImagePreview 
