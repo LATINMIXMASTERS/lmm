@@ -9,7 +9,7 @@ import TrackCard from './TrackCard';
  * Props for the GenreTabs component
  */
 interface GenreTabsProps {
-  genres: string[];  // Updated to accept string[] instead of Genre[]
+  genres: string[];  // List of genre names as strings
   tracks: Track[];
   filteredTracks: Track[];
   selectedTabGenre: string;

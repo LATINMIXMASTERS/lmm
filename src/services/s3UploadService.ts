@@ -11,7 +11,21 @@ export const uploadFileToS3 = async (
   onProgress?: (progress: number) => void
 ) => {
   try {
-    console.log(`Uploading file ${file.name} to folder ${folder}...`);
+    console.log(`Uploading file ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB) to folder ${folder}...`);
+    
+    // Check if file is too large for fallback storage (over 50MB)
+    const isVeryLargeFile = file.size > 50 * 1024 * 1024;
+    const s3Available = checkS3Config();
+    
+    if (isVeryLargeFile && !s3Available) {
+      console.warn('File is too large for fallback storage and S3 is not configured');
+      if (onProgress) onProgress(0);
+      return {
+        success: false,
+        url: '',
+        error: 'File is too large (over 50MB) and S3 storage is not configured. Please configure S3 storage or try a smaller file.'
+      };
+    }
     
     // Directly use the uploader service
     const result = await s3Upload(file, folder, onProgress);

@@ -37,6 +37,17 @@ export const useS3Upload = () => {
       return null;
     }
 
+    // Check if audio file is too large without S3 configuration
+    if (!s3Configured && audioFile.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large for local storage",
+        description: "S3 storage is not configured and audio file exceeds 5MB. Please configure S3 storage or use a smaller file.",
+        variant: "destructive"
+      });
+      setUploadError("File too large for local storage. Please configure S3 storage or use a smaller file.");
+      return null;
+    }
+
     setIsUploading(true);
     setUploadError(null);
     setUploadProgress(0);
@@ -44,7 +55,7 @@ export const useS3Upload = () => {
 
     try {
       // Upload cover image
-      console.log('Uploading cover image...');
+      console.log('Uploading cover image...', coverImage.size / 1024, 'KB');
       const coverUploadResult = await uploadFileToS3(coverImage, 'covers', setCoverProgress);
       
       if (!coverUploadResult.success) {
@@ -52,7 +63,7 @@ export const useS3Upload = () => {
       }
       
       // Upload audio file
-      console.log('Uploading audio file...');
+      console.log('Uploading audio file...', audioFile.size / (1024 * 1024), 'MB');
       const audioUploadResult = await uploadFileToS3(audioFile, 'audio', setUploadProgress);
       
       if (!audioUploadResult.success) {
@@ -65,12 +76,24 @@ export const useS3Upload = () => {
       };
     } catch (error) {
       console.error('Upload error:', error);
-      setUploadError(error instanceof Error ? error.message : 'Unknown upload error');
-      toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "There was an error uploading your files",
-        variant: "destructive"
-      });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown upload error';
+      setUploadError(errorMessage);
+      
+      // Provide more helpful error messages based on the error content
+      if (errorMessage.includes('quota') || errorMessage.includes('storage')) {
+        toast({
+          title: "Storage limit exceeded",
+          description: "The file is too large for browser storage. Please configure S3 or use a smaller file.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Upload failed",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      }
+      
       return null;
     } finally {
       setIsUploading(false);

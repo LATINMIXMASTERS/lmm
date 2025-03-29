@@ -63,7 +63,6 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           // Only update if there's an actual change to prevent loops
           if (JSON.stringify(state.chatMessages) !== e.newValue) {
             dispatch({ type: 'SET_CHAT_MESSAGES', payload: newMessages });
-            console.log("Chat messages updated from storage event", new Date().toISOString());
           }
         } catch (error) {
           console.error("Failed to parse updated chat messages:", error);
@@ -77,41 +76,42 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           // Only update if there's an actual change to prevent loops
           if (JSON.stringify(state.stations) !== e.newValue) {
             dispatch({ type: 'SET_STATIONS', payload: newStations });
-            console.log("Stations updated from storage event", new Date().toISOString());
           }
         } catch (error) {
           console.error("Failed to parse updated stations:", error);
         }
       }
-      
-      // Handle sync timestamp updates
-      else if (e.key === 'station_status_sync' || e.key === 'chat_enabled_sync' || e.key === 'chat_sync_timestamp') {
-        // Force a refresh of data when sync timestamps are updated
-        actions.syncChatMessagesFromStorage?.();
-        actions.syncStationsFromStorage?.();
-      }
     };
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Set up periodic sync for chat messages and stations
-    const syncInterval = setInterval(() => {
-      actions.syncChatMessagesFromStorage?.();
-      actions.syncStationsFromStorage?.();
-    }, 2000); // Sync every 2 seconds
+    // Use a ref to track if we've already synced to prevent infinite loops
+    let isSyncing = false;
     
-    // Set up a heartbeat to ensure sync works across devices
-    const heartbeatInterval = setInterval(() => {
-      // Update sync timestamps to trigger syncs on other devices
-      localStorage.setItem('sync_heartbeat', new Date().toISOString());
-    }, 5000); // Heartbeat every 5 seconds
+    // Set up periodic sync for chat messages and stations, but with debouncing to prevent infinite loops
+    const syncInterval = setInterval(() => {
+      if (!isSyncing) {
+        isSyncing = true;
+        // Use a setTimeout to stagger the syncs
+        setTimeout(() => {
+          if (actions.syncChatMessagesFromStorage) {
+            actions.syncChatMessagesFromStorage();
+          }
+          setTimeout(() => {
+            if (actions.syncStationsFromStorage) {
+              actions.syncStationsFromStorage();
+            }
+            isSyncing = false;
+          }, 500);
+        }, 0);
+      }
+    }, 5000); // Sync every 5 seconds instead of 2 seconds
     
     return () => {
       clearInterval(syncInterval);
-      clearInterval(heartbeatInterval);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [actions]);
+  }, []); // Removed actions from dependency array to prevent infinite loop
 
   // Prepare the context value with all required properties
   const contextValue = {
