@@ -37,13 +37,14 @@ export const useS3Upload = () => {
       return null;
     }
 
-    // Warn about S3 requirement for large files
-    if (!s3Configured && audioFile.size > 10 * 1024 * 1024) {
+    // S3 storage is now mandatory for all uploads
+    if (!s3Configured) {
       toast({
         title: "S3 storage required",
-        description: "Files over 10MB require S3 storage configuration. The upload may fail.",
+        description: "S3 storage configuration is mandatory for all uploads. Please contact an administrator.",
         variant: "destructive"
       });
+      return null;
     }
 
     setIsUploading(true);
@@ -52,6 +53,15 @@ export const useS3Upload = () => {
     setCoverProgress(0);
 
     try {
+      // Validate file sizes
+      if (coverImage.size > 1 * 1024 * 1024) {
+        throw new Error('Cover image must be 1MB or smaller');
+      }
+      
+      if (audioFile.size > 250 * 1024 * 1024) {
+        throw new Error('Audio file must be 250MB or smaller');
+      }
+      
       // Upload cover image
       console.log('Uploading cover image...', coverImage.size / 1024, 'KB');
       const coverUploadResult = await uploadFileToS3(coverImage, 'covers', setCoverProgress);
@@ -77,26 +87,11 @@ export const useS3Upload = () => {
       const errorMessage = error instanceof Error ? error.message : 'Unknown upload error';
       setUploadError(errorMessage);
       
-      // Provide more helpful error messages
-      if (errorMessage.includes('quota') || errorMessage.includes('storage')) {
-        toast({
-          title: "Storage limit exceeded",
-          description: "Browser storage limit reached. Please configure S3 storage for large files.",
-          variant: "destructive"
-        });
-      } else if (errorMessage.includes('10MB') || errorMessage.includes('large')) {
-        toast({
-          title: "S3 required for large files",
-          description: "Files over 10MB require S3 storage configuration. Please contact an administrator.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Upload failed",
-          description: errorMessage,
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Upload failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
       
       return null;
     } finally {

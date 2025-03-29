@@ -57,24 +57,20 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profileUser, isOwnProfile
     setIsUploading(true);
     
     try {
-      // Try to upload to S3 first if configured
+      // Check if S3 is configured - now mandatory
       const isS3Ready = isS3Configured();
-      let imageUrl;
-      
-      if (isS3Ready) {
-        // Upload to S3
-        const result = await uploadFileToS3(file, 'profiles');
-        if (result.success) {
-          imageUrl = result.url;
-        } else {
-          throw new Error(result.error || 'Failed to upload to S3');
-        }
-      } else {
-        // Fallback to local data URL
-        imageUrl = await fileToDataUrl(file);
+      if (!isS3Ready) {
+        throw new Error('S3 storage configuration is required for all uploads. Please contact an administrator.');
       }
       
-      updateProfile({ profileImage: imageUrl });
+      // Upload to S3
+      const result = await uploadFileToS3(file, 'profiles');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to upload to S3');
+      }
+      
+      // Update profile with S3 URL
+      updateProfile({ profileImage: result.url });
       
       toast({
         title: "Profile updated",
@@ -84,7 +80,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profileUser, isOwnProfile
       console.error('Profile image upload error:', error);
       toast({
         title: "Upload failed",
-        description: "Failed to upload profile image",
+        description: error instanceof Error ? error.message : "Failed to upload profile image",
         variant: "destructive"
       });
     } finally {

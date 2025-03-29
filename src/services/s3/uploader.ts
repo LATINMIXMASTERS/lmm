@@ -6,6 +6,7 @@ import { createAwsSignature } from './signature';
 
 /**
  * Upload a file to S3-compatible storage using fetch API
+ * No fallback to local storage - S3 is mandatory
  */
 export const uploadFileToS3 = async (
   file: File,
@@ -18,13 +19,21 @@ export const uploadFileToS3 = async (
   }
   
   // Check if file is within size limits
-  if (file.size > 250 * 1024 * 1024) {
-    console.error('File exceeds maximum size limit of 250MB');
-    if (onProgress) onProgress(0);
+  if (folder.includes('audio') && file.size > 250 * 1024 * 1024) {
+    console.error('Audio file exceeds maximum size limit of 250MB');
     return {
       success: false,
       url: '',
-      error: 'File exceeds maximum size limit of 250MB'
+      error: 'Audio file exceeds maximum size limit of 250MB'
+    };
+  }
+  
+  if ((folder.includes('covers') || folder.includes('image')) && file.size > 1 * 1024 * 1024) {
+    console.error('Image file exceeds maximum size limit of 1MB');
+    return {
+      success: false,
+      url: '',
+      error: 'Image file exceeds maximum size limit of 1MB'
     };
   }
   
@@ -40,23 +49,14 @@ export const uploadFileToS3 = async (
     fileSize: `${(file.size / (1024 * 1024)).toFixed(2)}MB`
   });
   
-  // Audio files over 10MB require S3 configuration
-  const isLargeAudioFile = file.size > 10 * 1024 * 1024 && 
-                      (file.type.includes('audio') || folder === 'audio');
-  
-  if (isLargeAudioFile && (!config || !isS3Configured())) {
-    console.warn('Large audio file requires S3 configuration');
-    if (onProgress) onProgress(0);
+  // S3 is now mandatory for all files
+  if (!config || !isS3Configured()) {
+    console.error('S3 storage is not configured but is required for file uploads');
     return {
       success: false,
       url: '',
-      error: 'Large audio files (over 10MB) require S3 storage configuration. Please configure S3 storage.'
+      error: 'S3 storage configuration is required for all uploads. Please configure S3 storage in admin settings.'
     };
-  }
-  
-  if (!config || !isS3Configured()) {
-    console.warn('S3 storage is not configured properly. Using fallback storage method.');
-    return uploadToLocalStorage(file, folder, onProgress);
   }
 
   try {
@@ -83,26 +83,10 @@ export const uploadFileToS3 = async (
       onProgress(0);
     }
     
-    // Don't fallback for large audio files
-    if (isLargeAudioFile) {
-      return {
-        success: false,
-        url: '',
-        error: 'S3 upload failed. Large audio files require working S3 configuration.'
-      };
-    }
-    
-    // Only attempt fallback for smaller files
-    try {
-      console.log('Attempting fallback to local storage due to S3 error');
-      return await uploadToLocalStorage(file, folder, onProgress);
-    } catch (fallbackError) {
-      console.error('Fallback upload also failed:', fallbackError);
-      return {
-        success: false,
-        url: '',
-        error: error instanceof Error ? error.message : 'Unknown upload error'
-      };
-    }
+    return {
+      success: false,
+      url: '',
+      error: error instanceof Error ? error.message : 'S3 upload failed. Please check your configuration.'
+    };
   }
 };

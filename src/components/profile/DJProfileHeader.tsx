@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { User, Edit, Upload, Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
@@ -7,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { SiSoundcloud } from "react-icons/si";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { uploadFileToS3, isS3Configured } from '@/services/s3UploadService';
 
 interface DJProfileHeaderProps {
   hostUser: any;
@@ -41,37 +41,46 @@ const DJProfileHeader: React.FC<DJProfileHeaderProps> = ({ hostUser, onEditProfi
       return;
     }
     
+    // Check file size (1MB limit)
+    if (file.size > 1 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Image must be 1MB or smaller",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsUploading(true);
     
     try {
-      // Convert file to data URL
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          updateProfile({ profileImage: reader.result });
-          toast({
-            title: "Profile updated",
-            description: "Your profile image has been updated"
-          });
-        }
-        setIsUploading(false);
-      };
-      reader.onerror = () => {
-        toast({
-          title: "Upload failed",
-          description: "Failed to upload profile image",
-          variant: "destructive"
-        });
-        setIsUploading(false);
-      };
+      // Check if S3 is configured - now mandatory
+      const isS3Ready = isS3Configured();
+      if (!isS3Ready) {
+        throw new Error('S3 storage configuration is required for all uploads. Please contact an administrator.');
+      }
+      
+      // Upload to S3
+      const result = await uploadFileToS3(file, 'profiles');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to upload to S3');
+      }
+      
+      // Update profile with S3 URL
+      updateProfile({ profileImage: result.url });
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile image has been updated"
+      });
     } catch (error) {
-      console.error(error);
+      console.error('Profile image upload error:', error);
       toast({
         title: "Upload failed",
-        description: "Something went wrong",
+        description: error instanceof Error ? error.message : "Failed to upload profile image",
         variant: "destructive"
       });
+    } finally {
       setIsUploading(false);
     }
   };

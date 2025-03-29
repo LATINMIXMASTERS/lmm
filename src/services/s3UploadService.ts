@@ -3,7 +3,7 @@ import { uploadFileToS3 as s3Upload } from './s3/uploader';
 import { getS3Config, isS3Configured as checkS3Config } from './s3/config';
 
 /**
- * Upload a file to S3 or fall back to localStorage
+ * Upload a file to S3 - now mandatory, no fallback to localStorage
  */
 export const uploadFileToS3 = async (
   file: File,
@@ -13,32 +13,41 @@ export const uploadFileToS3 = async (
   try {
     console.log(`Uploading file ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB) to folder ${folder}...`);
     
-    // Check if file is too large (over 250MB)
-    if (file.size > 250 * 1024 * 1024) {
-      console.error('File exceeds maximum size limit of 250MB');
+    // Check file size limits
+    if (folder.includes('audio') && file.size > 250 * 1024 * 1024) {
+      console.error('Audio file exceeds maximum size limit of 250MB');
       if (onProgress) onProgress(0);
       return {
         success: false,
         url: '',
-        error: 'File exceeds maximum size limit of 250MB'
+        error: 'Audio file exceeds maximum size limit of 250MB'
       };
     }
-
-    // Always require S3 for audio files over 10MB
-    const isLargeFile = file.size > 10 * 1024 * 1024;
+    
+    if ((folder.includes('covers') || folder.includes('image')) && file.size > 1 * 1024 * 1024) {
+      console.error('Image file exceeds maximum size limit of 1MB');
+      if (onProgress) onProgress(0);
+      return {
+        success: false,
+        url: '',
+        error: 'Image file exceeds maximum size limit of 1MB'
+      };
+    }
+    
+    // Check if S3 is configured - now mandatory
     const s3Available = checkS3Config();
     
-    if (isLargeFile && !s3Available) {
-      console.warn('File is too large for local storage and S3 is not configured');
+    if (!s3Available) {
+      console.error('S3 storage is not configured but is required for file uploads');
       if (onProgress) onProgress(0);
       return {
         success: false,
         url: '',
-        error: 'This file is too large for browser storage. Please configure S3 storage for uploads over 10MB.'
+        error: 'S3 storage configuration is required for all uploads. Please configure S3 storage in admin settings.'
       };
     }
     
-    // Use S3 if available, otherwise fallback
+    // Use S3 for all uploads - no fallback
     const result = await s3Upload(file, folder, onProgress);
     
     console.log('Upload result:', result);
@@ -52,7 +61,7 @@ export const uploadFileToS3 = async (
       url: '',
       error: error instanceof Error 
         ? error.message
-        : 'Unknown upload error. Check browser storage quota or S3 configuration.'
+        : 'Upload error. Please check S3 configuration.'
     };
   }
 };

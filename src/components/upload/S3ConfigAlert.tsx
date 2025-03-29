@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface S3ConfigAlertProps {
@@ -10,37 +11,35 @@ interface S3ConfigAlertProps {
 }
 
 const S3ConfigAlert: React.FC<S3ConfigAlertProps> = ({ s3Configured }) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const isAdmin = user?.isAdmin;
 
   if (s3Configured) {
-    return null; // Don't show anything if S3 is configured
-  }
-  
-  // Only show to admins or radio hosts
-  if (!user || (!user.isAdmin && !user.isRadioHost)) {
     return null;
   }
 
   return (
-    <Alert variant="default" className="bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
-      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-      <AlertTitle className="text-amber-800 dark:text-amber-400">S3 Storage Required</AlertTitle>
-      <AlertDescription className="text-amber-700 dark:text-amber-300">
+    <Alert variant="destructive" className="mb-6">
+      <AlertCircle className="h-4 w-4" />
+      <AlertTitle>S3 Storage Required</AlertTitle>
+      <AlertDescription className="mt-2">
         <p className="mb-2">
-          For uploads larger than 10MB, S3-compatible storage is required. 
-          Without S3 configuration, uploads over 10MB will fail.
+          S3 storage configuration is <strong>mandatory</strong> for all uploads. 
+          All audio tracks (up to 250MB) and images (up to 1MB) must be uploaded to S3.
         </p>
-        {user.isAdmin ? (
-          <p>
-            <Link 
-              to="/admin-dashboard?tab=s3" 
-              className="font-medium underline hover:text-amber-800"
-            >
-              Configure S3 storage
-            </Link> in the admin dashboard.
-          </p>
+        
+        {isAdmin ? (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate('/admin-dashboard')}
+            className="mt-2"
+          >
+            Configure S3 Storage
+          </Button>
         ) : (
-          <p>
+          <p className="text-sm italic">
             Please contact an administrator to configure S3 storage.
           </p>
         )}
