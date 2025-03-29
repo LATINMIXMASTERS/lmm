@@ -61,6 +61,9 @@ const Mixes: React.FC = () => {
     );
   };
 
+  // Convert Genre objects to genre name strings for GenreTabs
+  const genreNames = genres.map(genre => genre.name);
+
   return (
     <MainLayout>
       <div className="container py-8 md:py-12">
@@ -74,7 +77,7 @@ const Mixes: React.FC = () => {
         
         {/* Genre tabs with track listing */}
         <GenreTabs 
-          genres={genres}
+          genres={genreNames}
           tracks={tracks}
           filteredTracks={filteredTracks}
           selectedTabGenre={selectedTabGenre}

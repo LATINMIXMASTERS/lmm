@@ -1,12 +1,10 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Edit, Trash2 } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTrack } from '@/hooks/useTrackContext';
 import { useRadio } from '@/hooks/useRadioContext';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Track } from '@/models/Track';
 import UserNotFound from '@/components/profile/UserNotFound';
@@ -14,7 +12,9 @@ import DeleteTrackDialog from '@/components/profile/DeleteTrackDialog';
 import DJProfileHeader from '@/components/profile/DJProfileHeader';
 import DJProfileActions from '@/components/profile/DJProfileActions';
 import DJProfileTabs from '@/components/profile/DJProfileTabs';
+import DJTrackActions from '@/components/profile/DJTrackActions';
 import { useDJProfileActions } from '@/hooks/useDJProfileActions';
+import { formatDuration, createTrackActionsRenderer } from '@/utils/djProfileUtils';
 
 const DJProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -90,37 +90,22 @@ const DJProfile: React.FC = () => {
     });
   };
   
-  const formatDuration = (seconds?: number) => {
-    if (!seconds) return '0:00';
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-  
+  // Create a renderer function for track actions
   const renderTrackActions = (track: Track) => {
-    const canManageTrack = user?.isAdmin || track.uploadedBy === user?.id;
+    const actionProps = createTrackActionsRenderer(
+      user, 
+      handleTrackOperations.handleEditTrack,
+      handleDeleteTrack
+    )(track);
     
-    if (!canManageTrack) return null;
+    if (!actionProps) return null;
     
     return (
-      <div className="flex gap-2">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => handleTrackOperations.handleEditTrack(track.id)}
-          className="h-8 w-8 text-blue"
-        >
-          <Edit className="h-4 w-4" />
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => handleDeleteTrack(track)}
-          className="h-8 w-8 text-red-500"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
+      <DJTrackActions 
+        track={actionProps.track}
+        onEdit={actionProps.onEdit}
+        onDelete={actionProps.onDelete}
+      />
     );
   };
   
