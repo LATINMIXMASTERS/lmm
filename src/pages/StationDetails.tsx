@@ -1,13 +1,14 @@
 
 import React, { useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Navigate } from 'react-router-dom';
 import MainLayout from '@/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import StationHeader from '@/components/station-details/StationHeader';
 import StationDetailSkeleton from '@/components/station-details/StationDetailSkeleton';
 import ControlsSection from '@/components/station-details/ControlsSection';
 import StationContent from '@/components/station-details/StationContent';
-import useStationDetails from '@/hooks/station-details/useStationDetails';
+import useStationDetails from '@/hooks/useStationDetails';
+import { useRadio } from '@/hooks/useRadioContext';
 import useRandomListeners from '@/hooks/useRandomListeners';
 import { useToast } from '@/hooks/use-toast';
 import { Share2 } from 'lucide-react';
@@ -16,6 +17,23 @@ import { Button } from '@/components/ui/button';
 const StationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
+  const { stations } = useRadio();
+  
+  // Find station by id or slug (url-friendly name)
+  const realStationId = React.useMemo(() => {
+    if (!id) return null;
+    
+    // First try direct ID match
+    const directMatch = stations.find(s => s.id === id);
+    if (directMatch) return id;
+    
+    // Try slug match
+    const slugMatch = stations.find(s => 
+      s.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') === id
+    );
+    
+    return slugMatch ? slugMatch.id : id;
+  }, [id, stations]);
   
   // Custom hook for random listeners is used outside of component to avoid re-renders
   useRandomListeners();
@@ -36,7 +54,7 @@ const StationDetails: React.FC = () => {
     handleToggleVideo,
     handleUpdateVideoStreamUrl,
     handleSendMessage
-  } = useStationDetails(id);
+  } = useStationDetails(realStationId);
 
   // Handle connection issues
   useEffect(() => {
@@ -117,8 +135,13 @@ const StationDetails: React.FC = () => {
       });
   }, [toast]);
 
-  if (loadingState?.isLoading || !station) {
+  if (loadingState?.isLoading) {
     return <StationDetailSkeleton />;
+  }
+
+  if (!station) {
+    console.error("Station not found:", id);
+    return <Navigate to="/stations" replace />;
   }
 
   return (

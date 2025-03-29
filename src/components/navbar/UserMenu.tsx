@@ -25,7 +25,7 @@ const UserMenu: React.FC = () => {
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <div className="py-1">
                   <Link
-                    to={user?.isRadioHost ? `/host/${user.id}` : `/profile/${user.id}`}
+                    to={user?.isRadioHost ? `/dj/${user.id}` : `/profile/${user.id}`}
                     className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-lightest"
                   >
                     <User className="w-4 h-4" />
@@ -33,11 +33,11 @@ const UserMenu: React.FC = () => {
                   </Link>
                   {user?.isRadioHost && (
                     <Link
-                      to="/host-dashboard"
+                      to="/dj-dashboard"
                       className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-lightest"
                     >
                       <Headphones className="w-4 h-4" />
-                      <span>Host Dashboard</span>
+                      <span>DJ Dashboard</span>
                     </Link>
                   )}
                   {user?.isAdmin && (
@@ -82,7 +82,7 @@ const UserMenu: React.FC = () => {
           </div>
           
           <Link
-            to={user?.isRadioHost ? `/host/${user.id}` : `/profile/${user.id}`}
+            to={user?.isRadioHost ? `/dj/${user.id}` : `/profile/${user.id}`}
             className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-lightest rounded-lg"
           >
             <User className="w-5 h-5" />
@@ -91,11 +91,11 @@ const UserMenu: React.FC = () => {
           
           {user?.isRadioHost && (
             <Link
-              to="/host-dashboard"
+              to="/dj-dashboard"
               className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-lightest rounded-lg"
             >
               <Headphones className="w-5 h-5" />
-              <span>Host Dashboard</span>
+              <span>DJ Dashboard</span>
             </Link>
           )}
           

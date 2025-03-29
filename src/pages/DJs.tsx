@@ -48,7 +48,7 @@ const DJs: React.FC = () => {
                     )}
                   </CardHeader>
                   <CardFooter>
-                    <Link to={`/dj/${dj.username.toLowerCase().replace(/\s+/g, '-')}`} className="w-full">
+                    <Link to={`/dj/${dj.id}`} className="w-full">
                       <Button variant="default" className="w-full">
                         View Profile
                       </Button>

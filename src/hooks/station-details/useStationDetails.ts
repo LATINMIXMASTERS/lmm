@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,9 +8,25 @@ import { useChatSync } from './useChatSync';
 import { StationDetailsResult } from './types';
 
 export const useStationDetails = (stationId: string | undefined): StationDetailsResult => {
-  const { currentPlayingStation, getChatMessagesForStation } = useRadio();
+  const { currentPlayingStation, getChatMessagesForStation, stations } = useRadio();
   const { user } = useAuth();
   const [lastSyncTime, setLastSyncTime] = useState<Date>(new Date());
+  
+  // Find station by id or by slug (url-friendly name)
+  useEffect(() => {
+    if (stationId && !stations.some(s => s.id === stationId)) {
+      // If stationId doesn't match any station id, it might be a slug
+      const station = stations.find(s => 
+        s.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') === stationId
+      );
+      
+      if (station) {
+        console.log("Found station by slug:", station.name);
+      } else {
+        console.log("Station not found by id or slug:", stationId);
+      }
+    }
+  }, [stationId, stations]);
   
   // Get state from hooks
   const { 

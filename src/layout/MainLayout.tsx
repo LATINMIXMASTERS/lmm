@@ -49,14 +49,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           transitionStage === 'fadeIn' ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        {user && user.isRadioHost && location.pathname !== '/host-dashboard' && (
+        {user && user.isRadioHost && location.pathname !== '/dj-dashboard' && (
           <div className="fixed bottom-24 right-4 z-50">
             <Button 
               asChild 
               variant="default" 
               className="rounded-full shadow-lg p-3 h-12 w-12 bg-gold hover:bg-gold-dark dark:bg-gold dark:hover:bg-gold-dark"
             >
-              <Link to="/host-dashboard">
+              <Link to="/dj-dashboard">
                 <LayoutDashboard className="h-5 w-5" />
               </Link>
             </Button>

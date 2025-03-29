@@ -1,11 +1,12 @@
 
-import React, { useReducer, ReactNode, useEffect } from 'react';
+import React, { useReducer, ReactNode, useEffect, useRef } from 'react';
 import RadioContext from './RadioContext';
 import { radioReducer, initialRadioState, initialStations } from './radioReducer';
 import { useRadioActions } from './radioActions';
 
 export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(radioReducer, initialRadioState);
+  const isSyncing = useRef(false);
   
   const actions = useRadioActions(state, dispatch);
   
@@ -85,13 +86,10 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Use a ref to track if we've already synced to prevent infinite loops
-    let isSyncing = false;
-    
     // Set up periodic sync for chat messages and stations, but with debouncing to prevent infinite loops
     const syncInterval = setInterval(() => {
-      if (!isSyncing) {
-        isSyncing = true;
+      if (!isSyncing.current) {
+        isSyncing.current = true;
         // Use a setTimeout to stagger the syncs
         setTimeout(() => {
           if (actions.syncChatMessagesFromStorage) {
@@ -101,11 +99,11 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             if (actions.syncStationsFromStorage) {
               actions.syncStationsFromStorage();
             }
-            isSyncing = false;
+            isSyncing.current = false;
           }, 500);
         }, 0);
       }
-    }, 5000); // Sync every 5 seconds instead of 2 seconds
+    }, 5000); // Sync every 5 seconds
     
     return () => {
       clearInterval(syncInterval);
