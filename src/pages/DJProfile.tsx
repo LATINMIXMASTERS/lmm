@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { User as UserIcon, Music, Edit, Trash2, Share2 } from 'lucide-react';
@@ -17,8 +16,7 @@ import DeleteTrackDialog from '@/components/profile/DeleteTrackDialog';
 import RadioShowsTab from '@/components/profile/RadioShowsTab';
 import { Card, CardContent } from '@/components/ui/card';
 
-// Renaming component to DJProfileHeader
-import HostProfileHeader from '@/components/profile/HostProfileHeader';
+import DJProfileHeader from '@/components/profile/DJProfileHeader';
 
 const DJProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -209,7 +207,7 @@ const DJProfile: React.FC = () => {
     <MainLayout>
       <div className="container py-8 md:py-12">
         <div className="flex justify-between items-start mb-6">
-          <HostProfileHeader 
+          <DJProfileHeader 
             hostUser={djUser} 
             onEditProfile={user?.id === djUser.id ? () => navigate('/dj-dashboard') : undefined}
           />

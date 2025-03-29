@@ -20,7 +20,7 @@ interface UserTracksTabProps {
   showToast?: (title: string, description: string, variant?: 'default' | 'destructive') => void;
   user?: User | null;
   handleEditTrack?: (trackId: string) => void;
-  handleDeleteTrack?: (track: Track) => void;
+  handleDeleteTrack?: (track: Track) => void;  // Changed to accept Track object
   canUserEditTrack?: (trackId: string) => boolean;
 }
 

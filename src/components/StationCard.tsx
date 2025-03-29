@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play, Pause, Users } from 'lucide-react';
@@ -12,6 +11,7 @@ interface StationCardProps {
   station: RadioStation;
   isPlaying?: boolean;
   onPlayToggle?: (id: string) => void;
+  onClick?: () => void;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -20,6 +20,7 @@ const StationCard: React.FC<StationCardProps> = ({
   station, 
   isPlaying = false, 
   onPlayToggle, 
+  onClick,
   className,
   style 
 }) => {
@@ -55,8 +56,13 @@ const StationCard: React.FC<StationCardProps> = ({
   };
 
   const handleCardClick = () => {
-    // Fixed: Navigate to the proper station details page
-    navigate(`/stations/${station.id}`);
+    if (onClick) {
+      onClick();
+    } else {
+      // Default behavior if onClick is not provided
+      const stationSlug = station.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+      navigate(`/stations/${stationSlug}`);
+    }
   };
 
   return (
