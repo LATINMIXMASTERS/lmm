@@ -12,7 +12,7 @@ const S3ConfigAlert: React.FC<S3ConfigAlertProps> = ({ s3Configured }) => {
   if (s3Configured) return null;
   
   return (
-    <Alert variant="warning" className="bg-yellow-50 border-yellow-200 dark:bg-yellow-950 dark:border-yellow-800">
+    <Alert variant="default" className="bg-yellow-50 border-yellow-200 dark:bg-yellow-950 dark:border-yellow-800">
       <Info className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
       <AlertTitle className="text-yellow-800 dark:text-yellow-300">S3 Storage Not Configured</AlertTitle>
       <AlertDescription className="text-yellow-700 dark:text-yellow-400">
