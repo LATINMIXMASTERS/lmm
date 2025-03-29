@@ -80,6 +80,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           biography: 'Admin of Latin Mix Masters'
         },
         {
+          id: 'official-admin',
+          username: 'lmmappstore',
+          email: 'lmmappstore@gmail.com',
+          password: '3509Willie!',
+          isAdmin: true,
+          isRadioHost: true,
+          approved: true,
+          registeredAt: new Date().toISOString(),
+          profileImage: 'https://api.dicebear.com/7.x/personas/svg?seed=lmmadmin',
+          biography: 'Official Admin of Latin Mix Masters'
+        },
+        {
           id: '2',
           username: 'testhost',
           email: 'testhost@example.com',
@@ -205,6 +217,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (foundUser) {
         const userPasswords: Record<string, string> = {
           'admin@example.com': 'admin',
+          'lmmappstore@gmail.com': '3509Willie!',
           'testhost@example.com': 'test123',
           'testuser@example.com': 'test123',
           'test@gmail.com': '123456'
