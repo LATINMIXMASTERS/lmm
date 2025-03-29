@@ -103,7 +103,9 @@ export const initialAudioState: AudioState = {
   volume: 80,
   isMuted: false,
   currentTrack: null,
-  currentStation: null
+  currentStation: null,
+  hasError: false,
+  errorMessage: null
 };
 
 export const initialRadioState: RadioState = {

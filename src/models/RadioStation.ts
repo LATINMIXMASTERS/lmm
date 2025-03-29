@@ -1,3 +1,4 @@
+
 export interface RadioStation {
   id: string;
   name: string;
@@ -63,6 +64,8 @@ export interface AudioState {
   currentTrack: string | null;
   currentStation: string | null;
   currentMetadata?: RadioMetadata;
+  hasError?: boolean;    // Add error state flag
+  errorMessage?: string | null; // Add error message property
 }
 
 export interface ProfileUpdate {
