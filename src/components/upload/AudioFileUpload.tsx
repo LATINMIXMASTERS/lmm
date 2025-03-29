@@ -1,6 +1,6 @@
 
 import React, { useRef } from 'react';
-import { Music, FileMusic, X } from 'lucide-react';
+import { Music, FileMusic, X, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -71,9 +71,13 @@ const AudioFileUpload: React.FC<AudioFileUploadProps> = ({
             onClick={() => audioInputRef.current?.click()}
           >
             <div className="flex flex-col items-center">
-              <Music className="h-8 w-8 mb-2" />
+              <div className="flex items-center mb-2">
+                <Music className="h-6 w-6 mr-1" />
+                <Cloud className="h-5 w-5" />
+              </div>
               <span>Select audio file</span>
-              <span className="text-xs text-muted-foreground mt-1">MP3, max 250MB</span>
+              <span className="text-xs text-muted-foreground mt-1">MP3 format, max 250MB</span>
+              <span className="text-xs text-muted-foreground mt-1">Large files require S3 configuration</span>
             </div>
           </Button>
         )}

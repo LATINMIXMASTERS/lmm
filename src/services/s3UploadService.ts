@@ -13,21 +13,32 @@ export const uploadFileToS3 = async (
   try {
     console.log(`Uploading file ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB) to folder ${folder}...`);
     
-    // Check if file is too large for fallback storage (over 50MB)
-    const isVeryLargeFile = file.size > 50 * 1024 * 1024;
-    const s3Available = checkS3Config();
-    
-    if (isVeryLargeFile && !s3Available) {
-      console.warn('File is too large for fallback storage and S3 is not configured');
+    // Check if file is too large (over 250MB)
+    if (file.size > 250 * 1024 * 1024) {
+      console.error('File exceeds maximum size limit of 250MB');
       if (onProgress) onProgress(0);
       return {
         success: false,
         url: '',
-        error: 'File is too large (over 50MB) and S3 storage is not configured. Please configure S3 storage or try a smaller file.'
+        error: 'File exceeds maximum size limit of 250MB'
+      };
+    }
+
+    // Always require S3 for audio files over 10MB
+    const isLargeFile = file.size > 10 * 1024 * 1024;
+    const s3Available = checkS3Config();
+    
+    if (isLargeFile && !s3Available) {
+      console.warn('File is too large for local storage and S3 is not configured');
+      if (onProgress) onProgress(0);
+      return {
+        success: false,
+        url: '',
+        error: 'This file is too large for browser storage. Please configure S3 storage for uploads over 10MB.'
       };
     }
     
-    // Directly use the uploader service
+    // Use S3 if available, otherwise fallback
     const result = await s3Upload(file, folder, onProgress);
     
     console.log('Upload result:', result);
@@ -39,7 +50,9 @@ export const uploadFileToS3 = async (
     return {
       success: false,
       url: '',
-      error: error instanceof Error ? error.message : 'Unknown upload error'
+      error: error instanceof Error 
+        ? error.message
+        : 'Unknown upload error. Check browser storage quota or S3 configuration.'
     };
   }
 };

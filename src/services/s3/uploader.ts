@@ -17,6 +17,17 @@ export const uploadFileToS3 = async (
     onProgress(0);
   }
   
+  // Check if file is within size limits
+  if (file.size > 250 * 1024 * 1024) {
+    console.error('File exceeds maximum size limit of 250MB');
+    if (onProgress) onProgress(0);
+    return {
+      success: false,
+      url: '',
+      error: 'File exceeds maximum size limit of 250MB'
+    };
+  }
+  
   // Get S3 configuration
   const config = getS3Config();
   console.log('S3 config loaded:', { 
@@ -25,8 +36,23 @@ export const uploadFileToS3 = async (
     hasEndpoint: !!config?.endpoint,
     hasAccessKey: !!config?.accessKeyId,
     hasSecretKey: !!config?.secretAccessKey,
-    publicUrlBase: config?.publicUrlBase || 'not set'
+    publicUrlBase: config?.publicUrlBase || 'not set',
+    fileSize: `${(file.size / (1024 * 1024)).toFixed(2)}MB`
   });
+  
+  // Audio files over 10MB require S3 configuration
+  const isLargeAudioFile = file.size > 10 * 1024 * 1024 && 
+                      (file.type.includes('audio') || folder === 'audio');
+  
+  if (isLargeAudioFile && (!config || !isS3Configured())) {
+    console.warn('Large audio file requires S3 configuration');
+    if (onProgress) onProgress(0);
+    return {
+      success: false,
+      url: '',
+      error: 'Large audio files (over 10MB) require S3 storage configuration. Please configure S3 storage.'
+    };
+  }
   
   if (!config || !isS3Configured()) {
     console.warn('S3 storage is not configured properly. Using fallback storage method.');
@@ -57,7 +83,16 @@ export const uploadFileToS3 = async (
       onProgress(0);
     }
     
-    // Fallback to local storage on error if possible
+    // Don't fallback for large audio files
+    if (isLargeAudioFile) {
+      return {
+        success: false,
+        url: '',
+        error: 'S3 upload failed. Large audio files require working S3 configuration.'
+      };
+    }
+    
+    // Only attempt fallback for smaller files
     try {
       console.log('Attempting fallback to local storage due to S3 error');
       return await uploadToLocalStorage(file, folder, onProgress);

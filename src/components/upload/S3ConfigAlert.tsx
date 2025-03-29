@@ -1,34 +1,49 @@
 
 import React from 'react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Info, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ExclamationTriangleIcon } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface S3ConfigAlertProps {
   s3Configured: boolean;
 }
 
 const S3ConfigAlert: React.FC<S3ConfigAlertProps> = ({ s3Configured }) => {
-  if (s3Configured) return null;
+  const { user } = useAuth();
+
+  if (s3Configured) {
+    return null; // Don't show anything if S3 is configured
+  }
   
+  // Only show to admins or radio hosts
+  if (!user || (!user.isAdmin && !user.isRadioHost)) {
+    return null;
+  }
+
   return (
-    <Alert variant="default" className="bg-yellow-50 border-yellow-200 dark:bg-yellow-950 dark:border-yellow-800">
-      <Info className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-      <AlertTitle className="text-yellow-800 dark:text-yellow-300">S3 Storage Not Configured</AlertTitle>
-      <AlertDescription className="text-yellow-700 dark:text-yellow-400">
+    <Alert variant="default" className="bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
+      <ExclamationTriangleIcon className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+      <AlertTitle className="text-amber-800 dark:text-amber-400">S3 Storage Required</AlertTitle>
+      <AlertDescription className="text-amber-700 dark:text-amber-300">
         <p className="mb-2">
-          S3 storage is not configured, which limits upload size to 5MB. Large files may fail to upload.
+          For uploads larger than 10MB, S3-compatible storage is required. 
+          Without S3 configuration, uploads over 10MB will fail.
         </p>
-        <p className="flex items-center gap-1">
-          <Link 
-            to="/admin-dashboard?tab=storage" 
-            className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center"
-          >
-            Configure S3 storage
-            <ExternalLink className="ml-1 h-3 w-3" />
-          </Link>
-          {' '}for better upload performance.
-        </p>
+        {user.isAdmin ? (
+          <p>
+            <Link 
+              to="/admin-dashboard?tab=s3" 
+              className="font-medium underline hover:text-amber-800"
+            >
+              Configure S3 storage
+            </Link> in the admin dashboard.
+          </p>
+        ) : (
+          <p>
+            Please contact an administrator to configure S3 storage.
+          </p>
+        )}
       </AlertDescription>
     </Alert>
   );

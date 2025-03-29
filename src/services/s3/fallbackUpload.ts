@@ -22,10 +22,9 @@ export const uploadToLocalStorage = async (
       const fileSize = file.size;
       const fileType = file.type;
       
-      // For very large files (over 5MB), don't try to store data in localStorage
-      const isLargeFile = file.size > 5 * 1024 * 1024;
-      
-      if (isLargeFile) {
+      // For ALL audio files, don't try to store data in localStorage
+      // This prevents quota errors for large files
+      if (fileSize > 1024 * 1024) { // Any file over 1MB
         // For large files, just simulate progress and return a fallback URL
         if (onProgress) {
           // Simulate progress
@@ -45,10 +44,11 @@ export const uploadToLocalStorage = async (
         
         // Store just the metadata in localStorage
         try {
-          localStorage.setItem(`file_meta_${simulatedUrl}`, JSON.stringify({
+          localStorage.setItem(`file_meta_${fileId}`, JSON.stringify({
             name: fileName,
             size: fileSize,
             type: fileType,
+            path: simulatedUrl,
             timestamp
           }));
         } catch (error) {
@@ -89,7 +89,7 @@ export const uploadToLocalStorage = async (
             
             try {
               // Try to store in localStorage, but handle quota errors gracefully
-              localStorage.setItem(`file_${simulatedUrl}`, dataUrl);
+              localStorage.setItem(`file_${fileId}`, dataUrl);
             } catch (storageError) {
               console.warn("Failed to store file in localStorage due to quota limits:", storageError);
               // Continue without storing the actual data - the URL is what matters
@@ -99,7 +99,7 @@ export const uploadToLocalStorage = async (
             
             resolve({
               success: true,
-              url: dataUrl,
+              url: simulatedUrl,
             });
           } catch (error) {
             console.error('Error in fallback upload:', error);

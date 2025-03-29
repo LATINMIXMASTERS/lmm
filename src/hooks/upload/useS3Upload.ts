@@ -37,15 +37,13 @@ export const useS3Upload = () => {
       return null;
     }
 
-    // Check if audio file is too large without S3 configuration
-    if (!s3Configured && audioFile.size > 5 * 1024 * 1024) {
+    // Warn about S3 requirement for large files
+    if (!s3Configured && audioFile.size > 10 * 1024 * 1024) {
       toast({
-        title: "File too large for local storage",
-        description: "S3 storage is not configured and audio file exceeds 5MB. Please configure S3 storage or use a smaller file.",
+        title: "S3 storage required",
+        description: "Files over 10MB require S3 storage configuration. The upload may fail.",
         variant: "destructive"
       });
-      setUploadError("File too large for local storage. Please configure S3 storage or use a smaller file.");
-      return null;
     }
 
     setIsUploading(true);
@@ -79,11 +77,17 @@ export const useS3Upload = () => {
       const errorMessage = error instanceof Error ? error.message : 'Unknown upload error';
       setUploadError(errorMessage);
       
-      // Provide more helpful error messages based on the error content
+      // Provide more helpful error messages
       if (errorMessage.includes('quota') || errorMessage.includes('storage')) {
         toast({
           title: "Storage limit exceeded",
-          description: "The file is too large for browser storage. Please configure S3 or use a smaller file.",
+          description: "Browser storage limit reached. Please configure S3 storage for large files.",
+          variant: "destructive"
+        });
+      } else if (errorMessage.includes('10MB') || errorMessage.includes('large')) {
+        toast({
+          title: "S3 required for large files",
+          description: "Files over 10MB require S3 storage configuration. Please contact an administrator.",
           variant: "destructive"
         });
       } else {
