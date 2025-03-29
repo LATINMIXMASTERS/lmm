@@ -2,14 +2,14 @@
 import React from 'react';
 import { Music } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Genre, Track } from '@/models/Track';
+import { Track } from '@/models/Track';
 import TrackCard from './TrackCard';
 
 /**
  * Props for the GenreTabs component
  */
 interface GenreTabsProps {
-  genres: Genre[];
+  genres: string[];  // Updated to accept string[] instead of Genre[]
   tracks: Track[];
   filteredTracks: Track[];
   selectedTabGenre: string;
@@ -28,7 +28,6 @@ interface GenreTabsProps {
 /**
  * Component that displays tracks organized into tabs by genre
  * Each tab shows a grid of tracks filtered by the selected genre
- * Includes an "All Genres" tab to show all tracks
  */
 const GenreTabs: React.FC<GenreTabsProps> = ({
   genres,
@@ -58,13 +57,13 @@ const GenreTabs: React.FC<GenreTabsProps> = ({
         <TabsTrigger value="all" className="flex-shrink-0">
           All Genres
         </TabsTrigger>
-        {genres.map(genre => (
+        {genres.map((genre, index) => (
           <TabsTrigger 
-            key={genre.id} 
-            value={genre.id}
+            key={index} 
+            value={genre}
             className="flex-shrink-0"
           >
-            {genre.name}
+            {genre}
           </TabsTrigger>
         ))}
       </TabsList>
@@ -101,15 +100,15 @@ const GenreTabs: React.FC<GenreTabsProps> = ({
       </TabsContent>
       
       {/* Individual genre tabs */}
-      {genres.map(genre => (
-        <TabsContent key={genre.id} value={genre.id} className="mt-0">
+      {genres.map((genre, index) => (
+        <TabsContent key={index} value={genre} className="mt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTracks.length === 0 ? (
               /* Empty state when no tracks exist for this genre */
               <div className="col-span-full text-center py-16">
                 <Music className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-1">No tracks found</h3>
-                <p className="text-gray-500">No tracks available for {genre.name} yet</p>
+                <p className="text-gray-500">No tracks available for {genre} yet</p>
               </div>
             ) : (
               /* Grid of track cards filtered by genre */
