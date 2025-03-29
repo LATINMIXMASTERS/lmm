@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import MainLayout from '@/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,7 +19,7 @@ const StationDetails: React.FC = () => {
   const { toast } = useToast();
   const { syncChatMessagesFromStorage, clearChatMessagesForStation } = useRadio();
   const [syncTime, setSyncTime] = useState(new Date());
-  const [syncIntervalId, setSyncIntervalId] = useState<number | null>(null);
+  const syncIntervalIdRef = useRef<number | null>(null);
   
   // Custom hook for random listeners is used outside of component to avoid re-renders
   useRandomListeners();
@@ -41,17 +41,23 @@ const StationDetails: React.FC = () => {
     handleSendMessage
   } = useStationDetails(id);
 
+  // Clean up interval ref when component unmounts or dependencies change
+  const clearSyncInterval = useCallback(() => {
+    if (syncIntervalIdRef.current) {
+      window.clearInterval(syncIntervalIdRef.current);
+      syncIntervalIdRef.current = null;
+    }
+  }, []);
+
   // Set up more efficient sync when chat is visible and enabled
   useEffect(() => {
     // Clean up any existing interval first
-    if (syncIntervalId) {
-      clearInterval(syncIntervalId);
-      setSyncIntervalId(null);
-    }
+    clearSyncInterval();
     
+    // Only set up sync if station is live and chat is enabled
     if (!id || !station?.isLive || !station?.chatEnabled) return;
     
-    // Initial sync on page load
+    // Initial sync on dependencies change
     syncChatMessagesFromStorage();
     setSyncTime(new Date());
     
@@ -61,12 +67,10 @@ const StationDetails: React.FC = () => {
       setSyncTime(new Date());
     }, 5000); // Sync every 5 seconds when chat is active
     
-    setSyncIntervalId(intervalId);
+    syncIntervalIdRef.current = intervalId;
     
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [id, syncChatMessagesFromStorage, station?.isLive, station?.chatEnabled]);
+    return clearSyncInterval;
+  }, [id, syncChatMessagesFromStorage, station?.isLive, station?.chatEnabled, clearSyncInterval]);
 
   // Handle connection issues
   useEffect(() => {
@@ -102,7 +106,6 @@ const StationDetails: React.FC = () => {
       if (id && !station?.isLive && clearChatMessagesForStation) {
         // Clear messages for this station when user leaves the page and station is not live
         clearChatMessagesForStation(id);
-        console.log(`Cleaned up chat messages for station ${id} on page leave`);
       }
     };
   }, [id, station?.isLive, clearChatMessagesForStation]);

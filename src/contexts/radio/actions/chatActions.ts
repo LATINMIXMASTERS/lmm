@@ -11,26 +11,35 @@ export const useChatActions = (
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Enhanced sync mechanism with better error handling and feedback
+  // Optimized synchronization with debounce mechanism
+  let syncTimeout: number | null = null;
+  
   const syncChatMessagesFromStorage = () => {
-    try {
-      const storedMessages = localStorage.getItem('latinmixmasters_chat_messages');
-      if (storedMessages) {
-        const parsedMessages = JSON.parse(storedMessages);
-        // Only dispatch if there's an actual change to prevent unnecessary re-renders
-        if (JSON.stringify(state.chatMessages) !== JSON.stringify(parsedMessages)) {
-          dispatch({ 
-            type: 'SET_CHAT_MESSAGES', 
-            payload: parsedMessages 
-          });
-          console.log("Chat messages synchronized from localStorage", new Date().toISOString());
-        }
-      }
-    } catch (error) {
-      console.error("Failed to sync chat messages from localStorage:", error);
-      // Create an empty chat messages object if parsing fails
-      localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify({}));
+    // Clear any pending sync to prevent multiple rapid syncs
+    if (syncTimeout) {
+      window.clearTimeout(syncTimeout);
     }
+    
+    // Set a new timeout for the sync
+    syncTimeout = window.setTimeout(() => {
+      try {
+        const storedMessages = localStorage.getItem('latinmixmasters_chat_messages');
+        if (storedMessages) {
+          const parsedMessages = JSON.parse(storedMessages);
+          // Only dispatch if there's an actual change to prevent unnecessary re-renders
+          if (JSON.stringify(state.chatMessages) !== JSON.stringify(parsedMessages)) {
+            dispatch({ 
+              type: 'SET_CHAT_MESSAGES', 
+              payload: parsedMessages 
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to sync chat messages from localStorage:", error);
+        // Create an empty chat messages object if parsing fails
+        localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify({}));
+      }
+    }, 100); // Small delay to debounce multiple calls
   };
 
   const getChatMessagesForStationImpl = (stationId: string): ChatMessage[] => {
@@ -81,8 +90,6 @@ export const useChatActions = (
       type: 'ADD_CHAT_MESSAGE', 
       payload: newMessage
     });
-    
-    console.log(`Sent chat message to station ${stationId}:`, newMessage);
   };
 
   const setStationLiveStatusImpl = (stationId: string, isLive: boolean, enableChat: boolean = false): void => {
@@ -158,10 +165,8 @@ export const useChatActions = (
 
   // Function to clear chat messages for a specific station
   const clearChatMessagesForStationImpl = (stationId: string): void => {
-    // Don't sync before clearing to avoid loops
-    
-    // Get current messages directly from localStorage
     try {
+      // Get current messages directly from localStorage
       const storedMessages = localStorage.getItem('latinmixmasters_chat_messages');
       if (storedMessages) {
         const parsedMessages = JSON.parse(storedMessages);
@@ -180,8 +185,6 @@ export const useChatActions = (
     } catch (error) {
       console.error(`Failed to clear chat messages for station ${stationId}:`, error);
     }
-    
-    console.log(`Cleared chat messages for station ${stationId}`);
   };
 
   return {

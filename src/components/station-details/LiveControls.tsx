@@ -1,11 +1,10 @@
 
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, memo, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Video, Save, AlertCircle, HelpCircle } from 'lucide-react';
-import { useRadio } from '@/hooks/useRadioContext';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -21,7 +20,7 @@ interface LiveControlsProps {
   onUpdateVideoStreamUrl: (url: string) => void;
 }
 
-const LiveControls: React.FC<LiveControlsProps> = memo(({ 
+const LiveControls: React.FC<LiveControlsProps> = ({ 
   stationId, 
   isLive, 
   chatEnabled, 
@@ -35,8 +34,8 @@ const LiveControls: React.FC<LiveControlsProps> = memo(({
   const [customVideoUrl, setCustomVideoUrl] = useState(videoStreamUrl || '');
   const { toast } = useToast();
   
-  // Update state when props change
-  React.useEffect(() => {
+  // Update state when props change, but avoid unnecessary state updates
+  useEffect(() => {
     if (videoStreamUrl !== customVideoUrl) {
       setCustomVideoUrl(videoStreamUrl || '');
     }
@@ -204,8 +203,8 @@ const LiveControls: React.FC<LiveControlsProps> = memo(({
       </p>
     </div>
   );
-});
+};
 
 LiveControls.displayName = 'LiveControls';
 
-export default LiveControls;
+export default memo(LiveControls);

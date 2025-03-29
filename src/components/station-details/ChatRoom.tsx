@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, memo } from 'react';
+
+import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChatMessage } from '@/models/RadioStation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,25 +65,23 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
   lastSyncTime 
 }) => {
   const { user } = useAuth();
-  const { syncChatMessagesFromStorage } = useRadio();
   const [message, setMessage] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const chatContentRef = useRef<HTMLDivElement>(null);
+  const messagesLengthRef = useRef<number>(0);
   const isAnonymous = !user;
   const isMobile = useIsMobile();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [messageCount, setMessageCount] = useState(0);
   
+  // Use a ref to store the messages length to avoid unnecessary re-renders
   useEffect(() => {
-    if (messages?.length !== messageCount) {
-      setMessageCount(messages?.length || 0);
-    }
-  }, [messages, messageCount]);
+    messagesLengthRef.current = messages?.length || 0;
+  }, [messages]);
   
+  // Optimize online/offline handler to avoid re-creating functions on each render
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      syncChatMessagesFromStorage();
     };
     
     const handleOffline = () => {
@@ -96,34 +95,41 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [syncChatMessagesFromStorage]);
+  }, []);
   
+  // Optimize scroll effect to only run when messages length changes
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-    
-    if (chatContentRef.current) {
-      const scrollElement = chatContentRef.current.querySelector('[data-radix-scroll-area-viewport]');
-      if (scrollElement) {
-        scrollElement.scrollTop = scrollElement.scrollHeight;
+    if (messages?.length !== messagesLengthRef.current) {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       }
+      
+      if (chatContentRef.current) {
+        const scrollElement = chatContentRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (scrollElement) {
+          scrollElement.scrollTop = scrollElement.scrollHeight;
+        }
+      }
+      
+      messagesLengthRef.current = messages?.length || 0;
     }
-  }, [messageCount]);
+  }, [messages]);
 
-  const handleSendMessage = () => {
+  // Memoize the handleSendMessage function
+  const handleSendMessage = useCallback(() => {
     if (message.trim() && user) {
       onSendMessage(message);
       setMessage('');
     }
-  };
+  }, [message, user, onSendMessage]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  // Memoize the handleKeyDown function
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
-  };
+  }, [handleSendMessage]);
 
   return (
     <Card className={`mt-6 ${isMobile ? 'h-[400px]' : 'h-[500px]'} flex flex-col`}>

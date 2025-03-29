@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import StationDescription from '@/components/station-details/StationDescription';
 import UpcomingShows from '@/components/station-details/UpcomingShows';
 import ChatRoom from '@/components/station-details/ChatRoom';
@@ -33,6 +33,9 @@ const StationContent: React.FC<StationContentProps> = ({
   onUpdateVideoStreamUrl,
   lastSyncTime
 }) => {
+  // Avoid rendering chat if station is not live or chat is disabled
+  const shouldShowChat = station.isLive && station.chatEnabled;
+  
   return (
     <div className="prose prose-slate dark:prose-invert max-w-none">
       <StationDescription
@@ -41,15 +44,17 @@ const StationContent: React.FC<StationContentProps> = ({
       />
       
       {/* Privileged User Content */}
-      <PrivilegedContent 
-        station={station}
-        isPrivilegedUser={isPrivilegedUser}
-        showVideoPlayer={showVideoPlayer}
-        onToggleLiveStatus={onToggleLiveStatus}
-        onToggleChat={onToggleChat}
-        onToggleVideo={onToggleVideo}
-        onUpdateVideoStreamUrl={onUpdateVideoStreamUrl}
-      />
+      {isPrivilegedUser && (
+        <PrivilegedContent 
+          station={station}
+          isPrivilegedUser={isPrivilegedUser}
+          showVideoPlayer={showVideoPlayer}
+          onToggleLiveStatus={onToggleLiveStatus}
+          onToggleChat={onToggleChat}
+          onToggleVideo={onToggleVideo}
+          onUpdateVideoStreamUrl={onUpdateVideoStreamUrl}
+        />
+      )}
       
       {/* Embed Video Player above chat when visible */}
       {station.isLive && showVideoPlayer && (
@@ -64,7 +69,7 @@ const StationContent: React.FC<StationContentProps> = ({
       )}
       
       {/* Show chatroom when station is live and chat is enabled */}
-      {station.isLive && station.chatEnabled && (
+      {shouldShowChat && (
         <div className="mb-8">
           <ChatRoom 
             stationId={station.id}
@@ -81,4 +86,4 @@ const StationContent: React.FC<StationContentProps> = ({
   );
 };
 
-export default StationContent;
+export default memo(StationContent);
