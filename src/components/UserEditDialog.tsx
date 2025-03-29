@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { User } from "@/contexts/AuthContext";
+import { RefreshCw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserEditDialogProps {
   user: User;
@@ -27,12 +29,15 @@ const UserEditDialog: React.FC<UserEditDialogProps> = ({
   onClose,
   onSave,
 }) => {
+  const { toast } = useToast();
   const [userData, setUserData] = useState<Partial<User>>({
     username: user.username,
     email: user.email,
     isAdmin: user.isAdmin || false,
     isRadioHost: user.isRadioHost || false,
   });
+  const [newPassword, setNewPassword] = useState("");
+  const [showPasswordField, setShowPasswordField] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -49,10 +54,39 @@ const UserEditDialog: React.FC<UserEditDialogProps> = ({
     }));
   };
 
+  const generateRandomPassword = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(password);
+    setShowPasswordField(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(user.id, userData);
+    
+    const dataToSave: Partial<User> = { ...userData };
+    
+    if (showPasswordField && newPassword) {
+      dataToSave.password = newPassword;
+      toast({
+        title: "Password Reset",
+        description: `Password has been reset for ${user.username}`,
+      });
+    }
+    
+    onSave(user.id, dataToSave);
     onClose();
+  };
+
+  const copyPasswordToClipboard = () => {
+    navigator.clipboard.writeText(newPassword);
+    toast({
+      title: "Password Copied",
+      description: "Password has been copied to clipboard",
+    });
   };
 
   return (
@@ -91,6 +125,46 @@ const UserEditDialog: React.FC<UserEditDialogProps> = ({
                 className="col-span-3"
               />
             </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <div className="text-right">Password</div>
+              <div className="col-span-3 space-y-2">
+                {!showPasswordField ? (
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={generateRandomPassword}
+                    className="w-full"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Generate New Password
+                  </Button>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        id="newPassword"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button 
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={copyPasswordToClipboard}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      This new password will be set when you save changes.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+            
             <div className="grid grid-cols-4 items-center gap-4">
               <div className="text-right">Permissions</div>
               <div className="col-span-3 space-y-2">
@@ -107,11 +181,11 @@ const UserEditDialog: React.FC<UserEditDialogProps> = ({
                     id="isAdmin"
                     checked={userData.isAdmin}
                     onCheckedChange={() => handleCheckboxChange('isAdmin')}
-                    disabled={user.id === '1'} // Can't remove admin from main admin account
+                    disabled={user.id === 'official-admin'} // Can't remove admin from main admin account
                   />
                   <Label htmlFor="isAdmin">
                     Administrator
-                    {user.id === '1' && (
+                    {user.id === 'official-admin' && (
                       <span className="ml-2 text-xs text-gray-500">(Cannot be changed for main admin)</span>
                     )}
                   </Label>

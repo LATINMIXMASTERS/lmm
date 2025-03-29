@@ -4,55 +4,67 @@ export const useSyncActions = (
   dispatch: React.Dispatch<any>
 ) => {
   // Improved synchronization with debounce mechanism
-  let syncTimeout: number | null = null;
-  let lastSyncTime = 0;
-  const MIN_SYNC_INTERVAL = 500; // Shorter interval for more responsive syncing
-  
-  const syncChatMessagesFromStorage = () => {
-    // Prevent too frequent syncs
-    const now = Date.now();
-    if (now - lastSyncTime < MIN_SYNC_INTERVAL) {
-      // If called too frequently, debounce it
-      if (syncTimeout) {
-        window.clearTimeout(syncTimeout);
-      }
-      
-      syncTimeout = window.setTimeout(() => {
-        performSync();
-      }, MIN_SYNC_INTERVAL);
-      
-      return state.chatMessages;
-    }
+  const syncToLocalStorage = (stationId: string) => {
+    if (!stationId || !state.chatMessages[stationId]) return;
     
-    return performSync();
+    try {
+      localStorage.setItem(
+        `latinmixmasters_chat_${stationId}`, 
+        JSON.stringify(state.chatMessages[stationId])
+      );
+    } catch (error) {
+      console.error("Error syncing chat to localStorage:", error);
+    }
   };
   
-  const performSync = () => {
-    lastSyncTime = Date.now();
+  // Basic sync from localStorage to state
+  const syncFromLocalStorage = (stationId: string) => {
+    if (!stationId) return null;
+    
     try {
-      const storedMessages = localStorage.getItem('latinmixmasters_chat_messages');
-      if (storedMessages) {
-        const parsedMessages = JSON.parse(storedMessages);
+      const storedChat = localStorage.getItem(`latinmixmasters_chat_${stationId}`);
+      if (storedChat) {
+        const parsedChat = JSON.parse(storedChat);
         
-        // Deep comparison to prevent unnecessary re-renders
-        if (JSON.stringify(state.chatMessages) !== JSON.stringify(parsedMessages)) {
-          dispatch({ 
-            type: 'SET_CHAT_MESSAGES', 
-            payload: parsedMessages 
+        // Prevent unnecessary updates if data is the same
+        if (JSON.stringify(parsedChat) !== JSON.stringify(state.chatMessages[stationId])) {
+          dispatch({
+            type: 'SET_CHAT_MESSAGES',
+            payload: {
+              stationId,
+              messages: parsedChat
+            }
           });
-          
-          console.log("Chat messages synced from localStorage:", new Date().toISOString());
+          return parsedChat;
         }
-        
-        return parsedMessages;
       }
     } catch (error) {
-      console.error("Failed to sync chat messages from localStorage:", error);
-      // Create an empty chat messages object if parsing fails
-      localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify({}));
+      console.error("Error syncing chat from localStorage:", error);
     }
     
-    return state.chatMessages;
+    return null;
+  };
+  
+  // Sync chat data across browser tabs
+  const handleStorageEvent = (e: StorageEvent) => {
+    if (e.key && e.key.startsWith('latinmixmasters_chat_')) {
+      const stationId = e.key.replace('latinmixmasters_chat_', '');
+      
+      if (e.newValue) {
+        try {
+          const parsedMessages = JSON.parse(e.newValue);
+          dispatch({
+            type: 'SET_CHAT_MESSAGES',
+            payload: {
+              stationId,
+              messages: parsedMessages
+            }
+          });
+        } catch (error) {
+          console.error("Error handling storage event:", error);
+        }
+      }
+    }
   };
   
   const syncStationsFromStorage = () => {
@@ -62,22 +74,22 @@ export const useSyncActions = (
         const parsedStations = JSON.parse(storedStations);
         
         // Deep comparison to prevent unnecessary re-renders
-        if (JSON.stringify(state.stations) !== JSON.stringify(parsedStations)) {
-          dispatch({ 
-            type: 'SET_STATIONS', 
-            payload: parsedStations 
+        if (JSON.stringify(parsedStations) !== JSON.stringify(state.stations)) {
+          dispatch({
+            type: 'SET_STATIONS',
+            payload: parsedStations
           });
-          
-          console.log("Stations synced from localStorage:", new Date().toISOString());
         }
       }
     } catch (error) {
-      console.error("Failed to sync stations from localStorage:", error);
+      console.error("Error syncing stations from localStorage:", error);
     }
   };
-
+  
   return {
-    syncChatMessagesFromStorage,
+    syncToLocalStorage,
+    syncFromLocalStorage,
+    handleStorageEvent,
     syncStationsFromStorage
   };
 };

@@ -8,12 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/layout/MainLayout";
 import { Link } from "react-router-dom";
+import { ExternalLink } from "lucide-react";
 
 const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { requestPasswordReset, isLoading } = useAuth();
   const { toast } = useToast();
+  const supportEmail = "latinmixmasters@gmail.com";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +43,14 @@ const ForgotPassword: React.FC = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const openEmailClient = () => {
+    const subject = encodeURIComponent("Password Reset Request");
+    const body = encodeURIComponent(
+      `Hello Latin Mix Masters,\n\nI need to reset my password for the account with email: ${email}\n\nThank you.`
+    );
+    window.location.href = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
   };
 
   return (
@@ -73,6 +83,21 @@ const ForgotPassword: React.FC = () => {
                     <Button type="submit" disabled={isLoading}>
                       {isLoading ? "Processing..." : "Reset Password"}
                     </Button>
+                    
+                    <div className="mt-4 border-t pt-4">
+                      <p className="text-sm text-center text-gray-500 mb-2">
+                        Or contact support directly
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={openEmailClient}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Email {supportEmail}
+                      </Button>
+                    </div>
                   </div>
                 </form>
               ) : (
@@ -89,6 +114,21 @@ const ForgotPassword: React.FC = () => {
                       try again
                     </button>
                   </p>
+                  
+                  <div className="mt-4 border-t pt-4">
+                    <p className="text-sm text-gray-500 mb-2">
+                      Still having issues? Contact support directly:
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={openEmailClient}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Email {supportEmail}
+                    </Button>
+                  </div>
                 </div>
               )}
               
