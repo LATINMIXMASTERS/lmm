@@ -1,51 +1,89 @@
 
 import { S3StorageConfig } from './types';
+import { v4 as uuidv4 } from 'uuid';
+
+// Cached config to avoid reading localStorage frequently
+let cachedConfig: S3StorageConfig | null = null;
 
 /**
- * Gets the S3 configuration from localStorage
+ * Get S3 configuration from localStorage
  */
-export const getS3Config = (): S3StorageConfig | null => {
-  const savedConfig = localStorage.getItem('latinmixmasters_s3config');
-  if (!savedConfig) return null;
-  
+export function getS3Config(): S3StorageConfig | null {
   try {
-    return JSON.parse(savedConfig);
+    // Return cached config if available
+    if (cachedConfig) {
+      return cachedConfig;
+    }
+    
+    const configStr = localStorage.getItem('s3_storage_config');
+    if (!configStr) {
+      console.log('No S3 configuration found in localStorage');
+      return null;
+    }
+    
+    const config = JSON.parse(configStr) as S3StorageConfig;
+    
+    // Cache the config
+    cachedConfig = config;
+    
+    return config;
   } catch (error) {
-    console.error('Error parsing S3 configuration:', error);
+    console.error('Error getting S3 config:', error);
     return null;
   }
-};
+}
 
 /**
- * Check if S3 storage is properly configured
+ * Save S3 configuration to localStorage
  */
-export const isS3Configured = (): boolean => {
+export function saveS3Config(config: S3StorageConfig): void {
+  try {
+    // Validate required fields
+    if (!config.bucketName || !config.region) {
+      throw new Error('Missing required S3 configuration fields');
+    }
+    
+    // Cache the config
+    cachedConfig = config;
+    
+    // Save to localStorage
+    localStorage.setItem('s3_storage_config', JSON.stringify(config));
+    
+    console.log('S3 configuration saved successfully');
+  } catch (error) {
+    console.error('Error saving S3 config:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check if S3 is configured properly
+ */
+export function isS3Configured(): boolean {
   const config = getS3Config();
-  if (!config) {
-    console.warn('No S3 configuration found');
-    return false;
-  }
-  
-  if (!config.bucketName || !config.region || !config.accessKeyId || !config.secretAccessKey) {
-    console.warn('Incomplete S3 configuration', { 
-      hasBucket: !!config.bucketName, 
-      hasRegion: !!config.region,
-      hasAccessKey: !!config.accessKeyId,
-      hasSecretKey: !!config.secretAccessKey
-    });
-    return false;
-  }
-  
-  return true;
-};
+  return !!(config?.bucketName && config.region && config.accessKeyId && config.secretAccessKey);
+}
 
 /**
- * Generate a unique file name for S3 uploads
+ * Clear the cached config
  */
-export const generateS3FileName = (file: File): string => {
-  const timestamp = new Date().getTime();
-  const randomString = Math.random().toString(36).substring(2, 10);
-  const safeFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '-');
-  const extension = safeFileName.split('.').pop();
-  return `${timestamp}-${randomString}.${extension}`;
-};
+export function clearCachedConfig(): void {
+  cachedConfig = null;
+}
+
+/**
+ * Generate a unique filename for S3 with proper path
+ */
+export function generateS3FileName(file: File): string {
+  // Get file extension
+  const extension = file.name.split('.').pop()?.toLowerCase() || '';
+  
+  // Generate a UUID for the file
+  const uuid = uuidv4();
+  
+  // Add timestamp to ensure uniqueness
+  const timestamp = Date.now();
+  
+  // Generate the filename
+  return `${uuid}-${timestamp}.${extension}`;
+}

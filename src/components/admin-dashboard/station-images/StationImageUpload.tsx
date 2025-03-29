@@ -69,6 +69,7 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
       
       // Compress the image if needed
       if (file.size > 500 * 1024) {
+        console.log("Compressing image before upload...");
         const compressedFile = await compressImage(file, {
           maxWidthOrHeight: 1200,
           quality: 0.7,
@@ -88,6 +89,8 @@ const StationImageUpload: React.FC<StationImageUploadProps> = ({
       } else {
         dataTransfer.items.add(file);
       }
+      
+      console.log("File prepared for upload, calling onFileChange");
       
       // Pass the file to the parent component
       onFileChange(stationId, dataTransfer.files);

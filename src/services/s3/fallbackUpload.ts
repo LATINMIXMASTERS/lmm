@@ -1,69 +1,77 @@
 
 import { S3UploadResult } from './types';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Fallback upload method when S3 fails or is not configured
- * Stores files in localStorage (used only for demo/development)
+ * Simple fallback upload function that stores files as data URLs in localStorage
+ * This is only for demonstration purposes and should not be used in production
  */
 export const uploadToLocalStorage = async (
-  file: File,
-  folder: string = 'audio',
+  file: File, 
+  folder: string = 'uploads',
   onProgress?: (progress: number) => void
 ): Promise<S3UploadResult> => {
-  try {
-    // Start progress
-    if (onProgress) onProgress(10);
-    
-    // Convert file to data URL
-    const dataUrl = await new Promise<string>((resolve, reject) => {
+  return new Promise((resolve, reject) => {
+    try {
+      if (onProgress) onProgress(10);
+      
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
+      
+      reader.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percent = Math.round((event.loaded / event.total) * 80) + 10;
+          onProgress(percent);
+        }
+      };
+      
+      reader.onload = () => {
+        try {
+          if (onProgress) onProgress(90);
+          
+          if (!reader.result) {
+            throw new Error('Failed to read file');
+          }
+          
+          const dataUrl = reader.result as string;
+          
+          // Generate a simulated URL
+          const fileId = uuidv4();
+          const timestamp = Date.now();
+          const fileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+          const simulatedUrl = `local://${folder}/${fileId}-${timestamp}-${fileName}`;
+          
+          // Store in localStorage
+          localStorage.setItem(`file_${simulatedUrl}`, dataUrl);
+          
+          // Map fake URL to data URL
+          const urlMap = JSON.parse(localStorage.getItem('file_url_map') || '{}');
+          urlMap[simulatedUrl] = dataUrl;
+          localStorage.setItem('file_url_map', JSON.stringify(urlMap));
+          
+          if (onProgress) onProgress(100);
+          
+          resolve({
+            success: true,
+            url: dataUrl, // Return the data URL directly for fallback mode
+          });
+        } catch (error) {
+          console.error('Error in fallback upload:', error);
+          if (onProgress) onProgress(0);
+          reject(error);
+        }
+      };
+      
+      reader.onerror = () => {
+        console.error('FileReader error:', reader.error);
+        if (onProgress) onProgress(0);
+        reject(reader.error || new Error('File reading failed'));
+      };
+      
       reader.readAsDataURL(file);
-    });
-    
-    // Update progress
-    if (onProgress) onProgress(50);
-    
-    // Generate a unique ID for the file
-    const timestamp = new Date().getTime();
-    const randomString = Math.random().toString(36).substring(2, 10);
-    const fileId = `${timestamp}-${randomString}`;
-    
-    // Create a safe filename
-    const fileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-    const filePath = `${folder}/${fileId}-${fileName}`;
-    
-    // Store in localStorage (this is not suitable for large files in production)
-    const storage = JSON.parse(localStorage.getItem('latinmixmasters_files') || '{}');
-    storage[filePath] = {
-      dataUrl,
-      type: file.type,
-      name: file.name,
-      size: file.size,
-      uploadedAt: new Date().toISOString()
-    };
-    localStorage.setItem('latinmixmasters_files', JSON.stringify(storage));
-    
-    // Complete progress
-    if (onProgress) onProgress(100);
-    
-    // Return success with the dataUrl
-    console.log("Fallback storage used for", file.name);
-    return {
-      success: true,
-      url: dataUrl
-    };
-  } catch (error) {
-    console.error("Fallback upload error:", error);
-    
-    // Reset progress on error
-    if (onProgress) onProgress(0);
-    
-    return {
-      success: false,
-      url: '',
-      error: error instanceof Error ? error.message : 'Unknown upload error'
-    };
-  }
+    } catch (error) {
+      console.error('Error in fallback upload:', error);
+      if (onProgress) onProgress(0);
+      reject(error);
+    }
+  });
 };

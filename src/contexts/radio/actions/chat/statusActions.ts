@@ -34,14 +34,28 @@ export const useStatusActions = (
       return station;
     });
     
+    // Force localStorage update with a timestamp to ensure cross-device sync
+    const syncTimestamp = new Date().toISOString();
+    
     // Update localStorage to ensure cross-device sync
     localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+    localStorage.setItem('station_status_sync', syncTimestamp);
     
     // Force a storage event for cross-tab/device synchronization
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'latinmixmasters_stations',
-      newValue: JSON.stringify(updatedStations)
-    }));
+    try {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'latinmixmasters_stations',
+        newValue: JSON.stringify(updatedStations)
+      }));
+      
+      // Additional event for the sync timestamp
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'station_status_sync',
+        newValue: syncTimestamp
+      }));
+    } catch (error) {
+      console.error("Failed to dispatch storage event:", error);
+    }
     
     // Notify users when a station goes live
     if (isLive && statusChanged) {
@@ -77,14 +91,28 @@ export const useStatusActions = (
       return station;
     });
     
+    // Force localStorage update with a timestamp to ensure cross-device sync
+    const syncTimestamp = new Date().toISOString();
+    
     // Update localStorage and trigger storage event for cross-device sync
     localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+    localStorage.setItem('chat_enabled_sync', syncTimestamp);
     
     // Force a storage event for cross-tab/device synchronization
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'latinmixmasters_stations',
-      newValue: JSON.stringify(updatedStations)
-    }));
+    try {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'latinmixmasters_stations',
+        newValue: JSON.stringify(updatedStations)
+      }));
+      
+      // Additional event for the sync timestamp
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'chat_enabled_sync',
+        newValue: syncTimestamp
+      }));
+    } catch (error) {
+      console.error("Failed to dispatch storage event:", error);
+    }
     
     toast({
       title: enabled ? "Chat Enabled" : "Chat Disabled",
@@ -111,6 +139,12 @@ export const useStatusActions = (
           type: 'SET_CHAT_MESSAGES', 
           payload: remainingMessages 
         });
+        
+        // Force a storage event for cross-tab/device synchronization
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'latinmixmasters_chat_messages',
+          newValue: JSON.stringify(remainingMessages)
+        }));
         
         console.log(`Chat messages for station ${stationId} cleared at ${new Date().toISOString()}`);
       }

@@ -83,17 +83,32 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           console.error("Failed to parse updated stations:", error);
         }
       }
+      
+      // Handle sync timestamp updates
+      else if (e.key === 'station_status_sync' || e.key === 'chat_enabled_sync' || e.key === 'chat_sync_timestamp') {
+        // Force a refresh of data when sync timestamps are updated
+        actions.syncChatMessagesFromStorage?.();
+        actions.syncStationsFromStorage?.();
+      }
     };
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Set up periodic sync for chat messages
+    // Set up periodic sync for chat messages and stations
     const syncInterval = setInterval(() => {
       actions.syncChatMessagesFromStorage?.();
-    }, 3000); // Sync every 3 seconds
+      actions.syncStationsFromStorage?.();
+    }, 2000); // Sync every 2 seconds
+    
+    // Set up a heartbeat to ensure sync works across devices
+    const heartbeatInterval = setInterval(() => {
+      // Update sync timestamps to trigger syncs on other devices
+      localStorage.setItem('sync_heartbeat', new Date().toISOString());
+    }, 5000); // Heartbeat every 5 seconds
     
     return () => {
       clearInterval(syncInterval);
+      clearInterval(heartbeatInterval);
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [actions]);

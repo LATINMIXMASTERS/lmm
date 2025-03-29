@@ -65,10 +65,22 @@ export const useMessageActions = (
     });
     
     // Trigger a storage event to notify other tabs/windows
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'latinmixmasters_chat_messages',
-      newValue: JSON.stringify(allChatMessages)
-    }));
+    try {
+      // We need to use this trick to force a storage event across different tabs/windows
+      const event = new StorageEvent('storage', {
+        key: 'latinmixmasters_chat_messages',
+        newValue: JSON.stringify(allChatMessages)
+      });
+      
+      // Dispatch the event to notify other tabs/windows
+      window.dispatchEvent(event);
+      
+      // For cross-device sync, we periodically modify localStorage with a timestamp
+      // This helps ensure that changes propagate across devices
+      localStorage.setItem('chat_sync_timestamp', new Date().toISOString());
+    } catch (error) {
+      console.error("Failed to synchronize chat message:", error);
+    }
   };
 
   // Function to clear chat messages for a specific station
@@ -89,6 +101,12 @@ export const useMessageActions = (
           type: 'SET_CHAT_MESSAGES', 
           payload: remainingMessages 
         });
+        
+        // Force a storage event for cross-tab/device synchronization
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'latinmixmasters_chat_messages',
+          newValue: JSON.stringify(remainingMessages)
+        }));
         
         console.log(`Chat messages for station ${stationId} cleared at ${new Date().toISOString()}`);
       }

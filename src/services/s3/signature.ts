@@ -1,17 +1,140 @@
 
-/**
- * This file is now just a wrapper to maintain backward compatibility
- * while refactoring the S3 upload functionality into smaller files
- */
 import { S3StorageConfig, S3UploadResult } from './types';
-import { sha256, hmacSha256 } from './utils/cryptoUtils';
 import { createSignatureV4 } from './utils/signatureUtils';
-import { createAwsSignature } from './upload/s3Upload';
 
-// Re-export all the functions to maintain backwards compatibility
-export {
-  sha256,
-  hmacSha256,
-  createSignatureV4,
-  createAwsSignature
-};
+/**
+ * Creates AWS Signature and uploads a file to S3-compatible storage
+ */
+export async function createAwsSignature(
+  config: S3StorageConfig,
+  file: File,
+  filePath: string,
+  onProgress?: (progress: number) => void
+): Promise<S3UploadResult> {
+  try {
+    // Determine the endpoint URL, removing any trailing slashes
+    let endpoint = config.endpoint?.replace(/\/$/, '') || 
+      `https://s3.${config.region}.wasabisys.com`;
+    
+    // For Wasabi, ensure we have the correct domain format
+    if (!endpoint.includes('wasabisys.com') && config.region && !endpoint.includes(config.region)) {
+      endpoint = `https://s3.${config.region}.wasabisys.com`;
+      console.log("Using Wasabi endpoint:", endpoint);
+    }
+    
+    const host = new URL(endpoint).host;
+    
+    // Prepare headers for signature
+    const headers: Record<string, string> = {
+      'Host': host,
+      'Content-Type': file.type || 'application/octet-stream',
+      'Content-Length': file.size.toString(),
+      // Ensure proper cache control
+      'Cache-Control': 'public, max-age=31536000',
+      // Add CORS headers
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE',
+      'Access-Control-Allow-Headers': '*'
+    };
+    
+    // Use 'UNSIGNED-PAYLOAD' for browser compatibility
+    const payloadHash = 'UNSIGNED-PAYLOAD';
+    
+    if (onProgress) onProgress(10);
+    
+    // Generate AWS signature v4
+    const signedHeaders = await createSignatureV4(
+      config,
+      'PUT',
+      `${config.bucketName}/${filePath}`,
+      config.region,
+      's3',
+      payloadHash,
+      headers
+    );
+    
+    // Upload URL
+    const uploadUrl = `${endpoint}/${config.bucketName}/${filePath}`;
+    
+    console.log('Uploading to URL:', uploadUrl);
+    
+    if (onProgress) onProgress(20);
+    
+    // Upload the file to S3 using XHR with progress tracking
+    const xhr = new XMLHttpRequest();
+    
+    // Set up progress monitoring
+    if (onProgress) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          // Scale from 20-90%
+          const percentComplete = 20 + Math.round((event.loaded / event.total) * 70);
+          onProgress(percentComplete);
+        }
+      };
+    }
+    
+    // Create a promise to handle the XHR response
+    const uploadPromise = new Promise<S3UploadResult>((resolve, reject) => {
+      xhr.open('PUT', uploadUrl, true);
+      
+      // Add all signed headers
+      Object.keys(signedHeaders).forEach(key => {
+        xhr.setRequestHeader(key, signedHeaders[key]);
+      });
+      
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          // Construct the public URL
+          let publicUrl;
+          
+          if (config.publicUrlBase) {
+            // Use the configured public base URL if provided
+            publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${filePath}`;
+          } else {
+            // Construct URL based on the bucket endpoint
+            publicUrl = `${endpoint}/${config.bucketName}/${filePath}`;
+          }
+          
+          // Indicate complete
+          if (onProgress) onProgress(100);
+          
+          resolve({
+            success: true,
+            url: publicUrl
+          });
+        } else {
+          console.error('S3 upload failed:', xhr.status, xhr.responseText);
+          if (onProgress) onProgress(0);
+          reject(new Error(`S3 upload failed with status ${xhr.status}: ${xhr.responseText}`));
+        }
+      };
+      
+      xhr.onerror = () => {
+        console.error('S3 upload network error');
+        if (onProgress) onProgress(0);
+        reject(new Error('Network error during S3 upload'));
+      };
+      
+      xhr.onabort = () => {
+        console.error('S3 upload aborted');
+        if (onProgress) onProgress(0);
+        reject(new Error('S3 upload was aborted'));
+      };
+      
+      // Send the file
+      xhr.send(file);
+    });
+    
+    return await uploadPromise;
+  } catch (error) {
+    console.error('S3 upload error:', error);
+    
+    // Ensure we return 0 progress on error
+    if (onProgress) {
+      onProgress(0);
+    }
+    
+    throw error;
+  }
+}

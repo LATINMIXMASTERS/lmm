@@ -6,7 +6,7 @@ export const useSyncActions = (
   // Improved synchronization with debounce mechanism
   let syncTimeout: number | null = null;
   let lastSyncTime = 0;
-  const MIN_SYNC_INTERVAL = 1000; // Minimum 1 second between syncs
+  const MIN_SYNC_INTERVAL = 500; // Shorter interval for more responsive syncing
   
   const syncChatMessagesFromStorage = () => {
     // Prevent too frequent syncs
@@ -54,8 +54,30 @@ export const useSyncActions = (
     
     return state.chatMessages;
   };
+  
+  const syncStationsFromStorage = () => {
+    try {
+      const storedStations = localStorage.getItem('latinmixmasters_stations');
+      if (storedStations) {
+        const parsedStations = JSON.parse(storedStations);
+        
+        // Deep comparison to prevent unnecessary re-renders
+        if (JSON.stringify(state.stations) !== JSON.stringify(parsedStations)) {
+          dispatch({ 
+            type: 'SET_STATIONS', 
+            payload: parsedStations 
+          });
+          
+          console.log("Stations synced from localStorage:", new Date().toISOString());
+        }
+      }
+    } catch (error) {
+      console.error("Failed to sync stations from localStorage:", error);
+    }
+  };
 
   return {
-    syncChatMessagesFromStorage
+    syncChatMessagesFromStorage,
+    syncStationsFromStorage
   };
 };
