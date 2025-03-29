@@ -1,22 +1,19 @@
+
 import React, { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { User as UserIcon, Music, Edit, Trash2, Share2 } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Edit, Trash2 } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTrack } from '@/hooks/useTrackContext';
 import { useRadio } from '@/hooks/useRadioContext';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { ToastAction } from '@/components/ui/toast';
-import GenreTabs from '@/components/GenreTabs';
 import { Track } from '@/models/Track';
 import UserNotFound from '@/components/profile/UserNotFound';
 import DeleteTrackDialog from '@/components/profile/DeleteTrackDialog';
-import RadioShowsTab from '@/components/profile/RadioShowsTab';
-import { Card, CardContent } from '@/components/ui/card';
-
 import DJProfileHeader from '@/components/profile/DJProfileHeader';
+import DJProfileActions from '@/components/profile/DJProfileActions';
+import DJProfileTabs from '@/components/profile/DJProfileTabs';
 
 const DJProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -212,69 +209,34 @@ const DJProfile: React.FC = () => {
             onEditProfile={user?.id === djUser.id ? () => navigate('/dj-dashboard') : undefined}
           />
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleShareProfile}
-            className="flex items-center gap-1"
-          >
-            <Share2 className="h-4 w-4" />
-            Share Profile
-          </Button>
+          <DJProfileActions 
+            djUser={djUser}
+            onShareProfile={handleShareProfile}
+          />
         </div>
         
         <div className="max-w-5xl mx-auto">
-          <Tabs defaultValue="mixes" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="mixes">Mixes</TabsTrigger>
-              <TabsTrigger value="shows">Radio Shows</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="mixes">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold">{djUser.username}'s Mixes</h2>
-                {user && (user.id === djUser.id || user.isAdmin) && (
-                  <Button onClick={() => navigate('/upload-track')}>
-                    Upload New Mix
-                  </Button>
-                )}
-              </div>
-              
-              {userTracks.length > 0 ? (
-                <GenreTabs
-                  genres={genres}
-                  tracks={userTracks}
-                  filteredTracks={filteredTracks}
-                  selectedTabGenre={selectedTabGenre}
-                  setSelectedTabGenre={setSelectedTabGenre}
-                  currentPlayingTrack={currentPlayingTrack}
-                  handlePlayTrack={handlePlayTrack}
-                  handleLikeTrack={handleLikeTrack}
-                  handleShareTrack={handleShareTrack}
-                  newComments={newComments}
-                  handleCommentChange={handleCommentChange}
-                  handleSubmitComment={handleSubmitComment}
-                  formatDuration={formatDuration}
-                  renderTrackActions={renderTrackActions}
-                />
-              ) : (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <Music className="h-16 w-16 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground mb-4">This DJ hasn't uploaded any mixes yet.</p>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="shows">
-              <RadioShowsTab 
-                hostStations={djStations} 
-                hostBookings={djBookings}
-                startListening={startListening} 
-              />
-            </TabsContent>
-          </Tabs>
+          <DJProfileTabs 
+            djUser={djUser}
+            userTracks={userTracks}
+            filteredTracks={filteredTracks}
+            selectedTabGenre={selectedTabGenre}
+            setSelectedTabGenre={setSelectedTabGenre}
+            currentPlayingTrack={currentPlayingTrack}
+            genres={genres}
+            user={user}
+            djStations={djStations}
+            djBookings={djBookings}
+            handlePlayTrack={handlePlayTrack}
+            handleLikeTrack={handleLikeTrack}
+            handleShareTrack={handleShareTrack}
+            newComments={newComments}
+            handleCommentChange={handleCommentChange}
+            handleSubmitComment={handleSubmitComment}
+            formatDuration={formatDuration}
+            renderTrackActions={renderTrackActions}
+            startListening={startListening}
+          />
         </div>
       </div>
       
