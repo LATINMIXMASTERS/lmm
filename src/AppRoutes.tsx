@@ -4,6 +4,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
 import Login from "@/pages/Login";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import Stations from "@/pages/Stations";
 import StationDetails from "@/pages/StationDetails";
 import Mixes from "@/pages/Mixes";
@@ -26,6 +28,8 @@ const AppRoutes: React.FC = () => {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/stations" element={<Stations />} />
       <Route path="/stations/:id" element={<StationDetails />} />
       <Route path="/mixes" element={<Mixes />} />

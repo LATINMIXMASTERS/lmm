@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/layout/MainLayout";
+import { Link } from "react-router-dom";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -168,6 +169,17 @@ const Login: React.FC = () => {
                   </>
                 )}
               </div>
+
+              {!isRegistering && (
+                <div className="text-sm text-gray-500 text-center">
+                  <Link 
+                    to="/forgot-password" 
+                    className="underline underline-offset-4 hover:text-blue"
+                  >
+                    Forgot your password?
+                  </Link>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
