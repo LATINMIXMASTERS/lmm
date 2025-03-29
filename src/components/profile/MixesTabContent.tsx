@@ -15,7 +15,7 @@ interface MixesTabContentProps {
   selectedTabGenre: string;
   setSelectedTabGenre: (genre: string) => void;
   currentPlayingTrack: string | null;
-  genres: string[];
+  genres: string[];  // Updated to accept string[] instead of Genre[]
   user: User | null;
   handlePlayTrack: (trackId: string) => void;
   handleLikeTrack: (trackId: string, e: React.MouseEvent) => void;

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioStation, BookingSlot } from '@/models/RadioStation';
-import { Track } from '@/models/Track';
+import { Track, Genre } from '@/models/Track';
 import { User } from '@/contexts/auth/types';
 import MixesTabContent from './MixesTabContent';
 import RadioShowsTab from './RadioShowsTab';
@@ -14,7 +14,7 @@ interface DJProfileTabsProps {
   selectedTabGenre: string;
   setSelectedTabGenre: (genre: string) => void;
   currentPlayingTrack: string | null;
-  genres: string[];
+  genres: Genre[];
   user: User | null;
   djStations: RadioStation[];
   djBookings: BookingSlot[];
@@ -50,6 +50,9 @@ const DJProfileTabs: React.FC<DJProfileTabsProps> = ({
   renderTrackActions,
   startListening
 }) => {
+  // Convert Genre objects to strings for MixesTabContent
+  const genreNames = genres.map(genre => genre.name);
+  
   return (
     <Tabs defaultValue="mixes" className="w-full">
       <TabsList className="grid w-full grid-cols-2">
@@ -65,7 +68,7 @@ const DJProfileTabs: React.FC<DJProfileTabsProps> = ({
           selectedTabGenre={selectedTabGenre}
           setSelectedTabGenre={setSelectedTabGenre}
           currentPlayingTrack={currentPlayingTrack}
-          genres={genres}
+          genres={genreNames}
           user={user}
           handlePlayTrack={handlePlayTrack}
           handleLikeTrack={handleLikeTrack}
