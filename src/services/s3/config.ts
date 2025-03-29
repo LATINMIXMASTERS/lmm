@@ -5,6 +5,9 @@ import { v4 as uuidv4 } from 'uuid';
 // Cached config to avoid reading localStorage frequently
 let cachedConfig: S3StorageConfig | null = null;
 
+// Use the same storage key as the admin panel
+const STORAGE_KEY = 'latinmixmasters_s3config';
+
 /**
  * Get S3 configuration from localStorage
  */
@@ -15,7 +18,7 @@ export function getS3Config(): S3StorageConfig | null {
       return cachedConfig;
     }
     
-    const configStr = localStorage.getItem('s3_storage_config');
+    const configStr = localStorage.getItem(STORAGE_KEY);
     if (!configStr) {
       console.log('No S3 configuration found in localStorage');
       return null;
@@ -47,7 +50,7 @@ export function saveS3Config(config: S3StorageConfig): void {
     cachedConfig = config;
     
     // Save to localStorage
-    localStorage.setItem('s3_storage_config', JSON.stringify(config));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
     
     console.log('S3 configuration saved successfully');
   } catch (error) {

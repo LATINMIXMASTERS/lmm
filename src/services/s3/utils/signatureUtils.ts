@@ -1,5 +1,4 @@
 
-import { bufferToHex, hmacSha256, sha256, stringToUint8Array } from './cryptoUtils';
 import { S3StorageConfig } from '../types';
 
 /**
@@ -38,7 +37,7 @@ export async function createSignatureV4(
   const signedHeaders = sortedHeaderKeys.map(key => key.toLowerCase()).join(';');
   
   // Create canonical request
-  const canonicalUri = path.startsWith('/') ? path : `/${path}`;
+  const canonicalUri = `/${path}`;
   
   const canonicalRequest = [
     method.toUpperCase(),
@@ -53,34 +52,47 @@ export async function createSignatureV4(
   const algorithm = 'AWS4-HMAC-SHA256';
   const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
   
-  const stringToSignHash = await sha256(canonicalRequest);
+  // Calculate hash of canonical request
+  const canonicalRequestHash = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(canonicalRequest)
+  );
+  const canonicalRequestHashHex = Array.from(new Uint8Array(canonicalRequestHash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+  
   const stringToSign = [
     algorithm,
     amzDate,
     credentialScope,
-    stringToSignHash
+    canonicalRequestHashHex
   ].join('\n');
   
   // Calculate signature
-  // Create the signing key
   const kDate = await hmacSha256(
-    stringToUint8Array(`AWS4${config.secretAccessKey}`),
+    `AWS4${config.secretAccessKey}`,
     dateStamp
   );
   
-  // Convert ArrayBuffer to Uint8Array for all the signing steps
-  const kDateArray = new Uint8Array(kDate);
-  const kRegion = await hmacSha256(kDateArray, region);
+  const kRegion = await hmacSha256(
+    kDate,
+    region
+  );
   
-  const kRegionArray = new Uint8Array(kRegion);
-  const kService = await hmacSha256(kRegionArray, service);
+  const kService = await hmacSha256(
+    kRegion,
+    service
+  );
   
-  const kServiceArray = new Uint8Array(kService);
-  const kSigning = await hmacSha256(kServiceArray, 'aws4_request');
+  const kSigning = await hmacSha256(
+    kService,
+    'aws4_request'
+  );
   
-  // Calculate the signature
-  const signatureArrayBuffer = await hmacSha256(new Uint8Array(kSigning), stringToSign);
-  const signature = bufferToHex(signatureArrayBuffer);
+  const signature = await hmacSha256(
+    kSigning,
+    stringToSign
+  );
   
   // Create authorization header
   const authHeader = `${algorithm} ` +
@@ -92,4 +104,34 @@ export async function createSignatureV4(
     ...allHeaders,
     'Authorization': authHeader
   };
+}
+
+/**
+ * Helper function to calculate HMAC SHA256
+ */
+async function hmacSha256(key: string, message: string): Promise<string> {
+  const keyData = typeof key === 'string' 
+    ? new TextEncoder().encode(key)
+    : key;
+  
+  // Import the key
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    typeof keyData === 'string' ? new TextEncoder().encode(keyData) : keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  // Calculate HMAC
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    cryptoKey,
+    new TextEncoder().encode(message)
+  );
+  
+  // Convert to hex string
+  return Array.from(new Uint8Array(signature))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }

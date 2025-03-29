@@ -46,7 +46,9 @@ export const uploadFileToS3 = async (
     hasAccessKey: !!config?.accessKeyId,
     hasSecretKey: !!config?.secretAccessKey,
     publicUrlBase: config?.publicUrlBase || 'not set',
-    fileSize: `${(file.size / (1024 * 1024)).toFixed(2)}MB`
+    fileSize: `${(file.size / (1024 * 1024)).toFixed(2)}MB`,
+    filename: file.name,
+    folder: folder
   });
   
   // S3 is now mandatory for all files

@@ -1,6 +1,9 @@
 
 import { S3StorageConfig } from '../S3ConfigTypes';
 
+// Use the same storage key as the main S3 service
+const STORAGE_KEY = 'latinmixmasters_s3config';
+
 /**
  * Load the S3 configuration from localStorage
  */
@@ -12,7 +15,7 @@ export const loadS3Config = (): S3StorageConfig => {
     publicUrlBase: '',
   };
   
-  const savedConfig = localStorage.getItem('latinmixmasters_s3config');
+  const savedConfig = localStorage.getItem(STORAGE_KEY);
   if (!savedConfig) return defaultConfig;
   
   try {
@@ -28,7 +31,11 @@ export const loadS3Config = (): S3StorageConfig => {
  */
 export const saveS3Config = (config: S3StorageConfig): boolean => {
   try {
-    localStorage.setItem('latinmixmasters_s3config', JSON.stringify(config));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    // Also clear any cached config
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('s3_config_cache');
+    }
     return true;
   } catch (error) {
     console.error('Error saving S3 configuration:', error);

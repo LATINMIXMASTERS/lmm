@@ -42,6 +42,9 @@ export async function createAwsSignature(
     
     if (onProgress) onProgress(10);
     
+    console.log('Generating signature for URL:', `${endpoint}/${config.bucketName}/${filePath}`);
+    console.log('Using region:', config.region);
+    
     // Generate AWS signature v4
     const signedHeaders = await createSignatureV4(
       config,
@@ -85,6 +88,8 @@ export async function createAwsSignature(
       
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
+          console.log('S3 upload successful with status:', xhr.status);
+          
           // Construct the public URL
           let publicUrl;
           
@@ -104,7 +109,8 @@ export async function createAwsSignature(
             url: publicUrl
           });
         } else {
-          console.error('S3 upload failed:', xhr.status, xhr.responseText);
+          console.error('S3 upload failed with status:', xhr.status);
+          console.error('Response text:', xhr.responseText);
           if (onProgress) onProgress(0);
           reject(new Error(`S3 upload failed with status ${xhr.status}: ${xhr.responseText}`));
         }
