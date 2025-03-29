@@ -139,6 +139,7 @@ const UserProfile: React.FC = () => {
     handleEditTrack(trackId);
   };
 
+  // Fixed: Updated to accept Track object instead of string
   const handleTrackDelete = (track: Track) => {
     handleDeleteTrack(track);
   };
@@ -176,7 +177,7 @@ const UserProfile: React.FC = () => {
             {/* Tracks Tab */}
             <TabsContent value="tracks">
               <UserTracksTab
-                userId={userId}
+                userId={userId || ""}
                 isRadioHost={!!profileUser.isRadioHost}
                 userTracks={userTracks}
                 isAuthenticated={isAuthenticated}
