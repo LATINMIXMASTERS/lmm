@@ -1,4 +1,3 @@
-
 import React, { memo } from 'react';
 import StationDescription from '@/components/station-details/StationDescription';
 import UpcomingShows from '@/components/station-details/UpcomingShows';
@@ -33,10 +32,8 @@ const StationContent: React.FC<StationContentProps> = ({
   onUpdateVideoStreamUrl,
   lastSyncTime
 }) => {
-  // Avoid rendering chat if station is not live or chat is disabled
   const shouldShowChat = station.isLive && station.chatEnabled;
   
-  // Memoize parts of the UI that don't change frequently
   const renderedDescription = (
     <StationDescription
       description={station.description}
@@ -93,5 +90,4 @@ const StationContent: React.FC<StationContentProps> = ({
   );
 };
 
-// Use memo to prevent unnecessary re-renders
 export default memo(StationContent);
