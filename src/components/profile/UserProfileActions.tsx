@@ -2,15 +2,15 @@
 import React from 'react';
 import { Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { User } from '@/contexts/auth/types';
 import { useShareProfile } from '@/hooks/useShareProfile';
+import { User } from '@/contexts/auth/types';
 
-interface DJProfileActionsProps {
-  djUser: User;
+interface UserProfileActionsProps {
+  profileUser: User;
 }
 
-const DJProfileActions: React.FC<DJProfileActionsProps> = ({ djUser }) => {
-  const { handleShareProfile } = useShareProfile(djUser);
+const UserProfileActions: React.FC<UserProfileActionsProps> = ({ profileUser }) => {
+  const { handleShareProfile } = useShareProfile(profileUser);
   
   return (
     <Button 
@@ -25,4 +25,4 @@ const DJProfileActions: React.FC<DJProfileActionsProps> = ({ djUser }) => {
   );
 };
 
-export default DJProfileActions;
+export default UserProfileActions;

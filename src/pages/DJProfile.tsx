@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Edit, Trash2 } from 'lucide-react';
@@ -209,10 +208,7 @@ const DJProfile: React.FC = () => {
             onEditProfile={user?.id === djUser.id ? () => navigate('/dj-dashboard') : undefined}
           />
           
-          <DJProfileActions 
-            djUser={djUser}
-            onShareProfile={handleShareProfile}
-          />
+          <DJProfileActions djUser={djUser} />
         </div>
         
         <div className="max-w-5xl mx-auto">
