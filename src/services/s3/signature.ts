@@ -24,17 +24,15 @@ export async function createAwsSignature(
     
     const host = new URL(endpoint).host;
     
-    // Prepare headers for signature
+    // Create the full path for the signature
+    const s3Path = `${config.bucketName}/${filePath}`;
+    
+    // Standard headers for S3 upload
     const headers: Record<string, string> = {
       'Host': host,
       'Content-Type': file.type || 'application/octet-stream',
       'Content-Length': file.size.toString(),
-      // Ensure proper cache control
       'Cache-Control': 'public, max-age=31536000',
-      // Add CORS headers
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE',
-      'Access-Control-Allow-Headers': '*'
     };
     
     // Use 'UNSIGNED-PAYLOAD' for browser compatibility
@@ -42,14 +40,19 @@ export async function createAwsSignature(
     
     if (onProgress) onProgress(10);
     
-    console.log('Generating signature for URL:', `${endpoint}/${config.bucketName}/${filePath}`);
-    console.log('Using region:', config.region);
+    console.log('Generating signature for:', {
+      endpoint,
+      bucket: config.bucketName,
+      path: filePath,
+      region: config.region,
+      host
+    });
     
     // Generate AWS signature v4
     const signedHeaders = await createSignatureV4(
       config,
       'PUT',
-      `${config.bucketName}/${filePath}`,
+      s3Path,
       config.region,
       's3',
       payloadHash,

@@ -19,7 +19,15 @@ export const loadS3Config = (): S3StorageConfig => {
   if (!savedConfig) return defaultConfig;
   
   try {
-    return JSON.parse(savedConfig);
+    const parsedConfig = JSON.parse(savedConfig);
+    console.log('Loaded S3 config from storage:', {
+      hasBucket: !!parsedConfig.bucketName,
+      hasRegion: !!parsedConfig.region,
+      hasEndpoint: !!parsedConfig.endpoint,
+      hasAccessKey: !!parsedConfig.accessKeyId,
+      hasSecretKey: !!parsedConfig.secretAccessKey?.substring(0, 3) + '***'
+    });
+    return parsedConfig;
   } catch (error) {
     console.error('Error parsing saved S3 configuration:', error);
     return defaultConfig;
@@ -32,10 +40,18 @@ export const loadS3Config = (): S3StorageConfig => {
 export const saveS3Config = (config: S3StorageConfig): boolean => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-    // Also clear any cached config
+    
+    // Clear any cached config
     if (typeof window !== 'undefined') {
+      // Also clear the cached config in the S3 service
       localStorage.removeItem('s3_config_cache');
     }
+    
+    console.log('S3 config saved to storage:', {
+      bucket: config.bucketName,
+      region: config.region
+    });
+    
     return true;
   } catch (error) {
     console.error('Error saving S3 configuration:', error);

@@ -29,15 +29,23 @@ export async function createSignatureV4(
     'x-amz-content-sha256': payloadHash
   };
   
-  // Sort headers and create canonical headers string
-  const sortedHeaderKeys = Object.keys(allHeaders).sort();
+  // Sort headers by lowercase key name (important for signature calculation)
+  const sortedHeaderKeys = Object.keys(allHeaders).sort((a, b) => 
+    a.toLowerCase().localeCompare(b.toLowerCase())
+  );
+  
+  // Create canonical headers string with lowercase header names
   const canonicalHeaders = sortedHeaderKeys
-    .map(key => `${key.toLowerCase()}:${allHeaders[key]}\n`)
+    .map(key => `${key.toLowerCase()}:${allHeaders[key].trim()}\n`)
     .join('');
-  const signedHeaders = sortedHeaderKeys.map(key => key.toLowerCase()).join(';');
+  
+  // Create signed headers string with lowercase header names
+  const signedHeaders = sortedHeaderKeys
+    .map(key => key.toLowerCase())
+    .join(';');
   
   // Create canonical request
-  const canonicalUri = `/${path}`;
+  const canonicalUri = path.startsWith('/') ? path : `/${path}`;
   
   const canonicalRequest = [
     method.toUpperCase(),
@@ -69,69 +77,81 @@ export async function createSignatureV4(
   ].join('\n');
   
   // Calculate signature
-  const kDate = await hmacSha256(
-    `AWS4${config.secretAccessKey}`,
-    dateStamp
-  );
-  
-  const kRegion = await hmacSha256(
-    kDate,
-    region
-  );
-  
-  const kService = await hmacSha256(
-    kRegion,
-    service
-  );
-  
-  const kSigning = await hmacSha256(
-    kService,
-    'aws4_request'
-  );
-  
-  const signature = await hmacSha256(
-    kSigning,
-    stringToSign
-  );
-  
-  // Create authorization header
-  const authHeader = `${algorithm} ` +
-    `Credential=${config.accessKeyId}/${credentialScope}, ` +
-    `SignedHeaders=${signedHeaders}, ` +
-    `Signature=${signature}`;
-  
-  return {
-    ...allHeaders,
-    'Authorization': authHeader
-  };
-}
-
-/**
- * Helper function to calculate HMAC SHA256
- */
-async function hmacSha256(key: string, message: string): Promise<string> {
-  const keyData = typeof key === 'string' 
-    ? new TextEncoder().encode(key)
-    : key;
-  
-  // Import the key
-  const cryptoKey = await crypto.subtle.importKey(
+  const kSecret = await crypto.subtle.importKey(
     'raw',
-    typeof keyData === 'string' ? new TextEncoder().encode(keyData) : keyData,
+    new TextEncoder().encode(`AWS4${config.secretAccessKey}`),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign']
   );
   
-  // Calculate HMAC
-  const signature = await crypto.subtle.sign(
+  const kDate = await crypto.subtle.sign(
     'HMAC',
-    cryptoKey,
-    new TextEncoder().encode(message)
+    kSecret,
+    new TextEncoder().encode(dateStamp)
   );
   
-  // Convert to hex string
-  return Array.from(new Uint8Array(signature))
+  const kRegion = await crypto.subtle.sign(
+    'HMAC',
+    await crypto.subtle.importKey(
+      'raw',
+      kDate,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    ),
+    new TextEncoder().encode(region)
+  );
+  
+  const kService = await crypto.subtle.sign(
+    'HMAC',
+    await crypto.subtle.importKey(
+      'raw',
+      kRegion,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    ),
+    new TextEncoder().encode(service)
+  );
+  
+  const kSigning = await crypto.subtle.sign(
+    'HMAC',
+    await crypto.subtle.importKey(
+      'raw',
+      kService,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    ),
+    new TextEncoder().encode('aws4_request')
+  );
+  
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    await crypto.subtle.importKey(
+      'raw',
+      kSigning,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    ),
+    new TextEncoder().encode(stringToSign)
+  );
+  
+  // Convert signature to hex
+  const signatureHex = Array.from(new Uint8Array(signature))
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
+  
+  // Create authorization header
+  const authHeader = `${algorithm} ` +
+    `Credential=${config.accessKeyId}/${credentialScope}, ` +
+    `SignedHeaders=${signedHeaders}, ` +
+    `Signature=${signatureHex}`;
+  
+  return {
+    ...allHeaders,
+    'Authorization': authHeader
+  };
 }

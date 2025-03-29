@@ -29,6 +29,14 @@ export function getS3Config(): S3StorageConfig | null {
     // Cache the config
     cachedConfig = config;
     
+    console.log('S3 config loaded:', {
+      hasBucket: !!config.bucketName,
+      hasRegion: !!config.region,
+      hasEndpoint: !!config.endpoint,
+      hasAccessKey: !!config.accessKeyId,
+      hasSecretKey: !!config.secretAccessKey?.substring(0, 3) + '***'
+    });
+    
     return config;
   } catch (error) {
     console.error('Error getting S3 config:', error);
