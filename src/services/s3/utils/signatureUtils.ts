@@ -68,12 +68,18 @@ export async function createSignatureV4(
     dateStamp
   );
   
-  const kRegion = await hmacSha256(kDate, region);
-  const kService = await hmacSha256(kRegion, service);
-  const kSigning = await hmacSha256(kService, 'aws4_request');
+  // Convert ArrayBuffer to Uint8Array for all the signing steps
+  const kDateArray = new Uint8Array(kDate);
+  const kRegion = await hmacSha256(kDateArray, region);
+  
+  const kRegionArray = new Uint8Array(kRegion);
+  const kService = await hmacSha256(kRegionArray, service);
+  
+  const kServiceArray = new Uint8Array(kService);
+  const kSigning = await hmacSha256(kServiceArray, 'aws4_request');
   
   // Calculate the signature
-  const signatureArrayBuffer = await hmacSha256(kSigning, stringToSign);
+  const signatureArrayBuffer = await hmacSha256(new Uint8Array(kSigning), stringToSign);
   const signature = bufferToHex(signatureArrayBuffer);
   
   // Create authorization header
