@@ -29,10 +29,10 @@ export const useChatActions = (
         performSync();
       }, MIN_SYNC_INTERVAL);
       
-      return;
+      return state.chatMessages;
     }
     
-    performSync();
+    return performSync();
   };
   
   const performSync = () => {
@@ -51,17 +51,22 @@ export const useChatActions = (
           
           console.log("Chat messages synced from localStorage:", new Date().toISOString());
         }
+        
+        return parsedMessages;
       }
     } catch (error) {
       console.error("Failed to sync chat messages from localStorage:", error);
       // Create an empty chat messages object if parsing fails
       localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify({}));
     }
+    
+    return state.chatMessages;
   };
 
   const getChatMessagesForStationImpl = (stationId: string): ChatMessage[] => {
-    // Just return what's in the current state
-    return state.chatMessages[stationId] || [];
+    // Make sure we have the latest messages
+    const messages = syncChatMessagesFromStorage();
+    return messages[stationId] || [];
   };
 
   const sendChatMessageImpl = (stationId: string, message: string): void => {
@@ -86,8 +91,9 @@ export const useChatActions = (
       timestamp: new Date().toISOString()
     };
 
-    // Get current messages without syncing
-    const currentMessages = state.chatMessages[stationId] || [];
+    // Get current messages by syncing first
+    const allMessages = syncChatMessagesFromStorage();
+    const currentMessages = allMessages[stationId] || [];
     
     // Prevent duplicate messages by ID
     if (currentMessages.some(msg => msg.id === newMessage.id)) {
@@ -100,7 +106,7 @@ export const useChatActions = (
     const limitedMessages = updatedMessages.slice(-100); // Keep last 100 messages
     
     const allChatMessages = {
-      ...state.chatMessages,
+      ...allMessages,
       [stationId]: limitedMessages
     };
     
@@ -147,7 +153,14 @@ export const useChatActions = (
       return station;
     });
     
+    // Update localStorage to ensure cross-device sync
     localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+    
+    // Force a storage event for cross-tab/device synchronization
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'latinmixmasters_stations',
+      newValue: JSON.stringify(updatedStations)
+    }));
     
     // Notify users when a station goes live
     if (isLive && statusChanged) {
@@ -183,7 +196,14 @@ export const useChatActions = (
       return station;
     });
     
+    // Update localStorage and trigger storage event for cross-device sync
     localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+    
+    // Force a storage event for cross-tab/device synchronization
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'latinmixmasters_stations',
+      newValue: JSON.stringify(updatedStations)
+    }));
     
     toast({
       title: enabled ? "Chat Enabled" : "Chat Disabled",
@@ -209,6 +229,8 @@ export const useChatActions = (
           type: 'SET_CHAT_MESSAGES', 
           payload: remainingMessages 
         });
+        
+        console.log(`Chat messages for station ${stationId} cleared at ${new Date().toISOString()}`);
       }
     } catch (error) {
       console.error(`Failed to clear chat messages for station ${stationId}:`, error);

@@ -1,40 +1,92 @@
 
 import { RadioMetadata } from '@/models/RadioStation';
 
-// Sample artists and titles for simulated metadata
-const sampleArtists = [
-  'DJ Ramirez', 'LATINMIXMASTERS Crew', 'DJ Latino', 'Salsa Kings',
-  'Reggaeton Masters', 'Cumbia Collective', 'Bachata Legends', 'Latin House DJs'
+// Latin music artists and songs for simulation
+const latinArtists = [
+  'Bad Bunny',
+  'Karol G',
+  'J Balvin',
+  'Shakira',
+  'Daddy Yankee',
+  'Maluma',
+  'Ozuna',
+  'Luis Fonsi',
+  'Nicky Jam',
+  'Rosalía',
+  'Rauw Alejandro',
+  'Anuel AA',
+  'Sech',
+  'Becky G',
+  'Romeo Santos',
+  'Farruko',
+  'Marc Anthony',
+  'Enrique Iglesias',
+  'Prince Royce',
+  'Ricky Martin'
 ];
 
-const sampleTitles = [
-  'Summer Vibes Mix', 'Latin Party Anthems', 'Reggaeton Hits 2023',
-  'Salsa Classics Remix', 'Tropical House Session', 'Bachata Love Songs',
-  'Cumbia Revolution', 'Urban Latino Mix'
+const latinSongs = [
+  'Monaco',
+  'Tusa',
+  'La Canción',
+  'TQG',
+  'Despacito',
+  'Felices los 4',
+  'Dákiti',
+  'Con Calma',
+  'X',
+  'Con Altura',
+  'Todo de Ti',
+  'China',
+  'Otro Trago',
+  'Sin Pijama',
+  'Propuesta Indecente',
+  'Pepas',
+  'Vivir Mi Vida',
+  'Bailando',
+  'Darte un Beso',
+  'Livin\' la Vida Loca'
+];
+
+// Album covers for Latin artists
+const albumCovers = [
+  'https://i.scdn.co/image/ab67616d0000b2739416ed64daf84936d89e671c', // Un Verano Sin Ti
+  'https://i.scdn.co/image/ab67616d0000b273a543f68c31b395bb46d6f8c0', // KG0516
+  'https://i.scdn.co/image/ab67616d0000b273fc2101e6c215cc5d3a45c0c4', // Colores
+  'https://i.scdn.co/image/ab67616d0000b273a9e6784e5d6ad8a4c983d31e', // El Dorado
+  'https://i.scdn.co/image/ab67616d0000b273ef0d4234e1a645740f77d59c', // Legendaddy
+  'https://i.scdn.co/image/ab67616d0000b2738b752d1f529a8e7a3a328c0a'  // 11:11
 ];
 
 /**
- * Generates simulated metadata for stations without real metadata
+ * Generates simulated metadata for a radio station
+ * @returns Object containing a formatted track string and RadioMetadata object
  */
-export const generateSimulatedMetadata = (): {
-  trackString: string;
+export const generateSimulatedMetadata = (): { 
+  trackString: string; 
   metadata: RadioMetadata;
 } => {
-  const artist = sampleArtists[Math.floor(Math.random() * sampleArtists.length)];
-  const title = sampleTitles[Math.floor(Math.random() * sampleTitles.length)];
+  // Get random artist and song
+  const artistIndex = Math.floor(Math.random() * latinArtists.length);
+  const songIndex = Math.floor(Math.random() * latinSongs.length);
   
-  // Add a timestamp to avoid the same metadata appearing multiple times
-  const now = new Date();
-  const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const artist = latinArtists[artistIndex];
+  const title = latinSongs[songIndex];
   
-  return {
-    trackString: `${artist} - ${title} (${timestamp})`,
-    metadata: {
-      artist,
-      title: `${title} (${timestamp})`,
-      startedAt: now,
-      album: 'LATINMIXMASTERS Radio',
-      coverArt: `https://picsum.photos/seed/${Math.random().toString(36).substring(7)}/300/300`
-    }
+  // Get random album cover
+  const coverIndex = Math.floor(Math.random() * albumCovers.length);
+  const coverArt = albumCovers[coverIndex];
+  
+  // Create track string and metadata object
+  const trackString = `${artist} - ${title}`;
+  const metadata: RadioMetadata = {
+    artist,
+    title,
+    album: 'Latin Mix Masters Radio',
+    coverArt,
+    startedAt: new Date(),
+    duration: Math.floor(Math.random() * 180) + 120 // Random duration between 2-5 minutes
   };
+  
+  return { trackString, metadata };
 };

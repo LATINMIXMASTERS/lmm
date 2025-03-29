@@ -52,14 +52,35 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify({}));
     }
     
-    // Setup storage sync listener
+    // Enhanced storage sync listener for better cross-device communication
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'latinmixmasters_chat_messages' && e.newValue) {
+      if (!e.key || !e.newValue) return;
+      
+      // Handle chat messages update
+      if (e.key === 'latinmixmasters_chat_messages') {
         try {
-          dispatch({ type: 'SET_CHAT_MESSAGES', payload: JSON.parse(e.newValue) });
-          console.log("Chat messages updated from storage event", new Date().toISOString());
+          const newMessages = JSON.parse(e.newValue);
+          // Only update if there's an actual change to prevent loops
+          if (JSON.stringify(state.chatMessages) !== e.newValue) {
+            dispatch({ type: 'SET_CHAT_MESSAGES', payload: newMessages });
+            console.log("Chat messages updated from storage event", new Date().toISOString());
+          }
         } catch (error) {
           console.error("Failed to parse updated chat messages:", error);
+        }
+      }
+      
+      // Handle stations update (for live status sync)
+      else if (e.key === 'latinmixmasters_stations') {
+        try {
+          const newStations = JSON.parse(e.newValue);
+          // Only update if there's an actual change to prevent loops
+          if (JSON.stringify(state.stations) !== e.newValue) {
+            dispatch({ type: 'SET_STATIONS', payload: newStations });
+            console.log("Stations updated from storage event", new Date().toISOString());
+          }
+        } catch (error) {
+          console.error("Failed to parse updated stations:", error);
         }
       }
     };
@@ -69,7 +90,7 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // Set up periodic sync for chat messages
     const syncInterval = setInterval(() => {
       actions.syncChatMessagesFromStorage?.();
-    }, 5000); // Sync every 5 seconds
+    }, 3000); // Sync every 3 seconds
     
     return () => {
       clearInterval(syncInterval);
