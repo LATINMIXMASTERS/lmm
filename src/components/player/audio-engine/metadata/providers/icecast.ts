@@ -1,6 +1,6 @@
 
 import { RadioMetadata } from '@/models/RadioStation';
-import { fetchWithTimeout } from '../utils';
+import { fetchWithTimeout, safeJsonParse } from '../utils';
 
 /**
  * Fetches metadata from an Icecast server
@@ -24,7 +24,7 @@ export const fetchIcecastMetadata = async (streamUrl: string): Promise<Partial<R
       const icyUrl = response.headers.get('icy-url') || '';
       
       // Try to get more info from status-json.xsl if available
-      let additionalInfo = {};
+      let additionalInfo: { title?: string; artist?: string } = {};
       try {
         const statusUrl = new URL(streamUrl);
         // Replace any path with /status-json.xsl
@@ -52,8 +52,8 @@ export const fetchIcecastMetadata = async (streamUrl: string): Promise<Partial<R
       }
       
       return {
-        title: additionalInfo?.title || icyDescription || icyName || 'Icecast Stream',
-        artist: additionalInfo?.artist || icyGenre || '',
+        title: additionalInfo.title || icyDescription || icyName || 'Icecast Stream',
+        artist: additionalInfo.artist || icyGenre || '',
         album: icyName || 'Live Radio',
         coverArt: icyUrl || ''
       };
@@ -65,4 +65,3 @@ export const fetchIcecastMetadata = async (streamUrl: string): Promise<Partial<R
     throw error; // Let the main function handle fallback
   }
 };
-
