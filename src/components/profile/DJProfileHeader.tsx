@@ -8,12 +8,12 @@ import { SiSoundcloud } from "react-icons/si";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-interface HostProfileHeaderProps {
+interface DJProfileHeaderProps {
   hostUser: any;
   onEditProfile?: () => void;
 }
 
-const HostProfileHeader: React.FC<HostProfileHeaderProps> = ({ hostUser, onEditProfile }) => {
+const DJProfileHeader: React.FC<DJProfileHeaderProps> = ({ hostUser, onEditProfile }) => {
   const { user, updateProfile } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -111,7 +111,7 @@ const HostProfileHeader: React.FC<HostProfileHeaderProps> = ({ hostUser, onEditP
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-3xl font-bold">{hostUser.username}</h1>
-              <p className="text-gold font-medium">Radio Host & DJ</p>
+              <p className="text-gold font-medium">Radio DJ</p>
             </div>
             
             {onEditProfile && isOwnProfile && (
@@ -161,4 +161,4 @@ const HostProfileHeader: React.FC<HostProfileHeaderProps> = ({ hostUser, onEditP
   );
 };
 
-export default HostProfileHeader;
+export default DJProfileHeader;

@@ -11,13 +11,13 @@ import StationDetails from "@/pages/StationDetails";
 import Mixes from "@/pages/Mixes";
 import DJs from "@/pages/DJs";
 import UserProfile from "@/pages/UserProfile";
-import HostProfile from "@/pages/HostProfile";
+import DJProfile from "@/pages/DJProfile";
 import UploadTrack from "@/pages/UploadTrack";
 import EditTrack from "@/pages/EditTrack";
 import ManageGenres from "@/pages/ManageGenres";
 import BookShow from "@/pages/BookShow";
 import GoLive from "@/pages/GoLive";
-import HostDashboard from "@/pages/HostDashboard";
+import DJDashboard from "@/pages/DJDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
@@ -35,12 +35,13 @@ const AppRoutes: React.FC = () => {
       <Route path="/mixes" element={<Mixes />} />
       <Route path="/djs" element={<DJs />} />
       
-      {/* User Profile routes - ensure both formats work */}
+      {/* User Profile routes - user-friendly format */}
       <Route path="/profile/:userId" element={<UserProfile />} />
       <Route path="/user/:userId" element={<UserProfile />} />
       
-      {/* Host Profile route */}
-      <Route path="/host/:userId" element={<HostProfile />} />
+      {/* DJ Profile routes - renamed from Host to DJ */}
+      <Route path="/dj/:userId" element={<DJProfile />} />
+      <Route path="/host/:userId" element={<Navigate to="/dj/:userId" replace />} /> {/* Redirect legacy URLs */}
       
       {/* Upload paths */}
       <Route path="/upload" element={<UploadTrack />} />
@@ -61,9 +62,10 @@ const AppRoutes: React.FC = () => {
       <Route path="/go-live/:stationId?" element={<GoLive />} />
       <Route path="/live/:stationId?" element={<GoLive />} />
       
-      {/* Dashboard routes */}
-      <Route path="/dashboard" element={<HostDashboard />} />
-      <Route path="/host-dashboard" element={<HostDashboard />} />
+      {/* Dashboard routes - renamed from Host to DJ */}
+      <Route path="/dashboard" element={<DJDashboard />} />
+      <Route path="/dj-dashboard" element={<DJDashboard />} />
+      <Route path="/host-dashboard" element={<Navigate to="/dj-dashboard" replace />} /> {/* Redirect legacy URLs */}
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
       

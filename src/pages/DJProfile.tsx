@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { User as UserIcon, Music, Edit, Trash2, Share2 } from 'lucide-react';
@@ -12,12 +13,14 @@ import { ToastAction } from '@/components/ui/toast';
 import GenreTabs from '@/components/GenreTabs';
 import { Track } from '@/models/Track';
 import UserNotFound from '@/components/profile/UserNotFound';
-import HostProfileHeader from '@/components/profile/HostProfileHeader';
 import DeleteTrackDialog from '@/components/profile/DeleteTrackDialog';
 import RadioShowsTab from '@/components/profile/RadioShowsTab';
 import { Card, CardContent } from '@/components/ui/card';
 
-const HostProfile: React.FC = () => {
+// Renaming component to DJProfileHeader
+import HostProfileHeader from '@/components/profile/HostProfileHeader';
+
+const DJProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user, users } = useAuth();
   const { tracks, genres, getTracksByUser, deleteTrack, likeTrack, addComment, shareTrack } = useTrack();
@@ -31,22 +34,22 @@ const HostProfile: React.FC = () => {
   const [currentPlayingTrack, setCurrentPlayingTrack] = useState<string | null>(null);
   const [newComments, setNewComments] = useState<Record<string, string>>({});
   
-  const hostUser = users.find(u => u.id === userId && u.isRadioHost);
+  const djUser = users.find(u => u.id === userId && u.isRadioHost);
   
-  const userTracks = hostUser ? getTracksByUser(hostUser.id) : [];
+  const userTracks = djUser ? getTracksByUser(djUser.id) : [];
   const filteredTracks = userTracks.filter(track => 
     selectedTabGenre === 'all' || track.genre === selectedTabGenre
   );
   
-  const hostStations = stations.filter(station => 
-    station.hosts && station.hosts.includes(hostUser?.id || '')
+  const djStations = stations.filter(station => 
+    station.hosts && station.hosts.includes(djUser?.id || '')
   );
   
-  const hostBookings = bookings.filter(booking => 
-    booking.hostId === hostUser?.id
+  const djBookings = bookings.filter(booking => 
+    booking.hostId === djUser?.id
   );
   
-  if (!hostUser || !hostUser.isRadioHost) {
+  if (!djUser || !djUser.isRadioHost) {
     return (
       <MainLayout>
         <UserNotFound />
@@ -55,13 +58,13 @@ const HostProfile: React.FC = () => {
   }
   
   const handleShareProfile = () => {
-    const usernameSlug = hostUser.username.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
-    const shareUrl = `${window.location.origin}/host/${usernameSlug}/${hostUser.id}`;
+    const usernameSlug = djUser.username.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+    const shareUrl = `${window.location.origin}/dj/${usernameSlug}`;
     
     if (navigator.share) {
       navigator.share({
-        title: `${hostUser.username}'s DJ Profile - Latin Mix Masters`,
-        text: `Check out ${hostUser.username}, a DJ on Latin Mix Masters!`,
+        title: `${djUser.username}'s DJ Profile - Latin Mix Masters`,
+        text: `Check out ${djUser.username}, a DJ on Latin Mix Masters!`,
         url: shareUrl
       }).catch(error => {
         console.error('Error sharing:', error);
@@ -76,7 +79,7 @@ const HostProfile: React.FC = () => {
     navigator.clipboard.writeText(url).then(() => {
       toast({
         title: "Link copied!",
-        description: `${hostUser.username}'s profile link copied to clipboard`,
+        description: `${djUser.username}'s profile link copied to clipboard`,
       });
     }).catch(() => {
       toast({
@@ -207,8 +210,8 @@ const HostProfile: React.FC = () => {
       <div className="container py-8 md:py-12">
         <div className="flex justify-between items-start mb-6">
           <HostProfileHeader 
-            hostUser={hostUser} 
-            onEditProfile={user?.id === hostUser.id ? () => navigate('/host-dashboard') : undefined}
+            hostUser={djUser} 
+            onEditProfile={user?.id === djUser.id ? () => navigate('/dj-dashboard') : undefined}
           />
           
           <Button 
@@ -231,8 +234,8 @@ const HostProfile: React.FC = () => {
             
             <TabsContent value="mixes">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold">{hostUser.username}'s Mixes</h2>
-                {user && (user.id === hostUser.id || user.isAdmin) && (
+                <h2 className="text-2xl font-bold">{djUser.username}'s Mixes</h2>
+                {user && (user.id === djUser.id || user.isAdmin) && (
                   <Button onClick={() => navigate('/upload-track')}>
                     Upload New Mix
                   </Button>
@@ -268,8 +271,8 @@ const HostProfile: React.FC = () => {
             
             <TabsContent value="shows">
               <RadioShowsTab 
-                hostStations={hostStations} 
-                hostBookings={hostBookings}
+                hostStations={djStations} 
+                hostBookings={djBookings}
                 startListening={startListening} 
               />
             </TabsContent>
@@ -287,4 +290,4 @@ const HostProfile: React.FC = () => {
   );
 };
 
-export default HostProfile;
+export default DJProfile;

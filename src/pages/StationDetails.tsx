@@ -69,7 +69,7 @@ const StationDetails: React.FC = () => {
     
     // Create a URL-friendly version of the station name
     const stationSlug = station.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
-    const url = `${window.location.origin}/stations/${stationSlug}/${id}`;
+    const url = `${window.location.origin}/stations/${stationSlug}`;
     const title = `Listen to ${station.name} on LATINMIXMASTERS`;
     const text = `Check out ${station.name} - ${station.genre} on LATINMIXMASTERS Radio!`;
     

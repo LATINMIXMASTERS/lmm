@@ -72,7 +72,7 @@ export const createTrackInteractionActions = (
     // Create URL-friendly versions of artist and track names
     const artistSlug = track.artist.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
     const titleSlug = track.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
-    const shareUrl = `${window.location.origin}/mixes/${artistSlug}/${titleSlug}?track=${trackId}`;
+    const shareUrl = `${window.location.origin}/mixes/${artistSlug}/${titleSlug}`;
     
     // Create share data
     const shareData = {

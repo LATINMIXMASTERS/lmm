@@ -11,14 +11,14 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import ProfileEditor from '@/components/ProfileEditor';
 
-// Import the new components
+// Import the components
 import Sidebar from '@/components/host-dashboard/Sidebar';
 import MixesList from '@/components/host-dashboard/MixesList';
 import RadioShows from '@/components/host-dashboard/RadioShows';
 import BookingsList from '@/components/host-dashboard/BookingsList';
 import StatisticsPanel from '@/components/host-dashboard/StatisticsPanel';
 
-const HostDashboard: React.FC = () => {
+const DJDashboard: React.FC = () => {
   const { user, updateProfile } = useAuth();
   const { tracks, getTracksByUser, deleteTrack } = useTrack();
   const { stations, bookings, cancelBooking } = useRadio();
@@ -124,7 +124,7 @@ const HostDashboard: React.FC = () => {
               </>
             ) : (
               <>
-                <h1 className="text-2xl font-bold mb-6">Host Dashboard</h1>
+                <h1 className="text-2xl font-bold mb-6">DJ Dashboard</h1>
                 
                 <Tabs defaultValue="mixes" className="w-full">
                   <TabsList className="grid w-full grid-cols-4">
@@ -186,4 +186,4 @@ const HostDashboard: React.FC = () => {
   );
 };
 
-export default HostDashboard;
+export default DJDashboard;

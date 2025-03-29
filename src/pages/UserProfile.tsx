@@ -34,10 +34,10 @@ const UserProfile: React.FC = () => {
   // Check if this is the current user's profile
   const isOwnProfile = user && profileUser && user.id === profileUser.id;
   
-  // Handle redirect to host profile for radio hosts
+  // Handle redirect to DJ profile for radio DJs
   useEffect(() => {
     if (profileUser?.isRadioHost) {
-      navigate(`/host/${profileUser.id}`);
+      navigate(`/dj/${profileUser.id}`);
     }
   }, [profileUser, navigate]);
   
@@ -67,7 +67,7 @@ const UserProfile: React.FC = () => {
   const handleShareProfile = () => {
     // Create a URL-friendly version of the username
     const usernameSlug = profileUser.username.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
-    const shareUrl = `${window.location.origin}/profile/${usernameSlug}/${profileUser.id}`;
+    const shareUrl = `${window.location.origin}/profile/${usernameSlug}`;
     
     if (navigator.share) {
       navigator.share({
@@ -139,7 +139,7 @@ const UserProfile: React.FC = () => {
     handleEditTrack(trackId);
   };
 
-  // Fixed: Updated to accept Track object instead of string
+  // Handler for track deletion that accepts Track object
   const handleTrackDelete = (track: Track) => {
     handleDeleteTrack(track);
   };

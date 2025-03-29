@@ -20,8 +20,10 @@ const Stations: React.FC = () => {
   // Use the hook to simulate random listener counts - called at top level
   useRandomListeners();
 
-  const handleStationClick = (stationId: string) => {
-    navigate(`/stations/${stationId}`);
+  const handleStationClick = (stationId: string, stationName: string) => {
+    // Create a URL-friendly version of the station name
+    const stationSlug = stationName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+    navigate(`/stations/${stationSlug}`);
   };
 
   const handlePlayToggle = (stationId: string) => {
@@ -79,6 +81,7 @@ const Stations: React.FC = () => {
               station={station}
               isPlaying={currentPlayingStation === station.id && audioState.isPlaying}
               onPlayToggle={handlePlayToggle}
+              onClick={() => handleStationClick(station.id, station.name)}
             />
           ))}
         </div>
