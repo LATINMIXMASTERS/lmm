@@ -12,6 +12,9 @@ export async function createAwsSignature(
   onProgress?: (progress: number) => void
 ): Promise<S3UploadResult> {
   try {
+    // Init progress
+    if (onProgress) onProgress(5);
+    
     // Determine the endpoint URL, removing any trailing slashes
     let endpoint = config.endpoint?.replace(/\/$/, '') || 
       `https://s3.${config.region}.wasabisys.com`;
@@ -40,6 +43,7 @@ export async function createAwsSignature(
     const payloadHash = 'UNSIGNED-PAYLOAD';
     
     // Generate AWS signature v4
+    if (onProgress) onProgress(10);
     const signedHeaders = await createSignatureV4(
       config,
       'PUT',
@@ -56,14 +60,17 @@ export async function createAwsSignature(
     console.log('Uploading to URL:', uploadUrl);
     console.log('With headers:', Object.keys(signedHeaders).join(', '));
     
-    // Upload the file to S3 using fetch API with progress tracking
+    if (onProgress) onProgress(20);
+    
+    // Upload the file to S3 using XHR with progress tracking
     const xhr = new XMLHttpRequest();
     
     // Set up progress monitoring
     if (onProgress) {
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
-          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          // Scale from 20-90%
+          const percentComplete = 20 + Math.round((event.loaded / event.total) * 70);
           onProgress(percentComplete);
         }
       };
@@ -91,23 +98,29 @@ export async function createAwsSignature(
             publicUrl = `${endpoint}/${config.bucketName}/${filePath}`;
           }
           
+          // Indicate complete
+          if (onProgress) onProgress(100);
+          
           resolve({
             success: true,
             url: publicUrl
           });
         } else {
           console.error('S3 upload failed:', xhr.status, xhr.responseText);
+          if (onProgress) onProgress(0);
           reject(new Error(`S3 upload failed with status ${xhr.status}: ${xhr.responseText}`));
         }
       };
       
       xhr.onerror = () => {
         console.error('S3 upload network error');
+        if (onProgress) onProgress(0);
         reject(new Error('Network error during S3 upload'));
       };
       
       xhr.onabort = () => {
         console.error('S3 upload aborted');
+        if (onProgress) onProgress(0);
         reject(new Error('S3 upload was aborted'));
       };
       
@@ -118,6 +131,12 @@ export async function createAwsSignature(
     return await uploadPromise;
   } catch (error) {
     console.error('S3 upload error details:', error);
+    
+    // Ensure we return 0 progress on error
+    if (onProgress) {
+      onProgress(0);
+    }
+    
     throw error;
   }
 }

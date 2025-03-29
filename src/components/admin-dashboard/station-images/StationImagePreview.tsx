@@ -1,13 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { ImageIcon } from 'lucide-react';
 import { FileUpload } from '@/models/RadioStation';
 
 interface StationImagePreviewProps {
-  imageUrl?: string;
-  uploadPreview?: FileUpload | null;
+  imageUrl: string;
+  uploadPreview: FileUpload | null;
   stationName: string;
-  currentImage?: string;
+  currentImage: string | undefined;
 }
 
 const StationImagePreview: React.FC<StationImagePreviewProps> = ({
@@ -16,38 +16,47 @@ const StationImagePreview: React.FC<StationImagePreviewProps> = ({
   stationName,
   currentImage
 }) => {
-  const [imageError, setImageError] = useState(false);
-  
-  // Determine which image to show
-  const displayImage = uploadPreview?.dataUrl || 
-                      (imageUrl && !imageError ? imageUrl : null) || 
-                      (currentImage && !imageError ? currentImage : null);
-  
-  const handleImageError = () => {
-    console.error("Failed to load image:", displayImage);
-    setImageError(true);
+  // Determine what to display as the preview
+  const getPreviewImage = () => {
+    if (uploadPreview && uploadPreview.dataUrl) {
+      return uploadPreview.dataUrl;
+    }
+    
+    if (imageUrl) {
+      return imageUrl;
+    }
+    
+    if (currentImage) {
+      return currentImage;
+    }
+    
+    return null;
   };
   
-  // Reset error state when source changes
-  useEffect(() => {
-    setImageError(false);
-  }, [imageUrl, uploadPreview, currentImage]);
+  const previewImage = getPreviewImage();
   
   return (
-    <div className="bg-gray-100 dark:bg-gray-800 rounded-md p-4 flex justify-center">
-      <div className="aspect-video w-full max-w-[300px] rounded overflow-hidden border">
-        {displayImage ? (
+    <div className="flex flex-col items-center">
+      <h4 className="mb-2 font-medium">Preview</h4>
+      <div className="bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden aspect-square w-full max-w-64">
+        {previewImage ? (
           <img 
-            src={displayImage} 
-            alt={`${stationName} cover`}
+            src={previewImage} 
+            alt={`${stationName} preview`}
             className="w-full h-full object-cover"
-            onError={handleImageError}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-            <ImageIcon className="w-12 h-12 text-gray-400 dark:text-gray-500" />
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="text-center p-4">
+              <ImageIcon className="w-12 h-12 mx-auto text-gray-400" />
+              <p className="text-sm text-gray-500 mt-2">No image</p>
+            </div>
           </div>
         )}
+      </div>
+      
+      <div className="mt-2 text-sm text-gray-500">
+        {currentImage ? 'Current image will be replaced when saved' : 'No current image set'}
       </div>
     </div>
   );

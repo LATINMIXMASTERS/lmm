@@ -1,7 +1,4 @@
 
-/**
- * Type definitions for S3 service
- */
 export interface S3StorageConfig {
   bucketName: string;
   region: string;
