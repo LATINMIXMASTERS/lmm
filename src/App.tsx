@@ -3,7 +3,7 @@ import React from "react";
 import { BrowserRouter } from "react-router-dom";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider } from "@/contexts/auth/AuthContext";
 import { RadioProvider } from "@/contexts/radio/RadioProvider";
 import { TrackProvider } from "@/contexts/track/TrackProvider";
 import { ThemeProvider } from "@/lib/ThemeProvider";
