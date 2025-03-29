@@ -85,11 +85,36 @@ export const useSyncActions = (
       console.error("Error syncing stations from localStorage:", error);
     }
   };
+
+  // This function is needed for the RadioContextType interface
+  const syncChatMessagesFromStorage = () => {
+    try {
+      const storedMessages = localStorage.getItem('latinmixmasters_chat_messages');
+      if (storedMessages) {
+        const parsedMessages = JSON.parse(storedMessages);
+        
+        // Deep comparison to prevent unnecessary re-renders
+        if (JSON.stringify(state.chatMessages) !== JSON.stringify(parsedMessages)) {
+          dispatch({ 
+            type: 'SET_CHAT_MESSAGES', 
+            payload: parsedMessages 
+          });
+          
+          return parsedMessages;
+        }
+      }
+      return state.chatMessages;
+    } catch (error) {
+      console.error("Failed to sync chat messages from localStorage:", error);
+      return state.chatMessages;
+    }
+  };
   
   return {
     syncToLocalStorage,
     syncFromLocalStorage,
     handleStorageEvent,
-    syncStationsFromStorage
+    syncStationsFromStorage,
+    syncChatMessagesFromStorage
   };
 };

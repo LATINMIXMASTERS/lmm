@@ -8,19 +8,12 @@ export interface User {
   email: string;
   isAdmin?: boolean;
   isRadioHost?: boolean;
-  approved?: boolean;
-  pendingApproval?: boolean;
   registeredAt?: string;
-  suspended?: boolean;
   profileImage?: string;
-  biography?: string;
-  socialLinks?: {
-    facebook?: string;
-    twitter?: string;
-    instagram?: string;
-    soundcloud?: string;
-    youtube?: string;
-  };
+  suspended?: boolean;
+  pendingApproval?: boolean;
+  bio?: string;
+  password?: string;
 }
 
 interface AuthContextType {

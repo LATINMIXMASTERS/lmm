@@ -39,6 +39,10 @@ export interface RadioContextType {
   sendChatMessage: (stationId: string, message: string) => void;
   setStationLiveStatus: (stationId: string, isLive: boolean, enableChat?: boolean) => void;
   toggleChatEnabled: (stationId: string, enabled: boolean) => void;
-  syncChatMessagesFromStorage: () => void;
+  syncChatMessagesFromStorage: () => Record<string, ChatMessage[]>;
+  syncFromLocalStorage?: (stationId: string) => any;
+  syncToLocalStorage?: (stationId: string) => void;
+  handleStorageEvent?: (e: StorageEvent) => void;
+  syncStationsFromStorage?: () => void;
   clearChatMessagesForStation: (stationId: string) => void;
 }
