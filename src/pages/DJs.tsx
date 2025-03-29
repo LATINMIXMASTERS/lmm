@@ -41,9 +41,9 @@ const DJs: React.FC = () => {
                   </div>
                   <CardHeader className="pt-0">
                     <CardTitle className="text-xl">{host.username}</CardTitle>
-                    {host.biography && (
+                    {(host.biography || host.bio) && (
                       <p className="text-sm text-muted-foreground line-clamp-2">
-                        {host.biography}
+                        {host.biography || host.bio}
                       </p>
                     )}
                   </CardHeader>

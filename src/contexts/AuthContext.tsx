@@ -13,7 +13,16 @@ export interface User {
   suspended?: boolean;
   pendingApproval?: boolean;
   bio?: string;
+  biography?: string;
   password?: string;
+  approved?: boolean;
+  socialLinks?: {
+    facebook?: string;
+    twitter?: string;
+    instagram?: string;
+    soundcloud?: string;
+    youtube?: string;
+  };
 }
 
 interface AuthContextType {
