@@ -2,223 +2,78 @@
 #!/bin/bash
 set -e
 
-echo "=== Latin Mix Masters Fast Installation Script ==="
-echo "This optimized script will set up your application on Ubuntu 22.04"
+echo "=== Latin Mix Masters Fast VPS Installation ==="
+echo "Optimized for Ubuntu 22.04 servers with limited resources"
 
-# Update system packages in parallel
-echo -e "\n>>> Updating system packages..."
-sudo apt update -y &
-wait
+# Define color codes for better visibility
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-# Install essential dependencies in parallel
-echo -e "\n>>> Installing essential packages..."
-sudo apt install -y curl wget git build-essential nginx &
-wait
+# System optimization first - this helps the rest of the install process
+echo -e "\n${GREEN}>>> Optimizing system performance...${NC}"
+# Lower swappiness for better performance
+sudo sysctl -w vm.swappiness=10
+# Adjust cache pressure for better memory management
+sudo sysctl -w vm.vfs_cache_pressure=50
+# Add persistent settings
+echo "vm.swappiness=10
+vm.vfs_cache_pressure=50" | sudo tee -a /etc/sysctl.d/99-latinmixmasters.conf
 
-# Install NVM (Node Version Manager) with optimized settings
-echo -e "\n>>> Installing NVM..."
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+# Update essential packages only
+echo -e "\n${GREEN}>>> Updating essential packages...${NC}"
+sudo apt-get update -y 
+sudo apt-get install -y curl wget git build-essential nginx
+
+# Install NVM with optimized settings
+echo -e "\n${GREEN}>>> Installing NVM and Node.js...${NC}"
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-# Install Node.js v18 (LTS) with optimization flags
-echo -e "\n>>> Installing Node.js v18 LTS..."
-nvm install 18 --no-progress
-nvm use 18
-nvm alias default 18
+if [ ! -d "$NVM_DIR" ]; then
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  nvm install 18 --no-progress
+  nvm use 18
+  nvm alias default 18
+else
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  echo "NVM already installed, using existing installation"
+fi
 
 # Verify installation
-echo -e "\n>>> Verifying Node.js and npm installation..."
 node -v
 npm -v
 
-# Install packages in parallel using performance optimizations
-echo -e "\n>>> Setting up application dependencies..."
+# Install dependencies with performance optimizations
 if [ -f "package.json" ]; then
-    echo -e "\n>>> Cleaning npm cache..."
-    npm cache clean --force
-
-    echo -e "\n>>> Increasing Node.js memory limit and performance..."
-    export NODE_OPTIONS="--max-old-space-size=8192 --max-http-header-size=16384"
-
-    echo -e "\n>>> Installing dependencies with optimizations..."
-    # Clear any existing node_modules
-    rm -rf node_modules package-lock.json
-    
-    # Install with optimizations
-    npm install --legacy-peer-deps --no-fund --no-audit --prefer-offline --no-progress || \
-    npm install --legacy-peer-deps --force --no-fund --no-audit --prefer-offline --no-progress
-    
-    # Install Vite globally
-    npm install -g vite --no-progress || true
-    
-    # Build the application with optimizations
-    echo -e "\n>>> Building the application..."
-    NODE_ENV=production npm run build -- --minify=true || \
-    npm run build -- --minify=false
-    
-    # If build fails, try alternative method
-    if [ ! -d "dist" ] || [ ! -f "dist/index.html" ]; then
-        echo -e "\n>>> Standard build failed. Attempting alternative build method..."
-        NODE_ENV=production npm run build:fast || \
-        NODE_ENV=production npm run build -- --mode=fast || \
-        NODE_ENV=production npm run build -- --minify=false
-        
-        # Create fallback if still failing
-        if [ ! -d "dist" ] || [ ! -f "dist/index.html" ]; then
-            echo -e "\n>>> Creating basic dist directory..."
-            mkdir -p dist
-            cat > dist/index.html << EOL
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Latin Mix Masters</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body>
-    <h1>Latin Mix Masters</h1>
-    <p>Site is being updated. Please check back soon.</p>
-</body>
-</html>
-EOL
-        fi
-    fi
+  echo -e "\n${GREEN}>>> Setting up application with optimizations...${NC}"
+  
+  # Clear npm cache and set performance flags
+  npm cache clean --force
+  export NODE_OPTIONS="--max-old-space-size=1024"
+  
+  # Install with optimizations for low-memory VPS
+  echo -e "\n${YELLOW}>>> Installing dependencies with memory optimization for VPS...${NC}"
+  # Install in smaller batches to prevent memory issues
+  npm install --no-fund --no-audit --production=false --prefer-offline --legacy-peer-deps
+  
+  # Build with production optimizations
+  echo -e "\n${GREEN}>>> Building the application...${NC}"
+  NODE_ENV=production npm run build 
+  
+  # If build fails, try with even lower memory settings
+  if [ ! -d "dist" ] || [ ! -f "dist/index.html" ]; then
+    echo -e "\n${YELLOW}>>> Attempting low-memory build...${NC}"
+    export NODE_OPTIONS="--max-old-space-size=512"
+    NODE_ENV=production npm run build -- --minify=false
+  fi
 else
-    echo -e "\n>>> ERROR: package.json not found! Deployment aborted."
-    exit 1
+  echo -e "\n${YELLOW}>>> ERROR: package.json not found! Deployment aborted.${NC}"
+  exit 1
 fi
 
-# Set up Nginx with optimized configuration
-echo -e "\n>>> Setting up optimized Nginx configuration..."
+# Set up Nginx with optimized config for low-resource VPS
+echo -e "\n${GREEN}>>> Setting up optimized Nginx configuration...${NC}"
 sudo bash -c 'cat > /etc/nginx/sites-available/latinmixmasters << EOL
-server {
-    listen 80;
-    listen [::]:80;
-    server_name lmmapp.latinmixmasters.com www.lmmapp.latinmixmasters.com;
-
-    root /var/www/latinmixmasters/dist;
-    index index.html;
-    
-    # Performance optimizations
-    sendfile on;
-    tcp_nopush on;
-    tcp_nodelay on;
-    keepalive_timeout 65;
-    types_hash_max_size 2048;
-    client_max_body_size 100M;
-    
-    # Gzip compression for faster content delivery
-    gzip on;
-    gzip_disable "msie6";
-    gzip_vary on;
-    gzip_proxied any;
-    gzip_comp_level 6;
-    gzip_buffers 16 8k;
-    gzip_http_version 1.1;
-    gzip_min_length 256;
-    gzip_types
-        application/atom+xml
-        application/javascript
-        application/json
-        application/ld+json
-        application/manifest+json
-        application/rss+xml
-        application/vnd.geo+json
-        application/vnd.ms-fontobject
-        application/x-font-ttf
-        application/x-web-app-manifest+json
-        application/xhtml+xml
-        application/xml
-        font/opentype
-        image/bmp
-        image/svg+xml
-        image/x-icon
-        text/cache-manifest
-        text/css
-        text/plain
-        text/vcard
-        text/vnd.rim.location.xloc
-        text/vtt
-        text/x-component
-        text/x-cross-domain-policy;
-
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-
-    # Efficient caching for static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ {
-        expires 30d;
-        add_header Cache-Control "public, max-age=31536000, immutable";
-        access_log off;
-    }
-
-    # CORS headers
-    add_header Access-Control-Allow-Origin "*";
-    add_header Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, DELETE";
-    add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
-    add_header Access-Control-Allow-Credentials "true";
-}
-EOL'
-
-# Enable site and restart Nginx
-echo -e "\n>>> Enabling site and optimizing Nginx..."
-sudo ln -sf /etc/nginx/sites-available/latinmixmasters /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default || true
-
-# Remove default Nginx configurations that might slow performance
-sudo rm -f /etc/nginx/conf.d/default.conf || true
-
-# Optimize Nginx main configuration
-sudo bash -c 'cat > /etc/nginx/nginx.conf << EOL
-user www-data;
-worker_processes auto;
-pid /run/nginx.pid;
-
-events {
-    worker_connections 2048;
-    multi_accept on;
-    use epoll;
-}
-
-http {
-    server_tokens off;
-    sendfile on;
-    tcp_nopush on;
-    tcp_nodelay on;
-    keepalive_timeout 65;
-    types_hash_max_size 2048;
-    client_max_body_size 100M;
-    
-    include /etc/nginx/mime.types;
-    default_type application/octet-stream;
-    
-    # Logging Settings
-    access_log /var/log/nginx/access.log;
-    error_log /var/log/nginx/error.log;
-    
-    # Gzip Settings
-    gzip on;
-    gzip_disable "msie6";
-    gzip_vary on;
-    gzip_proxied any;
-    gzip_comp_level 6;
-    gzip_buffers 16 8k;
-    gzip_http_version 1.1;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-    
-    # Virtual Host Configs
-    include /etc/nginx/conf.d/*.conf;
-    include /etc/nginx/sites-enabled/*;
-}
-EOL'
-
-# Check Nginx configuration
-echo -e "\n>>> Testing optimized Nginx configuration..."
-sudo nginx -t || {
-    echo "Nginx configuration test failed. Using simplified configuration..."
-    sudo bash -c 'cat > /etc/nginx/sites-available/latinmixmasters << EOL
 server {
     listen 80;
     listen [::]:80;
@@ -226,65 +81,113 @@ server {
 
     root /var/www/latinmixmasters/dist;
     index index.html;
+    
+    # VPS performance optimizations
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    client_max_body_size 10M;
+    
+    # Gzip compression for faster content delivery and less bandwidth
+    gzip on;
+    gzip_min_length 256;
+    gzip_comp_level 5;
+    gzip_types
+        text/plain
+        text/css
+        application/javascript
+        application/json;
 
     location / {
         try_files \$uri \$uri/ /index.html;
     }
+
+    # Cache static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)\$ {
+        expires 7d;
+        add_header Cache-Control "public, max-age=604800";
+    }
 }
 EOL'
-    sudo nginx -t
+
+# Enable site and restart Nginx
+echo -e "\n${GREEN}>>> Configuring Nginx...${NC}"
+sudo ln -sf /etc/nginx/sites-available/latinmixmasters /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default || true
+
+# Test Nginx configuration
+sudo nginx -t || {
+  echo -e "\n${YELLOW}>>> Using simplified Nginx configuration...${NC}"
+  sudo bash -c 'cat > /etc/nginx/sites-available/latinmixmasters << EOL
+server {
+    listen 80;
+    root /var/www/latinmixmasters/dist;
+    index index.html;
+    location / { try_files \$uri \$uri/ /index.html; }
+}
+EOL'
+  sudo nginx -t
 }
 
 # Restart Nginx
-sudo systemctl restart nginx || sudo service nginx restart
+sudo systemctl restart nginx
 
-# Setup PM2 with optimized settings
-echo -e "\n>>> Setting up PM2 with performance optimizations..."
+# Setup PM2 for production 
+echo -e "\n${GREEN}>>> Setting up PM2 with VPS optimizations...${NC}"
 sudo npm install -g pm2@latest --no-progress || true
 
-# Create optimized PM2 ecosystem file
+# Create optimized PM2 ecosystem file for low-resource VPS
 cat > ecosystem.config.js << EOL
 module.exports = {
   apps: [{
     name: "latinmixmasters",
     script: "npm",
     args: "run preview",
-    instances: "max",
-    exec_mode: "cluster",
+    instances: 1,
+    exec_mode: "fork",
     watch: false,
-    max_memory_restart: "500M",
+    max_memory_restart: "150M",
     env: {
       NODE_ENV: "production",
-      NODE_OPTIONS: "--max-old-space-size=4096"
+      NODE_OPTIONS: "--max-old-space-size=150"
     }
   }]
 };
 EOL
 
-# Check if PM2 was installed successfully
+# Start with PM2
 if command -v pm2 >/dev/null 2>&1; then
-    echo "PM2 installed successfully, setting up optimized service..."
-    cd /var/www/latinmixmasters
-    pm2 start ecosystem.config.js || pm2 start npm --name "latinmixmasters" -- run preview
-    pm2 save
-    pm2 startup
+  echo -e "\n${GREEN}>>> Starting application with PM2...${NC}"
+  cd /var/www/latinmixmasters
+  pm2 start ecosystem.config.js || pm2 start npm --name "latinmixmasters" -- run preview
+  pm2 save
+  # Set up PM2 to start on boot
+  pm2 startup | tail -n 1 | bash
 else
-    echo "PM2 installation failed, skipping PM2 setup..."
+  echo -e "\n${YELLOW}>>> PM2 installation failed, skipping PM2 setup...${NC}"
 fi
 
-# System optimization
-echo -e "\n>>> Optimizing system performance..."
-# Lower swappiness for better performance
-sudo sysctl -w vm.swappiness=10
-# Add persistent setting
-echo "vm.swappiness=10" | sudo tee -a /etc/sysctl.conf
+# Create an update script for easier future updates
+echo -e "\n${GREEN}>>> Creating quick update script...${NC}"
+cat > update.sh << EOL
+#!/bin/bash
+set -e
+echo "=== Latin Mix Masters Quick Update ==="
+timestamp=\$(date +"%Y%m%d_%H%M%S")
+mkdir -p /var/backups/latinmixmasters
+tar -czf /var/backups/latinmixmasters/backup_\$timestamp.tar.gz .
+git pull
+npm ci --production=false --prefer-offline --legacy-peer-deps
+npm run build
+pm2 restart latinmixmasters
+echo "Update completed at \$(date)"
+EOL
+chmod +x update.sh
 
-echo -e "\n=== Fast Installation Complete ==="
-echo "Your application has been installed with performance optimizations!"
-echo "Next steps:"
-echo "1. Set up SSL with: sudo apt install -y certbot python3-certbot-nginx"
-echo "2. Generate certificates: sudo certbot --nginx -d lmmapp.latinmixmasters.com -d www.lmmapp.latinmixmasters.com"
-echo "3. Visit your site at: http://lmmapp.latinmixmasters.com"
-echo ""
-echo "If you need to check server status: sudo systemctl status nginx"
+echo -e "\n${GREEN}=== Installation Complete! ====${NC}"
+echo "Your application is ready to use on your VPS."
+echo "To check server status: sudo systemctl status nginx"
 echo "For PM2 status and logs: pm2 status && pm2 logs"
+echo "To update in the future, just run: ./update.sh"
