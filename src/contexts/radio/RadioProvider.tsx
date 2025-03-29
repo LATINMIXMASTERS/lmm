@@ -1,4 +1,3 @@
-
 import React, { useReducer, ReactNode, useEffect, useRef } from 'react';
 import RadioContext from './RadioContext';
 import { radioReducer, initialRadioState, initialStations } from './radioReducer';
@@ -7,6 +6,7 @@ import { useRadioActions } from './radioActions';
 export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(radioReducer, initialRadioState);
   const isSyncing = useRef(false);
+  const lastSyncTime = useRef<number>(Date.now());
   
   const actions = useRadioActions(state, dispatch);
   
@@ -57,6 +57,16 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const handleStorageChange = (e: StorageEvent) => {
       if (!e.key || !e.newValue) return;
       
+      // Skip if we're currently syncing to avoid loops
+      if (isSyncing.current) return;
+      
+      // Add throttling - don't process events too quickly
+      const now = Date.now();
+      if (now - lastSyncTime.current < 500) return;
+      lastSyncTime.current = now;
+      
+      console.log(`Storage change detected: ${e.key} at ${new Date().toISOString()}`);
+      
       // Handle chat messages update
       if (e.key === 'latinmixmasters_chat_messages') {
         try {
@@ -82,6 +92,27 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           console.error("Failed to parse updated stations:", error);
         }
       }
+      
+      // Handle special timestamp-based sync keys
+      else if (e.key === 'station_status_sync' || e.key === 'chat_enabled_sync') {
+        // These keys trigger a full refresh from localStorage
+        if (actions.syncStationsFromStorage) {
+          actions.syncStationsFromStorage();
+        }
+      }
+      
+      // Handle individual station status changes
+      else if (e.key.startsWith('station_') && (e.key.includes('_status') || e.key.includes('_chat'))) {
+        try {
+          // This is a specific status update for a station
+          // We'll do a full refresh to ensure consistency
+          if (actions.syncStationsFromStorage) {
+            actions.syncStationsFromStorage();
+          }
+        } catch (error) {
+          console.error("Failed to process station status update:", error);
+        }
+      }
     };
     
     window.addEventListener('storage', handleStorageChange);
@@ -105,11 +136,38 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
     }, 5000); // Sync every 5 seconds
     
+    // Setup online/offline handling for better synchronization
+    const handleOnline = () => {
+      console.log("Device is online, syncing data...");
+      // Force immediate sync when coming back online
+      if (actions.syncStationsFromStorage) actions.syncStationsFromStorage();
+      if (actions.syncChatMessagesFromStorage) actions.syncChatMessagesFromStorage();
+    };
+    
+    window.addEventListener('online', handleOnline);
+    
     return () => {
       clearInterval(syncInterval);
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('online', handleOnline);
     };
-  }, []); // Removed actions from dependency array to prevent infinite loop
+  }, []); // Removed dependencies to prevent infinite loop
+
+  // Add a secondary effect that runs more frequently to keep chat in sync
+  useEffect(() => {
+    // Only run this if we're on a page that likely has chat
+    if (window.location.href.includes('/stations/')) {
+      const quickSyncInterval = setInterval(() => {
+        if (!isSyncing.current && actions.syncChatMessagesFromStorage) {
+          actions.syncChatMessagesFromStorage();
+        }
+      }, 1500); // Sync chat more frequently - every 1.5 seconds
+      
+      return () => {
+        clearInterval(quickSyncInterval);
+      };
+    }
+  }, [actions]);
 
   // Prepare the context value with all required properties
   const contextValue = {

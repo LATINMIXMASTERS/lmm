@@ -41,18 +41,28 @@ export const useStatusActions = (
     localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
     localStorage.setItem('station_status_sync', syncTimestamp);
     
-    // Force a storage event for cross-tab/device synchronization
+    // Try multiple approaches to sync across tabs/devices
     try {
+      // 1. Use storage event (works across tabs)
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'latinmixmasters_stations',
         newValue: JSON.stringify(updatedStations)
       }));
       
-      // Additional event for the sync timestamp
+      // 2. Use a separate sync timestamp key for better detection
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'station_status_sync',
         newValue: syncTimestamp
       }));
+      
+      // 3. Set a special key with the exact change for better cross-device sync
+      const syncData = JSON.stringify({
+        stationId,
+        isLive,
+        chatEnabled: enableChat,
+        timestamp: syncTimestamp
+      });
+      localStorage.setItem(`station_${stationId}_status`, syncData);
     } catch (error) {
       console.error("Failed to dispatch storage event:", error);
     }
@@ -98,18 +108,27 @@ export const useStatusActions = (
     localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
     localStorage.setItem('chat_enabled_sync', syncTimestamp);
     
-    // Force a storage event for cross-tab/device synchronization
+    // Use multiple sync approaches for better cross-device consistency
     try {
+      // 1. Use storage event (works across tabs)
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'latinmixmasters_stations',
         newValue: JSON.stringify(updatedStations)
       }));
       
-      // Additional event for the sync timestamp
+      // 2. Use a separate sync timestamp key for better detection
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'chat_enabled_sync',
         newValue: syncTimestamp
       }));
+      
+      // 3. Set a special key with the exact change
+      const syncData = JSON.stringify({
+        stationId,
+        chatEnabled: enabled,
+        timestamp: syncTimestamp
+      });
+      localStorage.setItem(`station_${stationId}_chat`, syncData);
     } catch (error) {
       console.error("Failed to dispatch storage event:", error);
     }

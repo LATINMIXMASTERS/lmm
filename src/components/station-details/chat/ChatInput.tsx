@@ -31,9 +31,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
     }
   }, [handleSendMessage]);
   
-  // Add form submit handler to prevent default form submission
+  // Handle form submission properly to prevent page refresh
   const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // This is crucial to prevent page refresh
     handleSendMessage();
   }, [handleSendMessage]);
   

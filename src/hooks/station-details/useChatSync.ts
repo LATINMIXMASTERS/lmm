@@ -1,6 +1,7 @@
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { useRadio } from '@/hooks/useRadioContext';
+import { useToast } from '@/hooks/use-toast';
 
 export const useChatSync = (
   stationId: string | undefined, 
@@ -10,6 +11,9 @@ export const useChatSync = (
   const { syncChatMessagesFromStorage, clearChatMessagesForStation, getChatMessagesForStation } = useRadio();
   const syncIntervalIdRef = useRef<number | null>(null);
   const previousLiveStatusRef = useRef<boolean>(false);
+  const chatMessagesRef = useRef<any[]>([]);
+  const { toast } = useToast();
+  const [isForceSync, setIsForceSync] = useState<boolean>(false);
 
   // Clean up interval ref when component unmounts or dependencies change
   const clearSyncInterval = useCallback(() => {
@@ -18,6 +22,21 @@ export const useChatSync = (
       syncIntervalIdRef.current = null;
     }
   }, []);
+
+  // Force a sync when online status changes
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log("Device came online, forcing chat sync");
+      setIsForceSync(true);
+      setLastSyncTime(new Date());
+      if (syncChatMessagesFromStorage) {
+        syncChatMessagesFromStorage();
+      }
+    };
+    
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [syncChatMessagesFromStorage, setLastSyncTime]);
 
   // Sync chat messages periodically
   useEffect(() => {
@@ -47,12 +66,40 @@ export const useChatSync = (
     const syncInterval = window.setInterval(() => {
       syncChatMessagesFromStorage();
       setLastSyncTime(new Date());
-    }, 2000); // Sync every 2 seconds when chat is active for more responsive updates
+    }, 1500); // Sync every 1.5 seconds when chat is active for more responsive updates
     
     syncIntervalIdRef.current = syncInterval;
     
     return clearSyncInterval;
   }, [stationId, syncChatMessagesFromStorage, station?.isLive, station?.chatEnabled, clearSyncInterval, setLastSyncTime, clearChatMessagesForStation]);
+
+  // Check for significant changes in chat messages and force update if needed
+  useEffect(() => {
+    const stationMessages = stationId ? getChatMessagesForStation(stationId) : [];
+    
+    // If message count changed significantly, we should notify the user
+    if (chatMessagesRef.current.length > 0 && stationMessages.length > 0) {
+      const prevCount = chatMessagesRef.current.length;
+      const newCount = stationMessages.length;
+      
+      // If more than one message difference, it's likely we got an update from another device
+      if (Math.abs(newCount - prevCount) > 1 && !isForceSync) {
+        console.log(`Chat messages changed: ${prevCount} -> ${newCount}`);
+        setIsForceSync(true);
+        toast({
+          title: "Chat Updated",
+          description: "New messages have synchronized from another device"
+        });
+      }
+    }
+    
+    chatMessagesRef.current = stationMessages;
+    
+    // Reset force sync flag after effect runs
+    if (isForceSync) {
+      setIsForceSync(false);
+    }
+  }, [stationId, getChatMessagesForStation, isForceSync, toast]);
 
   // Automatically clean up chat messages on component unmount if not live
   useEffect(() => {

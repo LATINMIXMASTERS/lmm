@@ -1,16 +1,20 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStationData } from './useStationData';
 import { useStationActions } from './useStationActions';
 import { useChatSync } from './useChatSync';
+import { useSyncChecker } from './useSyncChecker'; // Import our new hook
 import { StationDetailsResult } from './types';
+import { useToast } from '@/hooks/use-toast';
 
 export const useStationDetails = (stationId: string | undefined): StationDetailsResult => {
-  const { currentPlayingStation, getChatMessagesForStation, stations } = useRadio();
+  const { currentPlayingStation, getChatMessagesForStation, stations, syncStationsFromStorage } = useRadio();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [lastSyncTime, setLastSyncTime] = useState<Date>(new Date());
+  const initialSyncDone = useRef<boolean>(false);
   
   // Find station by id or by slug (url-friendly name)
   useEffect(() => {
@@ -28,6 +32,15 @@ export const useStationDetails = (stationId: string | undefined): StationDetails
     }
   }, [stationId, stations]);
   
+  // Force initial sync when component mounts
+  useEffect(() => {
+    if (!initialSyncDone.current && stationId && syncStationsFromStorage) {
+      console.log("Performing initial station sync for:", stationId);
+      syncStationsFromStorage();
+      initialSyncDone.current = true;
+    }
+  }, [stationId, syncStationsFromStorage]);
+  
   // Get state from hooks
   const { 
     station, 
@@ -36,6 +49,9 @@ export const useStationDetails = (stationId: string | undefined): StationDetails
     loadingState 
   } = useStationData(stationId);
   
+  // Use our new sync checker hook
+  useSyncChecker(stationId);
+  
   // Use state for showVideoPlayer here
   const [localShowVideoPlayer, setShowVideoPlayer] = useState(showVideoPlayer);
   
@@ -43,6 +59,24 @@ export const useStationDetails = (stationId: string | undefined): StationDetails
   useEffect(() => {
     setShowVideoPlayer(showVideoPlayer);
   }, [showVideoPlayer]);
+  
+  // Handle online/offline status
+  useEffect(() => {
+    const handleOnline = () => {
+      // Force re-sync when coming back online
+      if (syncStationsFromStorage) {
+        console.log("Device came online, syncing station data");
+        syncStationsFromStorage();
+        toast({
+          title: "Connection Restored",
+          description: "Syncing station data..."
+        });
+      }
+    };
+    
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [syncStationsFromStorage, toast]);
   
   // Derived state
   const isPlaying = currentPlayingStation === stationId;
