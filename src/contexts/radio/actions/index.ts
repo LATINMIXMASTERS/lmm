@@ -3,7 +3,7 @@ import { useStationActions } from './stationActions';
 import { useStationQueries } from './stationQueries';
 import { useBookingActions } from './bookingActions';
 import { useAudioActions } from './audioActions';
-import { useChatActions } from './chatActions';
+import { useChatActions } from './chat';
 
 export const useRadioActions = (state: any, dispatch: React.Dispatch<any>) => {
   const stationActions = useStationActions(state, dispatch);
