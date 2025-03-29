@@ -3,7 +3,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTrackContext } from '@/hooks/useTrackContext';
 import { User } from '@/contexts/auth/types';
-import { Track } from '@/models/Track';
+import { Track, Comment } from '@/models/Track';
 import { formatDistance } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,25 +12,47 @@ import { Edit, Music } from 'lucide-react';
 
 interface UserTracksTabProps {
   userId: string;
+  isRadioHost?: boolean;
+  userTracks?: Track[];
+  isAuthenticated?: boolean;
+  likeTrack?: (trackId: string) => void;
+  addComment?: (trackId: string, comment: Omit<Comment, "id" | "date">) => void;
+  showToast?: (title: string, description: string, variant?: 'default' | 'destructive') => void;
+  user?: User | null;
+  handleEditTrack?: (trackId: string) => void;
+  handleDeleteTrack?: (track: Track) => void;
+  canUserEditTrack?: (trackId: string) => boolean;
 }
 
-const UserTracksTab: React.FC<UserTracksTabProps> = ({ userId }) => {
+const UserTracksTab: React.FC<UserTracksTabProps> = ({ 
+  userId,
+  isRadioHost,
+  userTracks: providedTracks,
+  isAuthenticated,
+  likeTrack,
+  addComment,
+  showToast,
+  user,
+  handleEditTrack,
+  handleDeleteTrack,
+  canUserEditTrack
+}) => {
   const { users } = useAuth();
   const { tracks } = useTrackContext();
 
-  const user = users.find(u => u.id === userId);
-  const userTracks = tracks.filter(track => track.artistId === userId);
+  const profileUser = users.find(u => u.id === userId);
+  const userTracks = providedTracks || tracks.filter(track => track.artistId === userId);
 
-  if (!user) {
+  if (!profileUser) {
     return <p>User not found.</p>;
   }
 
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle>{user.username}'s Mixes</CardTitle>
+        <CardTitle>{profileUser.username}'s Mixes</CardTitle>
         <CardDescription>
-          Uploaded mixes by {user.username}
+          Uploaded mixes by {profileUser.username}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -49,16 +71,18 @@ const UserTracksTab: React.FC<UserTracksTabProps> = ({ userId }) => {
                     </p>
                   </div>
                   <div className="flex space-x-2">
-                    <Link to={`/edit-track/${track.id}`}>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-blue-500 border-blue-200 hover:bg-blue-50"
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
-                      </Button>
-                    </Link>
+                    {(canUserEditTrack && canUserEditTrack(track.id)) && (
+                      <Link to={`/edit-track/${track.id}`}>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-blue-500 border-blue-200 hover:bg-blue-50"
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Edit
+                        </Button>
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>
@@ -67,7 +91,7 @@ const UserTracksTab: React.FC<UserTracksTabProps> = ({ userId }) => {
         ) : (
           <div className="text-center py-8 text-gray-500">
             <Music className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>{user.username} has not uploaded any mixes yet.</p>
+            <p>{profileUser.username} has not uploaded any mixes yet.</p>
           </div>
         )}
       </CardContent>

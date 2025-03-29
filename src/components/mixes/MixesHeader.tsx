@@ -15,19 +15,24 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 interface MixesHeaderProps {
-  onOpenUploadDialog: () => void;
+  isAuthenticated?: boolean;
+  user?: User | null;
+  handleManageGenres: () => void;
+  handleUpload: () => void;
 }
 
-const MixesHeader: React.FC<MixesHeaderProps> = ({ onOpenUploadDialog }) => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-
+const MixesHeader: React.FC<MixesHeaderProps> = ({ 
+  isAuthenticated, 
+  user, 
+  handleManageGenres, 
+  handleUpload 
+}) => {
   return (
     <div className="flex justify-between items-center mb-4">
       <h1 className="text-2xl font-bold">Mixes</h1>
       <div className="space-x-2">
         {user?.isRadioHost && (
-          <Button onClick={onOpenUploadDialog}>
+          <Button onClick={handleUpload}>
             <Plus className="w-4 h-4 mr-2" />
             Upload Mix
           </Button>
