@@ -41,28 +41,49 @@ export const useStatusActions = (
     localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
     localStorage.setItem('station_status_sync', syncTimestamp);
     
-    // Try multiple approaches to sync across tabs/devices
+    // Enhanced multi-device synchronization
     try {
-      // 1. Use storage event (works across tabs)
+      // 1. Use storage events to sync across tabs
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'latinmixmasters_stations',
         newValue: JSON.stringify(updatedStations)
       }));
       
-      // 2. Use a separate sync timestamp key for better detection
+      // 2. Use dedicated sync key for status changes
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'station_status_sync',
         newValue: syncTimestamp
       }));
       
-      // 3. Set a special key with the exact change for better cross-device sync
+      // 3. Set unique keys for different types of changes for better sync
       const syncData = JSON.stringify({
         stationId,
         isLive,
         chatEnabled: enableChat,
-        timestamp: syncTimestamp
+        timestamp: syncTimestamp,
+        action: 'broadcast_status_change'
       });
+      
+      // Store with unique keys for different actions
       localStorage.setItem(`station_${stationId}_status`, syncData);
+      localStorage.setItem('latinmixmasters_last_broadcast', syncData);
+      
+      // 4. Force a broadcast event with high priority
+      const broadcastData = JSON.stringify({
+        deviceId: localStorage.getItem('latinmixmasters_device_id') || 'unknown',
+        timestamp: Date.now(),
+        stationId,
+        isLive,
+        chatEnabled: enableChat,
+        action: 'broadcast_control',
+        priority: 'high'
+      });
+      
+      localStorage.setItem('latinmixmasters_sync_broadcast', broadcastData);
+      
+      // 5. Set a flag that this is a host-initiated change
+      localStorage.setItem('latinmixmasters_host_action', 'true');
+      setTimeout(() => localStorage.removeItem('latinmixmasters_host_action'), 2000);
     } catch (error) {
       console.error("Failed to dispatch storage event:", error);
     }
@@ -104,31 +125,47 @@ export const useStatusActions = (
     // Force localStorage update with a timestamp to ensure cross-device sync
     const syncTimestamp = new Date().toISOString();
     
-    // Update localStorage and trigger storage event for cross-device sync
+    // Enhanced multi-device synchronization for chat toggle
     localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
     localStorage.setItem('chat_enabled_sync', syncTimestamp);
     
-    // Use multiple sync approaches for better cross-device consistency
     try {
-      // 1. Use storage event (works across tabs)
+      // 1. Use multiple storage events for better cross-tab sync
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'latinmixmasters_stations',
         newValue: JSON.stringify(updatedStations)
       }));
       
-      // 2. Use a separate sync timestamp key for better detection
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'chat_enabled_sync',
         newValue: syncTimestamp
       }));
       
-      // 3. Set a special key with the exact change
+      // 2. Store action-specific data for better sync detection
       const syncData = JSON.stringify({
         stationId,
         chatEnabled: enabled,
-        timestamp: syncTimestamp
+        timestamp: syncTimestamp,
+        action: 'chat_toggle'
       });
       localStorage.setItem(`station_${stationId}_chat`, syncData);
+      localStorage.setItem('latinmixmasters_last_chat_toggle', syncData);
+      
+      // 3. Force broadcast with high priority
+      const broadcastData = JSON.stringify({
+        deviceId: localStorage.getItem('latinmixmasters_device_id') || 'unknown',
+        timestamp: Date.now(),
+        stationId,
+        chatEnabled: enabled,
+        action: 'broadcast_chat_toggle',
+        priority: 'high'
+      });
+      
+      localStorage.setItem('latinmixmasters_sync_broadcast', broadcastData);
+      
+      // 4. Set a flag that this is a host-initiated change
+      localStorage.setItem('latinmixmasters_host_action', 'true');
+      setTimeout(() => localStorage.removeItem('latinmixmasters_host_action'), 2000);
     } catch (error) {
       console.error("Failed to dispatch storage event:", error);
     }
@@ -158,6 +195,15 @@ export const useStatusActions = (
           type: 'SET_CHAT_MESSAGES', 
           payload: remainingMessages 
         });
+        
+        // Broadcast chat message clear event
+        const clearEvent = JSON.stringify({
+          stationId,
+          action: 'clear_chat',
+          timestamp: Date.now(),
+          deviceId: localStorage.getItem('latinmixmasters_device_id') || 'unknown'
+        });
+        localStorage.setItem(`latinmixmasters_chat_clear_${stationId}`, clearEvent);
         
         // Force a storage event for cross-tab/device synchronization
         window.dispatchEvent(new StorageEvent('storage', {

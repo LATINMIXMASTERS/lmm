@@ -15,7 +15,7 @@ SERVER="$1"
 GITHUB_REPO="$2"
 
 # Use optimized SSH settings for fast connections
-SSH_OPTS="-o ServerAliveInterval=30 -o Compression=yes"
+SSH_OPTS="-o ServerAliveInterval=30 -o Compression=yes -o ConnectTimeout=10"
 
 echo -e "\n>>> Setting up deployment on VPS..."
 ssh $SSH_OPTS $SERVER "mkdir -p /var/www/latinmixmasters && sudo chown -R \$USER:\$USER /var/www/latinmixmasters"

@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useToast } from '@/hooks/use-toast';
@@ -12,8 +11,9 @@ export const useSyncChecker = (stationId: string | undefined) => {
   const syncLock = useRef<boolean>(false);
   const deviceId = useRef<string>(getOrCreateDeviceId());
   const [forceSync, setForceSync] = useState<boolean>(false);
+  const lastBroadcastRef = useRef<string | null>(null);
+  const prioritySyncTimeout = useRef<number | null>(null);
   
-  // Function to create or retrieve device ID
   function getOrCreateDeviceId() {
     let id = localStorage.getItem('latinmixmasters_device_id');
     if (!id) {
@@ -23,42 +23,42 @@ export const useSyncChecker = (stationId: string | undefined) => {
     return id;
   }
 
-  // Function to perform a full sync of all data
-  const performFullSync = () => {
-    if (syncLock.current) return;
+  const performFullSync = (priority: boolean = false) => {
+    if (syncLock.current && !priority) return;
     
     syncLock.current = true;
+    console.log(`[SyncChecker] Performing ${priority ? 'PRIORITY' : 'regular'} full sync for station: ${stationId}`);
     
     try {
       if (syncStationsFromStorage) {
         syncStationsFromStorage();
       }
       
-      if (syncChatMessagesFromStorage) {
-        syncChatMessagesFromStorage();
-      }
-      
-      const syncTimestamp = Date.now();
-      localStorage.setItem('latinmixmasters_last_sync', syncTimestamp.toString());
-      localStorage.setItem(`latinmixmasters_device_${deviceId.current}_sync`, syncTimestamp.toString());
-      
-      if (stationId) {
-        broadcastSyncEvent({
-          stationId,
-          action: 'full_sync',
-          timestamp: syncTimestamp,
-          isMobile
-        });
-      }
+      setTimeout(() => {
+        if (syncChatMessagesFromStorage) {
+          syncChatMessagesFromStorage();
+        }
+        
+        const syncTimestamp = Date.now();
+        localStorage.setItem('latinmixmasters_last_sync', syncTimestamp.toString());
+        localStorage.setItem(`latinmixmasters_device_${deviceId.current}_sync`, syncTimestamp.toString());
+        
+        if (stationId) {
+          broadcastSyncEvent({
+            stationId,
+            action: priority ? 'priority_sync_complete' : 'full_sync',
+            timestamp: syncTimestamp,
+            isMobile
+          });
+        }
+      }, isMobile ? 100 : 200);
     } finally {
-      // Release lock after a delay to prevent rapid re-syncs
       setTimeout(() => {
         syncLock.current = false;
-      }, 500);
+      }, isMobile ? 300 : 500);
     }
   };
   
-  // Function to broadcast sync events to other devices/tabs
   const broadcastSyncEvent = (data: any) => {
     try {
       const eventData = {
@@ -82,19 +82,15 @@ export const useSyncChecker = (stationId: string | undefined) => {
     }
   };
 
-  // Handle online status to force sync - critical for mobile
   useEffect(() => {
     const handleOnline = () => {
       console.log(`[SyncChecker] Device online (${isMobile ? 'mobile' : 'desktop'})`);
       setForceSync(true);
       
-      // Record reconnection time
       localStorage.setItem('latinmixmasters_last_online', Date.now().toString());
       
-      // Perform sync immediately
-      performFullSync();
+      performFullSync(true);
       
-      // Reset force sync after a delay
       setTimeout(() => setForceSync(false), 2000);
     };
     
@@ -103,11 +99,10 @@ export const useSyncChecker = (stationId: string | undefined) => {
       localStorage.setItem('latinmixmasters_last_offline', Date.now().toString());
     };
     
-    // For mobile devices, also check visibility changes
     const handleVisibilityChange = () => {
-      if (isMobile && document.visibilityState === 'visible') {
-        console.log("[SyncChecker] Mobile app became visible, syncing...");
-        performFullSync();
+      if (document.visibilityState === 'visible') {
+        console.log(`[SyncChecker] App became visible (${isMobile ? 'mobile' : 'desktop'}), syncing...`);
+        performFullSync(isMobile);
       }
     };
     
@@ -115,44 +110,75 @@ export const useSyncChecker = (stationId: string | undefined) => {
     window.addEventListener('offline', handleOffline);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // Do an initial sync on mount for mobile devices
-    if (isMobile && stationId) {
-      performFullSync();
+    if (stationId) {
+      performFullSync(isMobile);
     }
     
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (prioritySyncTimeout.current) {
+        clearTimeout(prioritySyncTimeout.current);
+      }
     };
   }, [syncStationsFromStorage, syncChatMessagesFromStorage, stationId, isMobile]);
 
-  // Main sync checker effect
   useEffect(() => {
     if (!stationId) return;
     
-    // Run sync check immediately on first load
-    checkSyncStatus();
+    const checkForBroadcastActions = () => {
+      const hostAction = localStorage.getItem('latinmixmasters_host_action');
+      const lastBroadcast = localStorage.getItem('latinmixmasters_last_broadcast');
+      const lastChatToggle = localStorage.getItem('latinmixmasters_last_chat_toggle');
+      
+      if (hostAction === 'true' || 
+          (lastBroadcast && lastBroadcast !== lastBroadcastRef.current) ||
+          (lastChatToggle && lastChatToggle !== lastBroadcastRef.current)) {
+        
+        console.log(`[SyncChecker] Host broadcast action detected on ${isMobile ? 'mobile' : 'desktop'}`);
+        
+        syncLock.current = true;
+        
+        if (lastBroadcast) lastBroadcastRef.current = lastBroadcast;
+        if (lastChatToggle) lastBroadcastRef.current = lastChatToggle;
+        
+        if (syncStationsFromStorage) {
+          syncStationsFromStorage();
+          
+          setTimeout(() => {
+            if (syncChatMessagesFromStorage) {
+              syncChatMessagesFromStorage();
+            }
+            
+            setTimeout(() => {
+              syncLock.current = false;
+            }, 200);
+          }, 100);
+        } else {
+          syncLock.current = false;
+        }
+      }
+    };
     
-    // Set different intervals for mobile vs desktop
+    checkForBroadcastActions();
+    
     const checkInterval = setInterval(() => {
       checkSyncStatus();
-    }, isMobile ? 3000 : 6000);
+      checkForBroadcastActions();
+    }, isMobile ? 2000 : 4000);
     
     return () => clearInterval(checkInterval);
     
-    // Function to check sync status between localStorage and memory
     function checkSyncStatus() {
       if (syncLock.current) return;
       
       const now = Date.now();
       
-      // Skip if we've recently checked (unless force sync is true)
-      if (!forceSync && now - lastCheckTime.current < (isMobile ? 1500 : 2500)) {
+      if (!forceSync && now - lastCheckTime.current < (isMobile ? 1000 : 2000)) {
         return;
       }
       
-      // Get station from localStorage directly
       try {
         const storedStationsJson = localStorage.getItem('latinmixmasters_stations');
         if (!storedStationsJson) return;
@@ -162,54 +188,41 @@ export const useSyncChecker = (stationId: string | undefined) => {
         
         if (!storedStation) return;
         
-        // Find current station in state
         const currentStation = stations.find(s => s.id === stationId);
         if (!currentStation) return;
         
-        // Check for mismatches in critical properties
         const isLiveMismatch = storedStation.isLive !== currentStation.isLive;
         const isChatMismatch = storedStation.chatEnabled !== currentStation.chatEnabled;
         const isVideoMismatch = storedStation.videoStreamUrl !== currentStation.videoStreamUrl;
         
         if (isLiveMismatch || isChatMismatch || isVideoMismatch || forceSync) {
-          console.log(`[SyncChecker] Mismatch detected on ${isMobile ? 'mobile' : 'desktop'}`);
+          console.log(`[SyncChecker] Broadcast control mismatch detected on ${isMobile ? 'mobile' : 'desktop'}`);
           
-          // Force a sync to resolve the inconsistency
           syncLock.current = true;
           
           if (syncStationsFromStorage) {
             syncStationsFromStorage();
             
-            // Small delay before syncing chat
             setTimeout(() => {
               if (syncChatMessagesFromStorage) {
                 syncChatMessagesFromStorage();
               }
               
-              // Release the lock after a delay
               setTimeout(() => {
                 syncLock.current = false;
-              }, 300);
-            }, 200);
+              }, 200);
+            }, 100);
             
-            // Show toast if this is a force sync
-            if (forceSync) {
+            if (isLiveMismatch || isChatMismatch) {
               toast({
-                title: `Syncing Station Status`,
-                description: "Resolving inconsistency in station status"
+                title: `Station Status Updated`,
+                description: isLiveMismatch 
+                  ? `Station is now ${storedStation.isLive ? 'LIVE' : 'offline'}`
+                  : `Chat is now ${storedStation.chatEnabled ? 'enabled' : 'disabled'}`
               });
             }
             
-            // Update sync timestamp
             localStorage.setItem('latinmixmasters_last_sync', now.toString());
-            
-            // Broadcast sync event
-            broadcastSyncEvent({
-              stationId,
-              action: 'sync_fix',
-              timestamp: now,
-              isMobile
-            });
           } else {
             syncLock.current = false;
           }
@@ -223,20 +236,26 @@ export const useSyncChecker = (stationId: string | undefined) => {
     }
   }, [stationId, stations, syncStationsFromStorage, toast, forceSync, syncChatMessagesFromStorage, isMobile]);
   
-  // Listen for broadcast sync events from other tabs/devices
   useEffect(() => {
     const handleStorageEvent = (e: StorageEvent) => {
-      // Process sync broadcasts from other devices
       if (e.key === 'latinmixmasters_sync_broadcast' && e.newValue) {
         try {
           const syncData = JSON.parse(e.newValue);
           
-          // Only process if it's not from this device
           if (syncData.deviceId !== deviceId.current && syncData.stationId === stationId) {
-            console.log(`[SyncChecker] Received sync broadcast from another device`);
+            console.log(`[SyncChecker] Received sync broadcast: ${syncData.action || 'unknown action'}`);
             
-            // Force a sync when another device broadcasts
-            if (!syncLock.current) {
+            if (syncData.action === 'broadcast_control' || syncData.action === 'broadcast_chat_toggle') {
+              if (prioritySyncTimeout.current) {
+                clearTimeout(prioritySyncTimeout.current);
+              }
+              
+              prioritySyncTimeout.current = window.setTimeout(() => {
+                if (!syncLock.current) {
+                  performFullSync(true);
+                }
+              }, isMobile ? 100 : 200);
+            } else if (!syncLock.current) {
               syncLock.current = true;
               
               setTimeout(() => {
@@ -249,7 +268,7 @@ export const useSyncChecker = (stationId: string | undefined) => {
                     syncChatMessagesFromStorage();
                   }
                   syncLock.current = false;
-                }, 300);
+                }, 200);
               }, 100);
             }
           }
@@ -258,7 +277,36 @@ export const useSyncChecker = (stationId: string | undefined) => {
         }
       }
       
-      // React to stations changes
+      if (e.key && e.key.includes('_status') && e.newValue && !syncLock.current) {
+        try {
+          const statusData = JSON.parse(e.newValue);
+          if (statusData.action === 'broadcast_status_change' || 
+              statusData.action === 'chat_toggle') {
+            
+            console.log(`[SyncChecker] Detected broadcast control change: ${statusData.action}`);
+            
+            syncLock.current = true;
+            
+            if (syncStationsFromStorage) {
+              syncStationsFromStorage();
+              
+              setTimeout(() => {
+                if (syncChatMessagesFromStorage) {
+                  syncChatMessagesFromStorage();
+                }
+                
+                syncLock.current = false;
+              }, 200);
+            } else {
+              syncLock.current = false;
+            }
+          }
+        } catch (error) {
+          console.error(`[SyncChecker] Error processing status change:`, error);
+          syncLock.current = false;
+        }
+      }
+      
       if (e.key === 'latinmixmasters_stations' && e.newValue && !syncLock.current) {
         syncLock.current = true;
         
@@ -266,13 +314,11 @@ export const useSyncChecker = (stationId: string | undefined) => {
           syncStationsFromStorage();
         }
         
-        // Release the lock after a delay
         setTimeout(() => {
           syncLock.current = false;
         }, 300);
       }
       
-      // React to chat messages changes
       if (e.key === 'latinmixmasters_chat_messages' && e.newValue && !syncLock.current) {
         syncLock.current = true;
         
@@ -280,7 +326,6 @@ export const useSyncChecker = (stationId: string | undefined) => {
           syncChatMessagesFromStorage();
         }
         
-        // Release the lock after a delay
         setTimeout(() => {
           syncLock.current = false;
         }, 200);
@@ -290,6 +335,25 @@ export const useSyncChecker = (stationId: string | undefined) => {
     window.addEventListener('storage', handleStorageEvent);
     return () => window.removeEventListener('storage', handleStorageEvent);
   }, [stationId, syncStationsFromStorage, syncChatMessagesFromStorage, isMobile]);
+  
+  useEffect(() => {
+    const handleBroadcastEvent = (e: any) => {
+      if (!stationId) return;
+      
+      const { detail } = e;
+      if (detail && detail.stationId === stationId) {
+        console.log(`[SyncChecker] Custom broadcast event: ${detail.action}`);
+        
+        performFullSync(true);
+      }
+    };
+    
+    window.addEventListener('latinmixmasters_broadcast', handleBroadcastEvent);
+    
+    return () => {
+      window.removeEventListener('latinmixmasters_broadcast', handleBroadcastEvent);
+    };
+  }, [stationId]);
   
   return null;
 };

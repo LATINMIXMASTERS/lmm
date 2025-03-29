@@ -170,9 +170,70 @@ export const useStationActions = (
         payload: { stationId, videoStreamUrl } 
       });
       
+      // Get updated stations after dispatch
+      const updatedStations = state.stations.map(station => {
+        if (station.id === stationId) {
+          return { ...station, videoStreamUrl };
+        }
+        return station;
+      });
+      
+      // Force localStorage update with timestamp for better cross-device sync
+      localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+      localStorage.setItem('video_stream_url_sync', Date.now().toString());
+      
+      // Enhanced multi-device sync for video stream URL changes
+      try {
+        // 1. Use storage events to sync across tabs
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'latinmixmasters_stations',
+          newValue: JSON.stringify(updatedStations)
+        }));
+        
+        // 2. Set unique keys for video stream changes
+        const syncData = JSON.stringify({
+          stationId,
+          videoStreamUrl,
+          timestamp: Date.now(),
+          action: 'video_stream_update'
+        });
+        localStorage.setItem(`station_${stationId}_video`, syncData);
+        
+        // 3. Broadcast high-priority event
+        const broadcastData = JSON.stringify({
+          deviceId: localStorage.getItem('latinmixmasters_device_id') || 'unknown',
+          timestamp: Date.now(),
+          stationId,
+          videoStreamUrl,
+          action: 'broadcast_video_update',
+          priority: 'high'
+        });
+        localStorage.setItem('latinmixmasters_sync_broadcast', broadcastData);
+        
+        // 4. Set host action flag
+        localStorage.setItem('latinmixmasters_host_action', 'true');
+        setTimeout(() => localStorage.removeItem('latinmixmasters_host_action'), 2000);
+        
+        // 5. Try to dispatch a custom event for immediate sync
+        try {
+          const event = new CustomEvent('latinmixmasters_broadcast', {
+            detail: {
+              stationId,
+              action: 'video_stream_update',
+              timestamp: Date.now()
+            }
+          });
+          window.dispatchEvent(event);
+        } catch (error) {
+          console.error("Error dispatching custom event:", error);
+        }
+      } catch (error) {
+        console.error("Error broadcasting video stream update:", error);
+      }
+      
       toast({
         title: "Video stream URL updated",
-        description: "The video streaming URL has been updated."
+        description: "The video streaming URL has been updated and broadcasted to all devices."
       });
     } catch (error) {
       console.error("Error updating video stream URL:", error);
