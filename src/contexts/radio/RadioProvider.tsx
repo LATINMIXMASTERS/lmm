@@ -7,12 +7,20 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [state, dispatch] = useReducer(radioReducer, initialRadioState);
   const isSyncing = useRef(false);
   const lastSyncTime = useRef<number>(Date.now());
+  const deviceId = useRef<string>(getOrCreateDeviceId());
+  
+  function getOrCreateDeviceId() {
+    let id = localStorage.getItem('latinmixmasters_device_id');
+    if (!id) {
+      id = `device_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem('latinmixmasters_device_id', id);
+    }
+    return id;
+  }
   
   const actions = useRadioActions(state, dispatch);
   
-  // Initialize from localStorage or default data
   useEffect(() => {
-    // Check if we have stations saved in localStorage
     const savedStations = localStorage.getItem('latinmixmasters_stations');
     if (savedStations) {
       try {
@@ -23,7 +31,6 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         localStorage.setItem('latinmixmasters_stations', JSON.stringify(initialStations));
       }
     } else {
-      // Initialize with default stations if not in localStorage
       dispatch({ type: 'SET_STATIONS', payload: initialStations });
       localStorage.setItem('latinmixmasters_stations', JSON.stringify(initialStations));
     }
@@ -40,7 +47,6 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       localStorage.setItem('latinmixmasters_bookings', JSON.stringify([]));
     }
 
-    // Load chat messages from localStorage
     const savedChatMessages = localStorage.getItem('latinmixmasters_chat_messages');
     if (savedChatMessages) {
       try {
@@ -53,25 +59,23 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify({}));
     }
     
-    // Enhanced storage sync listener for better cross-device communication
+    localStorage.setItem('latinmixmasters_device_sync_time', Date.now().toString());
+    localStorage.setItem(`latinmixmasters_device_${deviceId.current}_loaded`, Date.now().toString());
+    
     const handleStorageChange = (e: StorageEvent) => {
       if (!e.key || !e.newValue) return;
       
-      // Skip if we're currently syncing to avoid loops
       if (isSyncing.current) return;
       
-      // Add throttling - don't process events too quickly
       const now = Date.now();
       if (now - lastSyncTime.current < 500) return;
       lastSyncTime.current = now;
       
       console.log(`Storage change detected: ${e.key} at ${new Date().toISOString()}`);
       
-      // Handle chat messages update
       if (e.key === 'latinmixmasters_chat_messages') {
         try {
           const newMessages = JSON.parse(e.newValue);
-          // Only update if there's an actual change to prevent loops
           if (JSON.stringify(state.chatMessages) !== e.newValue) {
             dispatch({ type: 'SET_CHAT_MESSAGES', payload: newMessages });
           }
@@ -80,48 +84,68 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
       }
       
-      // Handle stations update (for live status sync)
       else if (e.key === 'latinmixmasters_stations') {
         try {
           const newStations = JSON.parse(e.newValue);
-          // Only update if there's an actual change to prevent loops
           if (JSON.stringify(state.stations) !== e.newValue) {
             dispatch({ type: 'SET_STATIONS', payload: newStations });
+            localStorage.setItem(`latinmixmasters_device_${deviceId.current}_stations_sync`, now.toString());
           }
         } catch (error) {
           console.error("Failed to parse updated stations:", error);
         }
       }
       
-      // Handle special timestamp-based sync keys
       else if (e.key === 'station_status_sync' || e.key === 'chat_enabled_sync') {
-        // These keys trigger a full refresh from localStorage
         if (actions.syncStationsFromStorage) {
+          isSyncing.current = true;
           actions.syncStationsFromStorage();
+          setTimeout(() => {
+            isSyncing.current = false;
+          }, 500);
         }
       }
       
-      // Handle individual station status changes
       else if (e.key.startsWith('station_') && (e.key.includes('_status') || e.key.includes('_chat'))) {
+        if (actions.syncStationsFromStorage) {
+          isSyncing.current = true;
+          actions.syncStationsFromStorage();
+          setTimeout(() => {
+            if (actions.syncChatMessagesFromStorage) {
+              actions.syncChatMessagesFromStorage();
+            }
+            isSyncing.current = false;
+          }, 500);
+        }
+      }
+      
+      else if (e.key === 'latinmixmasters_sync_broadcast' && e.newValue) {
         try {
-          // This is a specific status update for a station
-          // We'll do a full refresh to ensure consistency
-          if (actions.syncStationsFromStorage) {
-            actions.syncStationsFromStorage();
+          const syncData = JSON.parse(e.newValue);
+          if (syncData.deviceId !== deviceId.current) {
+            console.log("Received sync broadcast from another device:", syncData);
+            if (actions.syncStationsFromStorage) {
+              isSyncing.current = true;
+              actions.syncStationsFromStorage();
+              setTimeout(() => {
+                if (actions.syncChatMessagesFromStorage) {
+                  actions.syncChatMessagesFromStorage();
+                }
+                isSyncing.current = false;
+              }, 500);
+            }
           }
         } catch (error) {
-          console.error("Failed to process station status update:", error);
+          console.error("Error processing sync broadcast:", error);
         }
       }
     };
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Set up periodic sync for chat messages and stations, but with debouncing to prevent infinite loops
     const syncInterval = setInterval(() => {
       if (!isSyncing.current) {
         isSyncing.current = true;
-        // Use a setTimeout to stagger the syncs
         setTimeout(() => {
           if (actions.syncChatMessagesFromStorage) {
             actions.syncChatMessagesFromStorage();
@@ -129,54 +153,82 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           setTimeout(() => {
             if (actions.syncStationsFromStorage) {
               actions.syncStationsFromStorage();
+              localStorage.setItem('latinmixmasters_last_global_sync', Date.now().toString());
+              localStorage.setItem(`latinmixmasters_device_${deviceId.current}_global_sync`, Date.now().toString());
             }
             isSyncing.current = false;
           }, 500);
         }, 0);
       }
-    }, 5000); // Sync every 5 seconds
+    }, 5000);
     
-    // Setup online/offline handling for better synchronization
     const handleOnline = () => {
       console.log("Device is online, syncing data...");
-      // Force immediate sync when coming back online
-      if (actions.syncStationsFromStorage) actions.syncStationsFromStorage();
-      if (actions.syncChatMessagesFromStorage) actions.syncChatMessagesFromStorage();
+      if (actions.syncStationsFromStorage) {
+        isSyncing.current = true;
+        actions.syncStationsFromStorage();
+        const reconnectTime = Date.now();
+        localStorage.setItem('latinmixmasters_last_reconnect', reconnectTime.toString());
+        localStorage.setItem(`latinmixmasters_device_${deviceId.current}_reconnect`, reconnectTime.toString());
+        setTimeout(() => {
+          if (actions.syncChatMessagesFromStorage) {
+            actions.syncChatMessagesFromStorage();
+          }
+          isSyncing.current = false;
+          try {
+            window.dispatchEvent(new StorageEvent('storage', {
+              key: 'latinmixmasters_sync_broadcast',
+              newValue: JSON.stringify({
+                deviceId: deviceId.current,
+                timestamp: Date.now(),
+                action: 'reconnect'
+              })
+            }));
+          } catch (error) {
+            console.error("Error broadcasting reconnect event:", error);
+          }
+        }, 500);
+      }
+    };
+    
+    const handleOffline = () => {
+      const offlineTime = Date.now();
+      localStorage.setItem('latinmixmasters_last_offline', offlineTime.toString());
+      localStorage.setItem(`latinmixmasters_device_${deviceId.current}_offline`, offlineTime.toString());
+      console.log("Device went offline at:", new Date(offlineTime).toISOString());
     };
     
     window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
     
     return () => {
       clearInterval(syncInterval);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
-  }, []); // Removed dependencies to prevent infinite loop
-
-  // Add a secondary effect that runs more frequently to keep chat in sync
+  }, []);
+  
   useEffect(() => {
-    // Only run this if we're on a page that likely has chat
     if (window.location.href.includes('/stations/')) {
       const quickSyncInterval = setInterval(() => {
         if (!isSyncing.current && actions.syncChatMessagesFromStorage) {
           actions.syncChatMessagesFromStorage();
         }
-      }, 1500); // Sync chat more frequently - every 1.5 seconds
+      }, 1500);
       
       return () => {
         clearInterval(quickSyncInterval);
       };
     }
   }, [actions]);
-
-  // Prepare the context value with all required properties
+  
   const contextValue = {
     stations: state.stations,
     bookings: state.bookings,
     currentPlayingStation: state.currentPlayingStation,
     audioState: state.audioState,
     chatMessages: state.chatMessages,
-    // Make sure to include all the required functions from the RadioContextType
     setStationLiveStatus: actions.setStationLiveStatus,
     toggleChatEnabled: actions.toggleChatEnabled,
     ...actions
