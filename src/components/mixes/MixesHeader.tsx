@@ -1,61 +1,51 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, PlusCircle } from 'lucide-react';
+import { Plus, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { User } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { User } from '@/contexts/auth/types';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
-/**
- * Props for the MixesHeader component
- */
 interface MixesHeaderProps {
-  isAuthenticated: boolean;
-  user: User | null;
-  handleManageGenres: () => void;
-  handleUpload: () => void;
+  onOpenUploadDialog: () => void;
 }
 
-/**
- * Component that displays the header section of the Mixes page
- * Shows the title, description, and action buttons for uploading mixes and managing genres
- * Action buttons are conditionally rendered based on user permissions
- */
-const MixesHeader: React.FC<MixesHeaderProps> = ({ 
-  isAuthenticated, 
-  user, 
-  handleManageGenres, 
-  handleUpload 
-}) => {
+const MixesHeader: React.FC<MixesHeaderProps> = ({ onOpenUploadDialog }) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
   return (
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-      <div>
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">Mixes</h1>
-        <p className="text-gray-600 mb-4">Discover tracks uploaded by our DJ crew</p>
-      </div>
-      
-      <div className="flex flex-wrap gap-2">
-        {/* Only show action buttons for radio hosts and admins */}
-        {isAuthenticated && (user?.isRadioHost || user?.isAdmin) && (
-          <>
-            <Button 
-              onClick={handleManageGenres}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <PlusCircle className="w-4 h-4" />
-              Manage Genres
-            </Button>
-            
-            <Button 
-              onClick={handleUpload}
-              className="bg-blue hover:bg-blue-dark text-white flex items-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
-              Upload Mix
-            </Button>
-          </>
+    <div className="flex justify-between items-center mb-4">
+      <h1 className="text-2xl font-bold">Mixes</h1>
+      <div className="space-x-2">
+        {user?.isRadioHost && (
+          <Button onClick={onOpenUploadDialog}>
+            <Plus className="w-4 h-4 mr-2" />
+            Upload Mix
+          </Button>
         )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <Filter className="w-4 h-4 mr-2" />
+              Filter
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Filter by</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Genre</DropdownMenuItem>
+            <DropdownMenuItem>Date</DropdownMenuItem>
+            <DropdownMenuItem>Popularity</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

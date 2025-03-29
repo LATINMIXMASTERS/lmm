@@ -25,7 +25,7 @@ import PasswordResetManager from '@/components/admin-dashboard/PasswordResetMana
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, users } = useAuth();
   const { toast } = useToast();
   
   useEffect(() => {
@@ -39,8 +39,8 @@ const AdminDashboard: React.FC = () => {
     }
   }, [isAuthenticated, user, navigate, toast]);
   
-  const pendingBookingsCount = useAuth().users.filter(u => u.pendingApproval).length;
-  const pendingUsersCount = useAuth().users.filter(u => u.pendingApproval).length;
+  const pendingBookingsCount = 0; // This would need to come from a different context
+  const pendingUsersCount = users.filter(u => u.pendingApproval).length;
   
   return (
     <MainLayout>

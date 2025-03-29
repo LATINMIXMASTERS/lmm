@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User } from "@/contexts/AuthContext";
+import { User } from "@/contexts/auth/types";
 import { useToast } from "@/hooks/use-toast";
 
 interface ProfileEditorProps {
