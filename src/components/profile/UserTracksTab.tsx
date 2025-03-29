@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTrackContext } from '@/contexts/track/TrackContext';
+import { useTrackContext } from '@/hooks/useTrackContext';
 import { User } from '@/contexts/auth/types';
-import { Track } from '@/contexts/track/types';
+import { Track } from '@/models/Track';
 import { formatDistance } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
