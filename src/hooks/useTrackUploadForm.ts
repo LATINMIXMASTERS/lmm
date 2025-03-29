@@ -25,7 +25,7 @@ export const useTrackUploadForm = () => {
     coverImage, setCoverImage,
     audioFile, setAudioFile,
     coverPreview, setCoverPreview,
-    maxFileSize
+    maxAudioFileSize, maxImageFileSize
   } = useFileHandling();
   
   const {
@@ -93,7 +93,8 @@ export const useTrackUploadForm = () => {
         coverImage: uploadResult.coverUrl,
         audioFile: uploadResult.audioUrl,
         fileSize: audioFile.size,
-        uploadedBy: user.id
+        uploadedBy: user.id,
+        uploadDate: new Date().toISOString() // Make sure we use uploadDate for the track
       };
       
       console.log('Adding track to context:', newTrack);
@@ -138,6 +139,7 @@ export const useTrackUploadForm = () => {
     s3Configured,
     uploadError,
     handleSubmit,
-    maxFileSize
+    maxAudioFileSize,
+    maxImageFileSize
   };
 };

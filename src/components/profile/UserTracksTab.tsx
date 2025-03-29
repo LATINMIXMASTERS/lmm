@@ -45,7 +45,7 @@ const UserTracksTab: React.FC<UserTracksTabProps> = ({ userId }) => {
                       Genre: {track.genre}
                     </p>
                     <p className="text-sm text-gray-500 mt-1">
-                      Uploaded {formatDistance(new Date(track.uploadedAt || Date.now()), new Date(), { addSuffix: true })}
+                      Uploaded {formatDistance(new Date(track.uploadDate || Date.now()), new Date(), { addSuffix: true })}
                     </p>
                   </div>
                   <div className="flex space-x-2">

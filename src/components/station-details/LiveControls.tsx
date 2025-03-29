@@ -199,7 +199,7 @@ const LiveControls: React.FC<LiveControlsProps> = ({
       </div>
       
       <p className="text-sm text-muted-foreground">
-        These controls are for demonstration purposes - in production, live status would be determined by actual streaming activity.
+        Only use these controls if needed to activate the live broadcast and chat room.
       </p>
     </div>
   );
@@ -208,3 +208,4 @@ const LiveControls: React.FC<LiveControlsProps> = ({
 LiveControls.displayName = 'LiveControls';
 
 export default memo(LiveControls);
+

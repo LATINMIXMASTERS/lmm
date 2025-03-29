@@ -28,7 +28,8 @@ const UploadForm: React.FC = () => {
     s3Configured,
     uploadError,
     handleSubmit,
-    maxFileSize
+    maxAudioFileSize,
+    maxImageFileSize
   } = useTrackUploadForm();
   
   return (
@@ -48,12 +49,13 @@ const UploadForm: React.FC = () => {
         coverPreview={coverPreview}
         setCoverPreview={setCoverPreview}
         setCoverImage={setCoverImage}
+        maxFileSize={maxImageFileSize}
       />
       
       <AudioFileUpload
         audioFile={audioFile}
         setAudioFile={setAudioFile}
-        maxFileSize={maxFileSize}
+        maxFileSize={maxAudioFileSize}
       />
       
       <UploadProgress

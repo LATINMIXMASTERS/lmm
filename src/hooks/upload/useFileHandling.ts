@@ -2,8 +2,9 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
-// Max file size: 250MB in bytes
-export const MAX_FILE_SIZE = 262144000;
+// Max file sizes in bytes
+export const MAX_AUDIO_FILE_SIZE = 262144000; // 250MB
+export const MAX_IMAGE_FILE_SIZE = 1048576; // 1MB
 
 export const useFileHandling = () => {
   const [coverImage, setCoverImage] = useState<File | null>(null);
@@ -12,16 +13,29 @@ export const useFileHandling = () => {
   const { toast } = useToast();
 
   const validateAudioFile = (file: File): boolean => {
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > MAX_AUDIO_FILE_SIZE) {
       toast({
         title: "File too large",
-        description: "Maximum file size is 250MB",
+        description: "Maximum audio file size is 250MB",
         variant: "destructive"
       });
       return false;
     }
     
     // Add more validation if needed (file type, etc.)
+    return true;
+  };
+
+  const validateImageFile = (file: File): boolean => {
+    if (file.size > MAX_IMAGE_FILE_SIZE) {
+      toast({
+        title: "Image too large",
+        description: "Maximum image size is 1MB",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
     return true;
   };
 
@@ -33,6 +47,10 @@ export const useFileHandling = () => {
   };
 
   const handleCoverImageChange = (file: File | null, previewUrl?: string) => {
+    if (file && !validateImageFile(file)) {
+      return;
+    }
+    
     setCoverImage(file);
     if (previewUrl) {
       setCoverPreview(previewUrl);
@@ -48,6 +66,7 @@ export const useFileHandling = () => {
     setAudioFile: handleAudioFileChange,
     coverPreview,
     setCoverPreview,
-    maxFileSize: MAX_FILE_SIZE
+    maxAudioFileSize: MAX_AUDIO_FILE_SIZE,
+    maxImageFileSize: MAX_IMAGE_FILE_SIZE
   };
 };
