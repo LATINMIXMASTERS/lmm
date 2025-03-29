@@ -11,6 +11,7 @@ export interface StationDetailsState {
     hasError: boolean;
     errorMessage: string;
   };
+  setShowVideoPlayer: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export interface StationDetailsActions {

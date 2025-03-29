@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,6 +19,14 @@ export const useStationDetails = (stationId: string | undefined): StationDetails
     loadingState 
   } = useStationData(stationId);
   
+  // Use state for showVideoPlayer here
+  const [localShowVideoPlayer, setShowVideoPlayer] = useState(showVideoPlayer);
+  
+  // Keep local state in sync with derived state
+  useEffect(() => {
+    setShowVideoPlayer(showVideoPlayer);
+  }, [showVideoPlayer]);
+  
   // Derived state
   const isPlaying = currentPlayingStation === stationId;
   const isPrivilegedUser = user?.isAdmin || user?.isRadioHost;
@@ -29,8 +36,8 @@ export const useStationDetails = (stationId: string | undefined): StationDetails
     stationId,
     station,
     isPlaying,
-    showVideoPlayer,
-    (value) => setShowVideoPlayer(value)
+    localShowVideoPlayer,
+    setShowVideoPlayer
   );
   
   // Get chat messages
@@ -43,7 +50,7 @@ export const useStationDetails = (stationId: string | undefined): StationDetails
     // State
     station,
     stationBookings,
-    showVideoPlayer,
+    showVideoPlayer: localShowVideoPlayer, // Use the local state here
     lastSyncTime,
     loadingState,
     

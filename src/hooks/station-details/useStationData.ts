@@ -66,6 +66,7 @@ export const useStationData = (stationId: string | undefined): StationDetailsSta
     stationBookings,
     showVideoPlayer,
     lastSyncTime,
-    loadingState
+    loadingState,
+    setShowVideoPlayer
   };
 };

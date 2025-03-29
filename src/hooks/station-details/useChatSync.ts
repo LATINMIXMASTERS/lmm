@@ -50,7 +50,9 @@ export const useChatSync = (
     };
   }, [stationId, station?.isLive, clearChatMessagesForStation]);
 
-  const chatMessages = station ? syncChatMessagesFromStorage() || [] : [];
+  // Get messages for this station - don't check truthiness of void function
+  // Instead, call the function and use its return value
+  const chatMessages = station ? syncChatMessagesFromStorage() : [];
   
   return { chatMessages };
 };
