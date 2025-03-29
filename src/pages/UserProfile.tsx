@@ -135,13 +135,16 @@ const UserProfile: React.FC = () => {
     likeTrack(trackId);
   };
 
+  // FIX: Add missing event parameter and properly handle it
   const handleTrackEdit = (trackId: string) => {
-    handleEditTrack(trackId);
+    // Create a mock event object since handleEditTrack expects an event parameter
+    const mockEvent = { stopPropagation: () => {} } as React.MouseEvent;
+    handleEditTrack(trackId, mockEvent);
   };
 
-  // Handler for track deletion that accepts Track object
+  // FIX: Correct wrapper function for track deletion to match the expected parameter type
   const handleTrackDelete = (track: Track) => {
-    handleDeleteTrack(track);
+    handleDeleteTrack(track.id);
   };
   
   return (
