@@ -11,39 +11,55 @@ export const useChatActions = (
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Optimized synchronization with debounce mechanism
+  // Improved synchronization with debounce mechanism
   let syncTimeout: number | null = null;
+  let lastSyncTime = 0;
+  const MIN_SYNC_INTERVAL = 1000; // Minimum 1 second between syncs
   
   const syncChatMessagesFromStorage = () => {
-    // Clear any pending sync to prevent multiple rapid syncs
-    if (syncTimeout) {
-      window.clearTimeout(syncTimeout);
+    // Prevent too frequent syncs
+    const now = Date.now();
+    if (now - lastSyncTime < MIN_SYNC_INTERVAL) {
+      // If called too frequently, debounce it
+      if (syncTimeout) {
+        window.clearTimeout(syncTimeout);
+      }
+      
+      syncTimeout = window.setTimeout(() => {
+        performSync();
+      }, MIN_SYNC_INTERVAL);
+      
+      return;
     }
     
-    // Set a new timeout for the sync
-    syncTimeout = window.setTimeout(() => {
-      try {
-        const storedMessages = localStorage.getItem('latinmixmasters_chat_messages');
-        if (storedMessages) {
-          const parsedMessages = JSON.parse(storedMessages);
-          // Only dispatch if there's an actual change to prevent unnecessary re-renders
-          if (JSON.stringify(state.chatMessages) !== JSON.stringify(parsedMessages)) {
-            dispatch({ 
-              type: 'SET_CHAT_MESSAGES', 
-              payload: parsedMessages 
-            });
-          }
+    performSync();
+  };
+  
+  const performSync = () => {
+    lastSyncTime = Date.now();
+    try {
+      const storedMessages = localStorage.getItem('latinmixmasters_chat_messages');
+      if (storedMessages) {
+        const parsedMessages = JSON.parse(storedMessages);
+        
+        // Deep comparison to prevent unnecessary re-renders
+        if (JSON.stringify(state.chatMessages) !== JSON.stringify(parsedMessages)) {
+          dispatch({ 
+            type: 'SET_CHAT_MESSAGES', 
+            payload: parsedMessages 
+          });
+          
+          console.log("Chat messages synced from localStorage:", new Date().toISOString());
         }
-      } catch (error) {
-        console.error("Failed to sync chat messages from localStorage:", error);
-        // Create an empty chat messages object if parsing fails
-        localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify({}));
       }
-    }, 100); // Small delay to debounce multiple calls
+    } catch (error) {
+      console.error("Failed to sync chat messages from localStorage:", error);
+      // Create an empty chat messages object if parsing fails
+      localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify({}));
+    }
   };
 
   const getChatMessagesForStationImpl = (stationId: string): ChatMessage[] => {
-    // We don't want to sync within this function to avoid infinite loops
     // Just return what's in the current state
     return state.chatMessages[stationId] || [];
   };
@@ -72,6 +88,12 @@ export const useChatActions = (
 
     // Get current messages without syncing
     const currentMessages = state.chatMessages[stationId] || [];
+    
+    // Prevent duplicate messages by ID
+    if (currentMessages.some(msg => msg.id === newMessage.id)) {
+      return;
+    }
+    
     const updatedMessages = [...currentMessages, newMessage];
     
     // Store in localStorage with a limit to prevent it from getting too large
@@ -82,7 +104,7 @@ export const useChatActions = (
       [stationId]: limitedMessages
     };
     
-    // Update localStorage with the latest messages
+    // Force update localStorage immediately with the latest messages
     localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify(allChatMessages));
     
     // Dispatch action to add message
@@ -90,6 +112,12 @@ export const useChatActions = (
       type: 'ADD_CHAT_MESSAGE', 
       payload: newMessage
     });
+    
+    // Trigger a storage event to notify other tabs/windows
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'latinmixmasters_chat_messages',
+      newValue: JSON.stringify(allChatMessages)
+    }));
   };
 
   const setStationLiveStatusImpl = (stationId: string, isLive: boolean, enableChat: boolean = false): void => {

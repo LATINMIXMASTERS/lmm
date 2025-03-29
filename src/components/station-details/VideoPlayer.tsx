@@ -1,5 +1,7 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
+import Hls from 'hls.js';
 import VideoPlayerControls from './VideoPlayerControls';
 import VideoPlayerElement from './video-player/VideoPlayerElement';
 import VideoPlayerLoading from './video-player/VideoPlayerLoading';
@@ -26,8 +28,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [fallbackToIframe, setFallbackToIframe] = useState(false);
   const initialUrlCheck = useRef(false);
   const [errorCount, setErrorCount] = useState(0);
+  const hlsRef = useRef<Hls | null>(null);
   
   const safeStreamUrl = streamUrl || '';
+  
+  // Check if the browser supports native HLS
+  const supportsNativeHLS = useRef(() => {
+    const video = document.createElement('video');
+    return video.canPlayType('application/vnd.apple.mpegurl') !== '';
+  }).current();
   
   useEffect(() => {
     if (!isVisible) return;
@@ -36,27 +45,28 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       initialUrlCheck.current = true;
       
       const problematicDomains = ['lmmappstore.com'];
-      
       const needsFallback = problematicDomains.some(domain => safeStreamUrl.includes(domain));
       
-      if (needsFallback) {
-        console.log("Using fallback player immediately for known problematic domain");
+      // Always use fallback for m3u8 on mobile devices
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const isM3u8 = safeStreamUrl.toLowerCase().endsWith('.m3u8');
+      
+      if (needsFallback || (isMobile && isM3u8 && !supportsNativeHLS)) {
+        console.log("Using fallback player for compatibility");
         setFallbackToIframe(true);
       }
     }
-  }, [safeStreamUrl, isVisible]);
+  }, [safeStreamUrl, isVisible, supportsNativeHLS]);
   
   useEffect(() => {
-    if (!isVisible) return;
-    
-    console.log("VideoPlayer component rendered with props:", { 
+    console.log("VideoPlayer component rendered:", { 
       streamUrl: safeStreamUrl, 
       isVisible,
       embedded,
-      streamUrlValid: !!safeStreamUrl && safeStreamUrl.length > 0,
-      usingFallback: fallbackToIframe
+      usingFallback: fallbackToIframe,
+      supportsNativeHLS
     });
-  }, [safeStreamUrl, isVisible, embedded, fallbackToIframe]);
+  }, [safeStreamUrl, isVisible, embedded, fallbackToIframe, supportsNativeHLS]);
   
   const {
     videoRef,
@@ -83,6 +93,79 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     isVisible: isVisible && !fallbackToIframe
   });
 
+  // Use Hls.js for non-Safari browsers when not using the fallback player
+  useEffect(() => {
+    if (fallbackToIframe || !videoRef.current || !isVisible || !safeStreamUrl || !safeStreamUrl.endsWith('.m3u8')) {
+      return;
+    }
+    
+    // If HLS.js is supported and it's an m3u8 stream
+    if (Hls.isSupported()) {
+      // Clean up any existing instance
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+      }
+      
+      try {
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          fragLoadingMaxRetry: 5
+        });
+        
+        hlsRef.current = hls;
+        hls.loadSource(safeStreamUrl);
+        hls.attachMedia(videoRef.current);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          if (isPlaying && videoRef.current) {
+            videoRef.current.play().catch(e => {
+              console.error("Error auto-playing video:", e);
+              setErrorCount(prev => prev + 1);
+            });
+          }
+        });
+        
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error("HLS error:", data);
+          setErrorCount(prev => prev + 1);
+          
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.log("Fatal network error, trying to recover");
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.log("Fatal media error, trying to recover");
+                hls.recoverMediaError();
+                break;
+              default:
+                console.log("Fatal error, using fallback");
+                hls.destroy();
+                setFallbackToIframe(true);
+                break;
+            }
+          }
+        });
+      } catch (error) {
+        console.error("Error initializing HLS:", error);
+        setFallbackToIframe(true);
+      }
+    } else if (!supportsNativeHLS) {
+      // Browser doesn't support HLS.js or native HLS
+      setFallbackToIframe(true);
+    }
+    
+    return () => {
+      if (hlsRef.current) {
+        console.log("Destroying HLS instance");
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [isVisible, safeStreamUrl, isPlaying, supportsNativeHLS]);
+
   useEffect(() => {
     if (shouldUseFallback && !fallbackToIframe) {
       console.log("Switching to fallback player based on hook recommendation");
@@ -90,33 +173,31 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [shouldUseFallback, fallbackToIframe]);
 
+  // Handle fallback after multiple errors
+  useEffect(() => {
+    if (errorCount >= 2 && !fallbackToIframe) {
+      console.log("Multiple errors detected, switching to fallback player");
+      setFallbackToIframe(true);
+      toast({
+        title: "Switching to Compatible Player",
+        description: "Using alternative player for better compatibility"
+      });
+    }
+  }, [errorCount, fallbackToIframe, toast]);
+
   if (!isVisible) {
     return null;
   }
 
   const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     console.error("Video error:", e);
-    const videoElement = e.currentTarget;
-    const errorCode = videoElement.error ? videoElement.error.code : 'unknown';
-    const errorMessage = videoElement.error ? videoElement.error.message : 'Unknown error';
-    
-    console.error("Video error details:", { 
-      errorCode, 
-      errorMessage,
-      networkState: videoElement.networkState,
-      readyState: videoElement.readyState,
-      streamUrl: safeStreamUrl
-    });
-    
     setErrorCount(prev => prev + 1);
     
-    if (errorCount >= 2 && !fallbackToIframe) {
+    if (errorCount >= 1 && !fallbackToIframe) {
       setFallbackToIframe(true);
-      
       toast({
         title: "Switching to Compatible Player",
-        description: "Using alternative player for better compatibility",
-        variant: "default"
+        description: "Using alternative player for better compatibility"
       });
     }
   };

@@ -9,7 +9,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Send, WifiOff } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useRadio } from '@/hooks/useRadioContext';
 
 interface ChatRoomProps {
   stationId: string;
@@ -18,6 +17,7 @@ interface ChatRoomProps {
   lastSyncTime?: Date;
 }
 
+// Memoized chat message component to prevent unnecessary re-renders
 const ChatMessageItem = memo(({ 
   message, 
   isCurrentUser 
@@ -25,6 +25,13 @@ const ChatMessageItem = memo(({
   message: ChatMessage; 
   isCurrentUser: boolean;
 }) => {
+  const formattedTime = React.useMemo(() => {
+    const timestamp = typeof message.timestamp === 'string' 
+      ? new Date(message.timestamp)
+      : message.timestamp;
+    return format(timestamp, 'h:mm a');
+  }, [message.timestamp]);
+  
   return (
     <div className={`flex items-start gap-2 ${isCurrentUser ? 'justify-end' : ''}`}>
       {!isCurrentUser && (
@@ -39,9 +46,7 @@ const ChatMessageItem = memo(({
             {isCurrentUser ? 'You' : message.username}
           </span>
           <span className="text-xs opacity-70">
-            {typeof message.timestamp === 'string' 
-              ? format(new Date(message.timestamp), 'h:mm a')
-              : format(message.timestamp, 'h:mm a')}
+            {formattedTime}
           </span>
         </div>
         <p className="text-sm whitespace-pre-wrap break-words">{message.message}</p>
@@ -58,7 +63,7 @@ const ChatMessageItem = memo(({
 
 ChatMessageItem.displayName = 'ChatMessageItem';
 
-const ChatRoom: React.FC<ChatRoomProps> = ({ 
+const ChatRoom: React.FC<ChatRoomProps> = memo(({ 
   stationId, 
   messages, 
   onSendMessage,
@@ -67,26 +72,16 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
   const { user } = useAuth();
   const [message, setMessage] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
-  const chatContentRef = useRef<HTMLDivElement>(null);
-  const messagesLengthRef = useRef<number>(0);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const prevMessagesLengthRef = useRef<number>(0);
   const isAnonymous = !user;
   const isMobile = useIsMobile();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   
-  // Use a ref to store the messages length to avoid unnecessary re-renders
+  // Network status effect
   useEffect(() => {
-    messagesLengthRef.current = messages?.length || 0;
-  }, [messages]);
-  
-  // Optimize online/offline handler to avoid re-creating functions on each render
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-    };
-    
-    const handleOffline = () => {
-      setIsOnline(false);
-    };
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
     
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -97,31 +92,24 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
     };
   }, []);
   
-  // Optimize scroll effect to only run when messages length changes
+  // Auto-scroll to bottom effect, optimized to only run when messages count changes
   useEffect(() => {
-    if (messages?.length !== messagesLengthRef.current) {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    const currentLength = messages?.length || 0;
+    if (currentLength !== prevMessagesLengthRef.current) {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
       }
-      
-      if (chatContentRef.current) {
-        const scrollElement = chatContentRef.current.querySelector('[data-radix-scroll-area-viewport]');
-        if (scrollElement) {
-          scrollElement.scrollTop = scrollElement.scrollHeight;
-        }
-      }
-      
-      messagesLengthRef.current = messages?.length || 0;
+      prevMessagesLengthRef.current = currentLength;
     }
   }, [messages]);
 
   // Memoize the handleSendMessage function
   const handleSendMessage = useCallback(() => {
-    if (message.trim() && user) {
+    if (message.trim() && user && isOnline) {
       onSendMessage(message);
       setMessage('');
     }
-  }, [message, user, onSendMessage]);
+  }, [message, user, onSendMessage, isOnline]);
 
   // Memoize the handleKeyDown function
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -130,6 +118,9 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
       handleSendMessage();
     }
   }, [handleSendMessage]);
+
+  // Format time for display
+  const formattedSyncTime = lastSyncTime ? format(lastSyncTime, 'h:mm:ss a') : 'Never';
 
   return (
     <Card className={`mt-6 ${isMobile ? 'h-[400px]' : 'h-[500px]'} flex flex-col`}>
@@ -145,7 +136,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
         </div>
       </CardHeader>
       
-      <CardContent className="flex-grow flex flex-col p-3 h-full" ref={chatContentRef}>
+      <CardContent className="flex-grow flex flex-col p-3 h-full">
         <ScrollArea className="flex-grow mb-4 pr-4" ref={scrollRef}>
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
@@ -160,6 +151,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
                   isCurrentUser={msg.userId === user?.id}
                 />
               ))}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </ScrollArea>
@@ -190,11 +182,13 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
         )}
         
         <div className="mt-2 text-xs text-muted-foreground text-right">
-          Last sync: {lastSyncTime ? format(lastSyncTime, 'h:mm:ss a') : 'Never'}
+          Last sync: {formattedSyncTime}
         </div>
       </CardContent>
     </Card>
   );
-};
+});
 
-export default memo(ChatRoom);
+ChatRoom.displayName = 'ChatRoom';
+
+export default ChatRoom;

@@ -36,54 +36,62 @@ const StationContent: React.FC<StationContentProps> = ({
   // Avoid rendering chat if station is not live or chat is disabled
   const shouldShowChat = station.isLive && station.chatEnabled;
   
+  // Memoize parts of the UI that don't change frequently
+  const renderedDescription = (
+    <StationDescription
+      description={station.description}
+      broadcastTime={station.broadcastTime}
+    />
+  );
+  
+  const renderedPrivilegedContent = isPrivilegedUser ? (
+    <PrivilegedContent 
+      station={station}
+      isPrivilegedUser={isPrivilegedUser}
+      showVideoPlayer={showVideoPlayer}
+      onToggleLiveStatus={onToggleLiveStatus}
+      onToggleChat={onToggleChat}
+      onToggleVideo={onToggleVideo}
+      onUpdateVideoStreamUrl={onUpdateVideoStreamUrl}
+    />
+  ) : null;
+  
+  const renderedVideoPlayer = station.isLive && showVideoPlayer ? (
+    <div className="mb-6 mt-4 rounded-md overflow-hidden border border-border">
+      <VideoPlayer 
+        streamUrl={station.videoStreamUrl || ''}
+        isVisible={showVideoPlayer}
+        onClose={onToggleVideo}
+        embedded={true}
+      />
+    </div>
+  ) : null;
+  
+  const renderedChatRoom = shouldShowChat ? (
+    <div className="mb-8">
+      <ChatRoom 
+        stationId={station.id}
+        messages={chatMessages}
+        onSendMessage={onSendMessage}
+        lastSyncTime={lastSyncTime}
+      />
+    </div>
+  ) : null;
+  
+  const renderedUpcomingShows = (
+    <UpcomingShows bookings={stationBookings} />
+  );
+  
   return (
     <div className="prose prose-slate dark:prose-invert max-w-none">
-      <StationDescription
-        description={station.description}
-        broadcastTime={station.broadcastTime}
-      />
-      
-      {/* Privileged User Content */}
-      {isPrivilegedUser && (
-        <PrivilegedContent 
-          station={station}
-          isPrivilegedUser={isPrivilegedUser}
-          showVideoPlayer={showVideoPlayer}
-          onToggleLiveStatus={onToggleLiveStatus}
-          onToggleChat={onToggleChat}
-          onToggleVideo={onToggleVideo}
-          onUpdateVideoStreamUrl={onUpdateVideoStreamUrl}
-        />
-      )}
-      
-      {/* Embed Video Player above chat when visible */}
-      {station.isLive && showVideoPlayer && (
-        <div className="mb-6 mt-4 rounded-md overflow-hidden border border-border">
-          <VideoPlayer 
-            streamUrl={station.videoStreamUrl || ''}
-            isVisible={showVideoPlayer}
-            onClose={onToggleVideo}
-            embedded={true}
-          />
-        </div>
-      )}
-      
-      {/* Show chatroom when station is live and chat is enabled */}
-      {shouldShowChat && (
-        <div className="mb-8">
-          <ChatRoom 
-            stationId={station.id}
-            messages={chatMessages}
-            onSendMessage={onSendMessage}
-            lastSyncTime={lastSyncTime}
-          />
-        </div>
-      )}
-      
-      {/* Show upcoming bookings/shows calendar */}
-      <UpcomingShows bookings={stationBookings} />
+      {renderedDescription}
+      {renderedPrivilegedContent}
+      {renderedVideoPlayer}
+      {renderedChatRoom}
+      {renderedUpcomingShows}
     </div>
   );
 };
 
+// Use memo to prevent unnecessary re-renders
 export default memo(StationContent);
