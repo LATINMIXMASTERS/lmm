@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ExclamationTriangleIcon } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -23,7 +23,7 @@ const S3ConfigAlert: React.FC<S3ConfigAlertProps> = ({ s3Configured }) => {
 
   return (
     <Alert variant="default" className="bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
-      <ExclamationTriangleIcon className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
       <AlertTitle className="text-amber-800 dark:text-amber-400">S3 Storage Required</AlertTitle>
       <AlertDescription className="text-amber-700 dark:text-amber-300">
         <p className="mb-2">
