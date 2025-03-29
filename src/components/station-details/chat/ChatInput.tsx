@@ -1,8 +1,9 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, FormEvent } from 'react';
 import { Send } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -16,41 +17,68 @@ const ChatInput: React.FC<ChatInputProps> = ({
   isOnline 
 }) => {
   const [message, setMessage] = useState('');
+  const isMobile = useIsMobile();
+  const [isSending, setIsSending] = useState(false);
   
+  // Enhanced send message with debounce protection to prevent double-sends on mobile
   const handleSendMessage = useCallback(() => {
-    if (message.trim() && !isDisabled && isOnline) {
-      onSendMessage(message);
-      setMessage('');
+    if (message.trim() && !isDisabled && isOnline && !isSending) {
+      setIsSending(true);
+      
+      try {
+        onSendMessage(message);
+        setMessage('');
+      } catch (error) {
+        console.error("Error sending message:", error);
+      } finally {
+        // Reset sending state after a short delay
+        setTimeout(() => {
+          setIsSending(false);
+        }, 300);
+      }
     }
-  }, [message, isDisabled, isOnline, onSendMessage]);
+  }, [message, isDisabled, isOnline, onSendMessage, isSending]);
 
+  // Special handling for Enter key
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
+      e.preventDefault(); // Critical to prevent form submission
       handleSendMessage();
     }
   }, [handleSendMessage]);
   
-  // Handle form submission properly to prevent page refresh
-  const handleSubmit = useCallback((e: React.FormEvent) => {
+  // Enhanced form submission handler with extra safeguards
+  const handleSubmit = useCallback((e: FormEvent) => {
     e.preventDefault(); // This is crucial to prevent page refresh
+    e.stopPropagation(); // Extra protection
     handleSendMessage();
+    return false; // Yet another safeguard
   }, [handleSendMessage]);
   
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 items-end">
+    <form 
+      onSubmit={handleSubmit} 
+      className="flex gap-2 items-end"
+      // Extra attributes to ensure no submission
+      action="javascript:void(0);"
+    >
       <Textarea
         placeholder="Type your message here..."
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="min-h-[60px] resize-none"
+        className={`min-h-[${isMobile ? '50' : '60'}px] resize-none`}
         maxLength={500}
-        disabled={isDisabled || !isOnline}
+        disabled={isDisabled || !isOnline || isSending}
+        // Make sure autocomplete and correction don't interfere with form submission
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck="true"
       />
       <Button 
-        type="submit"
-        disabled={!message.trim() || isDisabled || !isOnline} 
+        type="button" // Changed from "submit" to "button" for safer mobile handling
+        onClick={handleSubmit}
+        disabled={!message.trim() || isDisabled || !isOnline || isSending} 
         className="h-10 w-10 p-0"
       >
         <Send className="h-4 w-4" />
