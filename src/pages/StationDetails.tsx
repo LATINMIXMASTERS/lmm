@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import MainLayout from '@/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,19 +7,15 @@ import StationHeader from '@/components/station-details/StationHeader';
 import StationDetailSkeleton from '@/components/station-details/StationDetailSkeleton';
 import ControlsSection from '@/components/station-details/ControlsSection';
 import StationContent from '@/components/station-details/StationContent';
-import useStationDetails from '@/hooks/useStationDetails';
+import useStationDetails from '@/hooks/station-details/useStationDetails';
 import useRandomListeners from '@/hooks/useRandomListeners';
 import { useToast } from '@/hooks/use-toast';
-import { useRadio } from '@/hooks/useRadioContext';
 import { Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const StationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
-  const { syncChatMessagesFromStorage, clearChatMessagesForStation } = useRadio();
-  const [syncTime, setSyncTime] = useState(new Date());
-  const syncIntervalIdRef = useRef<number | null>(null);
   
   // Custom hook for random listeners is used outside of component to avoid re-renders
   useRandomListeners();
@@ -32,6 +28,7 @@ const StationDetails: React.FC = () => {
     showVideoPlayer,
     chatMessages,
     loadingState,
+    lastSyncTime,
     handlePlayToggle,
     handleBookShow,
     handleToggleLiveStatus,
@@ -40,37 +37,6 @@ const StationDetails: React.FC = () => {
     handleUpdateVideoStreamUrl,
     handleSendMessage
   } = useStationDetails(id);
-
-  // Clean up interval ref when component unmounts or dependencies change
-  const clearSyncInterval = useCallback(() => {
-    if (syncIntervalIdRef.current) {
-      window.clearInterval(syncIntervalIdRef.current);
-      syncIntervalIdRef.current = null;
-    }
-  }, []);
-
-  // Set up more efficient sync when chat is visible and enabled
-  useEffect(() => {
-    // Clean up any existing interval first
-    clearSyncInterval();
-    
-    // Only set up sync if station is live and chat is enabled
-    if (!id || !station?.isLive || !station?.chatEnabled) return;
-    
-    // Initial sync on dependencies change
-    syncChatMessagesFromStorage();
-    setSyncTime(new Date());
-    
-    // Set up periodic sync with a more efficient interval
-    const intervalId = window.setInterval(() => {
-      syncChatMessagesFromStorage();
-      setSyncTime(new Date());
-    }, 5000); // Sync every 5 seconds when chat is active
-    
-    syncIntervalIdRef.current = intervalId;
-    
-    return clearSyncInterval;
-  }, [id, syncChatMessagesFromStorage, station?.isLive, station?.chatEnabled, clearSyncInterval]);
 
   // Handle connection issues
   useEffect(() => {
@@ -87,8 +53,6 @@ const StationDetails: React.FC = () => {
         title: "Connection Restored",
         description: "You're back online. Syncing chat messages...",
       });
-      syncChatMessagesFromStorage();
-      setSyncTime(new Date());
     };
     
     window.addEventListener('offline', handleOffline);
@@ -98,17 +62,7 @@ const StationDetails: React.FC = () => {
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('online', handleOnline);
     };
-  }, [toast, syncChatMessagesFromStorage]);
-
-  // Automatically clean up chat messages on component unmount if not live
-  useEffect(() => {
-    return () => {
-      if (id && !station?.isLive && clearChatMessagesForStation) {
-        // Clear messages for this station when user leaves the page and station is not live
-        clearChatMessagesForStation(id);
-      }
-    };
-  }, [id, station?.isLive, clearChatMessagesForStation]);
+  }, [toast]);
 
   const handleShareStation = useCallback(() => {
     if (!station) return;
@@ -210,7 +164,7 @@ const StationDetails: React.FC = () => {
               onToggleChat={handleToggleChat}
               onToggleVideo={handleToggleVideo}
               onUpdateVideoStreamUrl={handleUpdateVideoStreamUrl}
-              lastSyncTime={syncTime}
+              lastSyncTime={lastSyncTime}
             />
           </CardContent>
         </Card>
