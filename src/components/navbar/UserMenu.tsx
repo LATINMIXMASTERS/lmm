@@ -9,6 +9,12 @@ const UserMenu: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const isMobile = useIsMobile();
 
+  // Create URL-friendly username for profile links
+  const getUsernameSlug = () => {
+    if (!user) return '';
+    return user.username.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+  };
+
   return (
     <>
       {/* Desktop menu */}
@@ -25,7 +31,7 @@ const UserMenu: React.FC = () => {
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <div className="py-1">
                   <Link
-                    to={user?.isRadioHost ? `/dj/${user.id}` : `/profile/${user.id}`}
+                    to={user?.isRadioHost ? `/dj/${getUsernameSlug()}` : `/profile/${getUsernameSlug()}`}
                     className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-lightest"
                   >
                     <User className="w-4 h-4" />
@@ -82,7 +88,7 @@ const UserMenu: React.FC = () => {
           </div>
           
           <Link
-            to={user?.isRadioHost ? `/dj/${user.id}` : `/profile/${user.id}`}
+            to={user?.isRadioHost ? `/dj/${getUsernameSlug()}` : `/profile/${getUsernameSlug()}`}
             className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-lightest rounded-lg"
           >
             <User className="w-5 h-5" />

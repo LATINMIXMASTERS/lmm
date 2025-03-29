@@ -14,6 +14,11 @@ const DJs: React.FC = () => {
   // Filter users to only get radio DJs
   const djs = users.filter(user => user.isRadioHost);
   
+  // Create URL-friendly username for profile links
+  const getUsernameSlug = (username: string) => {
+    return username.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+  };
+  
   return (
     <MainLayout>
       <div className="container py-8 md:py-12">
@@ -48,7 +53,7 @@ const DJs: React.FC = () => {
                     )}
                   </CardHeader>
                   <CardFooter>
-                    <Link to={`/dj/${dj.id}`} className="w-full">
+                    <Link to={`/dj/${getUsernameSlug(dj.username)}`} className="w-full">
                       <Button variant="default" className="w-full">
                         View Profile
                       </Button>

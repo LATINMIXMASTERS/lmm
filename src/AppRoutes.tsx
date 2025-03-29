@@ -35,13 +35,13 @@ const AppRoutes: React.FC = () => {
       <Route path="/mixes" element={<Mixes />} />
       <Route path="/djs" element={<DJs />} />
       
-      {/* User Profile routes - user-friendly format */}
-      <Route path="/profile/:userId" element={<UserProfile />} />
-      <Route path="/user/:userId" element={<UserProfile />} />
+      {/* User Profile routes - support both ID and username */}
+      <Route path="/profile/:username" element={<UserProfile />} />
+      <Route path="/user/:username" element={<UserProfile />} />
       
-      {/* DJ Profile routes - renamed from Host to DJ */}
-      <Route path="/dj/:userId" element={<DJProfile />} />
-      <Route path="/host/:userId" element={<Navigate to="/dj/:userId" replace />} /> {/* Redirect legacy URLs */}
+      {/* DJ Profile routes - support both ID and username */}
+      <Route path="/dj/:username" element={<DJProfile />} />
+      <Route path="/host/:username" element={<Navigate to="/dj/:username" replace />} /> {/* Redirect legacy URLs */}
       
       {/* Upload paths */}
       <Route path="/upload" element={<UploadTrack />} />

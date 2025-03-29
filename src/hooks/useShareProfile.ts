@@ -6,7 +6,7 @@ export const useShareProfile = (profileUser: User) => {
   const { toast } = useToast();
   
   const handleShareProfile = () => {
-    // Create a URL-friendly version of the username
+    // Use username for URL path
     const usernameSlug = profileUser.username.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
     const isRadioHost = profileUser.isRadioHost;
     const shareUrl = `${window.location.origin}/${isRadioHost ? 'dj' : 'profile'}/${usernameSlug}`;

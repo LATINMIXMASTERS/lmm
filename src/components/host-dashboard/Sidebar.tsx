@@ -14,6 +14,11 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ user, onEditProfile }) => {
   const navigate = useNavigate();
+  
+  // Create URL-friendly username for profile links
+  const getUsernameSlug = () => {
+    return user.username.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+  };
 
   return (
     <div className="w-full md:w-64 flex-shrink-0">
@@ -51,7 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onEditProfile }) => {
             <Button 
               variant="ghost" 
               className="w-full justify-start hover:bg-gold/10 hover:text-gold-dark" 
-              onClick={() => navigate(`/host/${user.id}`)}
+              onClick={() => navigate(`/dj/${getUsernameSlug()}`)}
             >
               <Users className="mr-2 h-4 w-4" />
               Public Profile

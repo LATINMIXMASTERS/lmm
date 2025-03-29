@@ -17,13 +17,18 @@ import { useDJProfileActions } from '@/hooks/useDJProfileActions';
 import { formatDuration, createTrackActionsRenderer } from '@/utils/djProfileUtils';
 
 const DJProfile: React.FC = () => {
-  const { userId } = useParams<{ userId: string }>();
+  const { username } = useParams<{ username: string }>();
   const { user, users } = useAuth();
   const { tracks, genres, getTracksByUser, deleteTrack } = useTrack();
   const { stations, bookings, setCurrentPlayingStation } = useRadio();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const djUser = users.find(u => u.id === userId && u.isRadioHost);
+
+  // Find DJ by username or by ID for backwards compatibility
+  const djUser = users.find(u => {
+    const normalizedUsername = u.username.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+    return (normalizedUsername === username?.toLowerCase() || u.id === username) && u.isRadioHost;
+  });
   
   const [trackToDelete, setTrackToDelete] = useState<Track | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
