@@ -51,7 +51,8 @@ const StationImageCard: React.FC<StationImageCardProps> = ({
           
           <Button 
             onClick={() => onSaveImage(station.id)}
-            className="mt-4 bg-blue hover:bg-blue-dark w-full"
+            className="mt-4 w-full"
+            variant="default"
           >
             <ImageIcon className="w-4 h-4 mr-2" />
             Save Image

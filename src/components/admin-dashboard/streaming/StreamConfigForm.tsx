@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioStation } from '@/models/RadioStation';
+import { useToast } from '@/hooks/use-toast';
 
 interface StreamConfigFormProps {
   currentStation: RadioStation | null;
@@ -27,9 +28,10 @@ const StreamConfigForm: React.FC<StreamConfigFormProps> = ({
   setStreamPassword,
   handleSubmit
 }) => {
+  const { toast } = useToast();
   // Add validation state
   const [isFormDirty, setIsFormDirty] = useState(false);
-  const [formValues, setFormValues] = useState({
+  const [localValues, setLocalValues] = useState({
     url: '',
     port: '',
     password: ''
@@ -37,39 +39,51 @@ const StreamConfigForm: React.FC<StreamConfigFormProps> = ({
   
   // Update form values when station changes
   useEffect(() => {
-    setFormValues({
-      url: streamUrl,
-      port: streamPort,
-      password: streamPassword
+    setLocalValues({
+      url: streamUrl || '',
+      port: streamPort || '',
+      password: streamPassword || ''
     });
+    setIsFormDirty(false);
   }, [streamUrl, streamPort, streamPassword, currentStation]);
   
   // Wrap the setters to track changes
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setFormValues(prev => ({ ...prev, url: newValue }));
-    setStreamUrl(newValue);
+    setLocalValues(prev => ({ ...prev, url: newValue }));
     setIsFormDirty(true);
   };
   
   const handlePortChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setFormValues(prev => ({ ...prev, port: newValue }));
-    setStreamPort(newValue);
+    setLocalValues(prev => ({ ...prev, port: newValue }));
     setIsFormDirty(true);
   };
   
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setFormValues(prev => ({ ...prev, password: newValue }));
-    setStreamPassword(newValue);
+    setLocalValues(prev => ({ ...prev, password: newValue }));
     setIsFormDirty(true);
   };
   
   const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Update parent state values before submitting
+    setStreamUrl(localValues.url);
+    setStreamPort(localValues.port);
+    setStreamPassword(localValues.password);
+    
+    // Call the original submit handler
     handleSubmit(e);
+    
     // Reset the form dirty state after submission
     setIsFormDirty(false);
+    
+    toast({
+      title: "Stream settings saved",
+      description: "Your streaming configuration has been updated successfully."
+    });
   };
   
   return (
@@ -86,7 +100,7 @@ const StreamConfigForm: React.FC<StreamConfigFormProps> = ({
             <Label htmlFor="streamUrl">Stream URL</Label>
             <Input
               id="streamUrl"
-              value={formValues.url}
+              value={localValues.url}
               onChange={handleUrlChange}
               placeholder="e.g., cast.yourstreamingservice.com"
             />
@@ -99,7 +113,7 @@ const StreamConfigForm: React.FC<StreamConfigFormProps> = ({
             <Label htmlFor="streamPort">Port</Label>
             <Input
               id="streamPort"
-              value={formValues.port}
+              value={localValues.port}
               onChange={handlePortChange}
               placeholder="e.g., 8000"
             />
@@ -110,7 +124,7 @@ const StreamConfigForm: React.FC<StreamConfigFormProps> = ({
             <Input
               id="streamPassword"
               type="password"
-              value={formValues.password}
+              value={localValues.password}
               onChange={handlePasswordChange}
               placeholder="Your stream password"
             />

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,59 +26,79 @@ export const useStationDetails = (stationId: string | undefined) => {
   const [stationBookings, setStationBookings] = useState<any[]>([]);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date>(new Date());
+  const [loadingState, setLoadingState] = useState({
+    isLoading: true,
+    hasError: false,
+    errorMessage: ''
+  });
   
   const isPlaying = currentPlayingStation === stationId;
   const isPrivilegedUser = user?.isAdmin || user?.isRadioHost;
 
-  useEffect(() => {
-    console.log("StationDetails initializing with ID:", stationId);
-  }, [stationId]);
-
   // Fetch and update station data
   useEffect(() => {
-    if (stationId) {
-      console.log("Looking for station with ID:", stationId);
-      console.log("Available stations:", stations.map(s => ({ id: s.id, name: s.name })));
+    if (!stationId) return;
+    
+    try {
+      setLoadingState({ isLoading: true, hasError: false, errorMessage: '' });
       
       const foundStation = stations.find(s => s.id === stationId);
       if (foundStation) {
-        console.log("Found station:", {
-          id: foundStation.id,
-          name: foundStation.name,
-          isLive: foundStation.isLive,
-          videoStreamUrl: foundStation.videoStreamUrl
-        });
-        
         setStation(foundStation);
         const bookings = getBookingsForStation(stationId);
         setStationBookings(bookings.filter(b => b.approved && !b.rejected));
+        setLoadingState({ isLoading: false, hasError: false, errorMessage: '' });
       } else {
         console.error("Station not found with ID:", stationId);
-        navigate('/stations');
-        toast({
-          title: "Station not found",
-          description: "The station you're looking for doesn't exist",
-          variant: "destructive"
+        setLoadingState({ 
+          isLoading: false, 
+          hasError: true, 
+          errorMessage: 'Station not found' 
         });
+        
+        // Only navigate away if we've confirmed the station doesn't exist
+        if (stations.length > 0) {
+          toast({
+            title: "Station not found",
+            description: "The station you're looking for doesn't exist",
+            variant: "destructive"
+          });
+          navigate('/stations');
+        }
       }
+    } catch (error) {
+      console.error("Error loading station details:", error);
+      setLoadingState({ 
+        isLoading: false, 
+        hasError: true, 
+        errorMessage: 'Error loading station' 
+      });
     }
   }, [stationId, stations, getBookingsForStation, navigate, toast]);
 
   // Sync chat messages periodically
   useEffect(() => {
-    if (!stationId) return;
+    if (!stationId || !station?.isLive || !station?.chatEnabled) return;
     
-    // Force refresh chat messages when component mounts
+    // Initial sync on page load
     syncChatMessagesFromStorage();
     setLastSyncTime(new Date());
     
-  }, [stationId, syncChatMessagesFromStorage]);
+    // Set up periodic sync with a short interval when chat is active
+    const syncInterval = setInterval(() => {
+      syncChatMessagesFromStorage();
+      setLastSyncTime(new Date());
+    }, 3000); // Sync every 3 seconds when chat is active
+    
+    return () => clearInterval(syncInterval);
+  }, [stationId, syncChatMessagesFromStorage, station?.isLive, station?.chatEnabled]);
 
-  const handlePlayToggle = () => {
+  // Handle play toggle with error handling
+  const handlePlayToggle = useCallback(() => {
     if (isPlaying) {
       setCurrentPlayingStation(null);
     } else {
-      if (station?.streamUrl) {
+      if (station?.streamUrl || (station?.streamDetails?.url && station?.streamDetails?.url.trim() !== '')) {
         setCurrentPlayingStation(station.id);
       } else {
         toast({
@@ -88,14 +108,16 @@ export const useStationDetails = (stationId: string | undefined) => {
         });
       }
     }
-  };
+  }, [isPlaying, station, setCurrentPlayingStation, toast]);
 
-  const handleBookShow = () => {
-    navigate(`/book-show/${station.id}`);
-  };
+  const handleBookShow = useCallback(() => {
+    if (station) {
+      navigate(`/book-show/${station.id}`);
+    }
+  }, [station, navigate]);
 
-  const handleToggleLiveStatus = () => {
-    if (isPrivilegedUser) {
+  const handleToggleLiveStatus = useCallback(() => {
+    if (isPrivilegedUser && station) {
       const newLiveStatus = !station.isLive;
       console.log(`Toggling station ${station.id} live status to:`, newLiveStatus);
       setStationLiveStatus(station.id, newLiveStatus, station.chatEnabled || false);
@@ -104,10 +126,10 @@ export const useStationDetails = (stationId: string | undefined) => {
         setShowVideoPlayer(false);
       }
     }
-  };
+  }, [isPrivilegedUser, station, setStationLiveStatus, showVideoPlayer]);
 
-  const handleToggleChat = () => {
-    if (isPrivilegedUser) {
+  const handleToggleChat = useCallback(() => {
+    if (isPrivilegedUser && station) {
       if (station.isLive) {
         toggleChatEnabled(station.id, !station.chatEnabled);
       } else {
@@ -118,9 +140,11 @@ export const useStationDetails = (stationId: string | undefined) => {
         });
       }
     }
-  };
+  }, [isPrivilegedUser, station, toggleChatEnabled, toast]);
 
-  const handleToggleVideo = () => {
+  const handleToggleVideo = useCallback(() => {
+    if (!station) return;
+    
     console.log("Toggle video called. Current state:", {
       showVideoPlayer,
       videoStreamUrl: station.videoStreamUrl,
@@ -138,30 +162,32 @@ export const useStationDetails = (stationId: string | undefined) => {
     
     setShowVideoPlayer(!showVideoPlayer);
     
-    if (!showVideoPlayer) {
-      if (!station.videoStreamUrl && isPrivilegedUser) {
-        toast({
-          title: "No Video Stream Configured",
-          description: "Please add an M3U8 stream URL in the broadcast controls section",
-          variant: "destructive"
-        });
-      }
+    if (!showVideoPlayer && !station.videoStreamUrl && isPrivilegedUser) {
+      toast({
+        title: "No Video Stream Configured",
+        description: "Please add an M3U8 stream URL in the broadcast controls section",
+        variant: "destructive"
+      });
     }
-  };
+  }, [station, showVideoPlayer, isPrivilegedUser, toast]);
 
-  const handleUpdateVideoStreamUrl = (url: string) => {
+  const handleUpdateVideoStreamUrl = useCallback((url: string) => {
     if (isPrivilegedUser && stationId) {
       updateVideoStreamUrl(stationId, url);
+      toast({
+        title: "Video Stream Updated",
+        description: "Your video stream URL has been updated"
+      });
     }
-  };
+  }, [isPrivilegedUser, stationId, updateVideoStreamUrl, toast]);
 
-  const handleSendMessage = (message: string) => {
-    if (station) {
+  const handleSendMessage = useCallback((message: string) => {
+    if (station && message.trim() !== '') {
       // Sync before sending to get the latest messages
       syncChatMessagesFromStorage();
       sendChatMessage(station.id, message);
     }
-  };
+  }, [station, syncChatMessagesFromStorage, sendChatMessage]);
 
   // Get chat messages with forced refresh
   const chatMessages = station ? getChatMessagesForStation(station.id) : [];
@@ -173,6 +199,7 @@ export const useStationDetails = (stationId: string | undefined) => {
     isPrivilegedUser,
     showVideoPlayer,
     chatMessages,
+    loadingState,
     handlePlayToggle,
     handleBookShow,
     handleToggleLiveStatus,

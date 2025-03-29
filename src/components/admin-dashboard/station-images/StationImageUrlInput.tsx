@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -16,6 +16,23 @@ const StationImageUrlInput: React.FC<StationImageUrlInputProps> = ({
   onChange,
   disabled
 }) => {
+  const [localUrl, setLocalUrl] = useState(imageUrl);
+
+  useEffect(() => {
+    setLocalUrl(imageUrl);
+  }, [imageUrl]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setLocalUrl(newValue);
+  };
+
+  const handleBlur = () => {
+    if (localUrl !== imageUrl) {
+      onChange(stationId, localUrl);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <Label htmlFor={`station-image-${stationId}`} className="mb-2 block">
@@ -23,8 +40,9 @@ const StationImageUrlInput: React.FC<StationImageUrlInputProps> = ({
       </Label>
       <Input
         id={`station-image-${stationId}`}
-        value={imageUrl}
-        onChange={(e) => onChange(stationId, e.target.value)}
+        value={localUrl}
+        onChange={handleChange}
+        onBlur={handleBlur}
         placeholder="https://example.com/image.jpg"
         className="w-full"
         disabled={disabled}
