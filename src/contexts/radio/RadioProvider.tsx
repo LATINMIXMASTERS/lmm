@@ -113,15 +113,21 @@ export const RadioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
   }, [actions]);
 
+  // Prepare the context value with all required properties
+  const contextValue = {
+    stations: state.stations,
+    bookings: state.bookings,
+    currentPlayingStation: state.currentPlayingStation,
+    audioState: state.audioState,
+    chatMessages: state.chatMessages,
+    // Make sure to include all the required functions from the RadioContextType
+    setStationLiveStatus: actions.setStationLiveStatus,
+    toggleChatEnabled: actions.toggleChatEnabled,
+    ...actions
+  };
+
   return (
-    <RadioContext.Provider value={{
-      stations: state.stations,
-      bookings: state.bookings,
-      currentPlayingStation: state.currentPlayingStation,
-      audioState: state.audioState,
-      chatMessages: state.chatMessages,
-      ...actions
-    }}>
+    <RadioContext.Provider value={contextValue}>
       {children}
     </RadioContext.Provider>
   );
