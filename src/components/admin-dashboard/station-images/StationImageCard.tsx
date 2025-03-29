@@ -21,7 +21,7 @@ interface StationImageCardProps {
   onSaveImage: (stationId: string) => void;
 }
 
-export function StationImageCard({
+const StationImageCard: React.FC<StationImageCardProps> = ({
   station,
   imageUrl,
   uploadPreview,
@@ -29,7 +29,7 @@ export function StationImageCard({
   onFileChange,
   onClearUpload,
   onSaveImage
-}: StationImageCardProps) {
+}) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [s3Configured, setS3Configured] = useState(false);
@@ -164,4 +164,6 @@ export function StationImageCard({
       </CardContent>
     </Card>
   );
-}
+};
+
+export { StationImageCard };

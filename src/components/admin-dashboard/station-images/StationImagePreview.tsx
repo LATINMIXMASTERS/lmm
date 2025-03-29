@@ -1,20 +1,16 @@
 
 import React from 'react';
 import { ImageIcon } from 'lucide-react';
-import { FileUpload } from '@/models/RadioStation';
+import { FileUpload, RadioStation } from '@/models/RadioStation';
 
 interface StationImagePreviewProps {
-  imageUrl: string;
+  station: RadioStation;
   uploadPreview: FileUpload | null;
-  stationName: string;
-  currentImage: string | undefined;
 }
 
 const StationImagePreview: React.FC<StationImagePreviewProps> = ({
-  imageUrl,
-  uploadPreview,
-  stationName,
-  currentImage
+  station,
+  uploadPreview
 }) => {
   // Determine what to display as the preview
   const getPreviewImage = () => {
@@ -22,12 +18,12 @@ const StationImagePreview: React.FC<StationImagePreviewProps> = ({
       return uploadPreview.dataUrl;
     }
     
-    if (imageUrl) {
-      return imageUrl;
+    if (station.s3Image) {
+      return station.s3Image;
     }
     
-    if (currentImage) {
-      return currentImage;
+    if (station.image) {
+      return station.image;
     }
     
     return null;
@@ -42,7 +38,7 @@ const StationImagePreview: React.FC<StationImagePreviewProps> = ({
         {previewImage ? (
           <img 
             src={previewImage} 
-            alt={`${stationName} preview`}
+            alt={`${station.name} preview`}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -56,7 +52,7 @@ const StationImagePreview: React.FC<StationImagePreviewProps> = ({
       </div>
       
       <div className="mt-2 text-sm text-gray-500">
-        {currentImage ? 'Current image will be replaced when saved' : 'No current image set'}
+        {station.image ? 'Current image will be replaced when saved' : 'No current image set'}
       </div>
     </div>
   );

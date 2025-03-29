@@ -1,6 +1,6 @@
 
 export const useSyncActions = (
-  state: { chatMessages: Record<string, any> }, 
+  state: { chatMessages: Record<string, any>; stations?: any[] }, 
   dispatch: React.Dispatch<any>
 ) => {
   // Improved synchronization with debounce mechanism
@@ -58,7 +58,7 @@ export const useSyncActions = (
   const syncStationsFromStorage = () => {
     try {
       const storedStations = localStorage.getItem('latinmixmasters_stations');
-      if (storedStations) {
+      if (storedStations && state.stations) {
         const parsedStations = JSON.parse(storedStations);
         
         // Deep comparison to prevent unnecessary re-renders
