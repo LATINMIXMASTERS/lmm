@@ -17,21 +17,11 @@ const VideoPlayerFallback: React.FC<VideoPlayerFallbackProps> = ({
   
   // More reliable method to determine correct player type
   const getPlayerType = () => {
-    // Check if it's a known domain that needs iframe
-    if (streamUrl.includes('lmmappstore.com')) {
-      return 'iframe';
-    }
-    
     // For m3u8 streams
     if (streamUrl.endsWith('.m3u8')) {
       // On iOS, use native player
       if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         return 'native';
-      }
-      
-      // On Android, use JW Player iframe
-      if (/Android/i.test(navigator.userAgent)) {
-        return 'jwplayer';
       }
       
       // On desktop, try HLS.js if supported
@@ -56,14 +46,6 @@ const VideoPlayerFallback: React.FC<VideoPlayerFallbackProps> = ({
     }
     
     switch (playerType) {
-      case 'iframe':
-        if (iframeRef.current) {
-          // Use specialized player for problematic URLs
-          const encodedUrl = encodeURIComponent(streamUrl);
-          iframeRef.current.src = `https://player.castr.io/live?source=${encodedUrl}`;
-        }
-        break;
-        
       case 'jwplayer':
         if (iframeRef.current) {
           // JW Player handles m3u8 well across platforms
@@ -168,7 +150,7 @@ const VideoPlayerFallback: React.FC<VideoPlayerFallbackProps> = ({
       )}
       
       {/* For iframe-based players */}
-      {(playerType === 'iframe' || playerType === 'jwplayer') && (
+      {playerType === 'jwplayer' && (
         <iframe
           ref={iframeRef}
           className="w-full h-full border-0"

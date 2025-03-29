@@ -9,19 +9,17 @@ export function useStreamCompatibility(streamUrl: string) {
   // Check for known problematic stream formats
   useEffect(() => {
     if (streamUrl) {
-      // Known problematic domains or URL patterns that need special handling
-      const problematicPatterns = [
-        'lmmappstore.com',
-        '.m3u8'  // All m3u8 streams should use our specialized fallback player
-      ];
+      // Known problematic URL patterns that need special handling
+      const problematicPatterns = ['.m3u8'];
       
-      // Check if URL matches any problematic patterns
+      // Check if URL matches any problematic patterns and we're on mobile
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       const needsSpecialHandling = problematicPatterns.some(pattern => 
         streamUrl.toLowerCase().includes(pattern)
-      );
+      ) && isMobile;
       
       if (needsSpecialHandling) {
-        console.log("Stream URL requires special handling:", streamUrl);
+        console.log("Stream URL may require special handling:", streamUrl);
         setShouldUseFallback(true);
       }
     }

@@ -40,13 +40,13 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
     handleCanPlay
   } = useVideoEvents(videoRef);
 
-  // Use our new compatibility hook
+  // Use our compatibility hook
   const {
     shouldUseFallback,
     setShouldUseFallback
   } = useStreamCompatibility(streamUrl);
 
-  // Use our new playback hook
+  // Use our playback hook
   const { enhancedTogglePlay } = useVideoPlayback({
     videoRef,
     streamUrl,
@@ -60,7 +60,7 @@ export function useVideoPlayer({ streamUrl, isVisible }: UseVideoPlayerProps) {
     setShouldUseFallback
   });
 
-  // Use our new effects hook
+  // Use our effects hook
   useVideoEffects({
     videoRef,
     volume,
