@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Shield, Mic, Volume2, ImageIcon, Users, Calendar as CalendarIcon, 
-  DatabaseBackup, Share2, Activity, Settings, BarChart2 
+  DatabaseBackup, Share2, Activity, Settings, BarChart2, Key 
 } from 'lucide-react';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,7 @@ import SocialMediaConfig from '@/components/admin-dashboard/SocialMediaConfig';
 import ListenersManagement from '@/components/admin-dashboard/ListenersManagement';
 import SystemUpdate from '@/components/admin-dashboard/SystemUpdate';
 import SiteStatisticsManagement from '@/components/admin-dashboard/SiteStatisticsManagement';
+import PasswordResetManager from '@/components/admin-dashboard/PasswordResetManager';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -97,6 +98,10 @@ const AdminDashboard: React.FC = () => {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="password-reset" className="flex items-center">
+              <Key className="w-4 h-4 mr-2" />
+              Password Reset
+            </TabsTrigger>
             <TabsTrigger value="system" className="flex items-center">
               <Settings className="w-4 h-4 mr-2" />
               System
@@ -137,6 +142,10 @@ const AdminDashboard: React.FC = () => {
           
           <TabsContent value="bookings">
             <ShowBookings />
+          </TabsContent>
+          
+          <TabsContent value="password-reset">
+            <PasswordResetManager />
           </TabsContent>
           
           <TabsContent value="system">
