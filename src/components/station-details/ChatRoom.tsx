@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChatMessage } from '@/models/RadioStation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,9 +14,55 @@ interface ChatRoomProps {
   stationId: string;
   messages: ChatMessage[];
   onSendMessage: (message: string) => void;
+  lastSyncTime?: Date;
 }
 
-const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage }) => {
+const ChatMessageItem = memo(({ 
+  message, 
+  isCurrentUser 
+}: { 
+  message: ChatMessage; 
+  isCurrentUser: boolean;
+}) => {
+  return (
+    <div className={`flex items-start gap-2 ${isCurrentUser ? 'justify-end' : ''}`}>
+      {!isCurrentUser && (
+        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+          {message.username.charAt(0).toUpperCase()}
+        </div>
+      )}
+      
+      <div className={`max-w-[80%] ${isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'} rounded-lg px-3 py-2`}>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xs font-medium">
+            {isCurrentUser ? 'You' : message.username}
+          </span>
+          <span className="text-xs opacity-70">
+            {typeof message.timestamp === 'string' 
+              ? format(new Date(message.timestamp), 'h:mm a')
+              : format(message.timestamp, 'h:mm a')}
+          </span>
+        </div>
+        <p className="text-sm whitespace-pre-wrap break-words">{message.message}</p>
+      </div>
+      
+      {isCurrentUser && (
+        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+          {message.username.charAt(0).toUpperCase()}
+        </div>
+      )}
+    </div>
+  );
+});
+
+ChatMessageItem.displayName = 'ChatMessageItem';
+
+const ChatRoom: React.FC<ChatRoomProps> = ({ 
+  stationId, 
+  messages, 
+  onSendMessage,
+  lastSyncTime 
+}) => {
   const { user } = useAuth();
   const { syncChatMessagesFromStorage } = useRadio();
   const [message, setMessage] = useState('');
@@ -25,13 +71,18 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
   const isAnonymous = !user;
   const isMobile = useIsMobile();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [lastSync, setLastSync] = useState<Date>(new Date());
+  const [messageCount, setMessageCount] = useState(0);
+  
+  useEffect(() => {
+    if (messages?.length !== messageCount) {
+      setMessageCount(messages?.length || 0);
+    }
+  }, [messages, messageCount]);
   
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
       syncChatMessagesFromStorage();
-      setLastSync(new Date());
     };
     
     const handleOffline = () => {
@@ -58,32 +109,12 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
         scrollElement.scrollTop = scrollElement.scrollHeight;
       }
     }
-  }, [messages]);
-
-  useEffect(() => {
-    if (!isOnline) return;
-    
-    const intervalId = setInterval(() => {
-      syncChatMessagesFromStorage();
-      setLastSync(new Date());
-    }, 2000);
-    
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-    
-    return () => clearInterval(intervalId);
-  }, [stationId, isOnline, syncChatMessagesFromStorage]);
+  }, [messageCount]);
 
   const handleSendMessage = () => {
     if (message.trim() && user) {
       onSendMessage(message);
       setMessage('');
-      
-      setTimeout(() => {
-        syncChatMessagesFromStorage();
-        setLastSync(new Date());
-      }, 500);
     }
   };
 
@@ -117,36 +148,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
           ) : (
             <div className="space-y-2">
               {messages.map((msg) => (
-                <div 
+                <ChatMessageItem 
                   key={msg.id} 
-                  className={`flex items-start gap-2 ${msg.userId === user?.id ? 'justify-end' : ''}`}
-                >
-                  {msg.userId !== user?.id && (
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      {msg.username.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  
-                  <div className={`max-w-[80%] ${msg.userId === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted'} rounded-lg px-3 py-2`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-medium">
-                        {msg.userId === user?.id ? 'You' : msg.username}
-                      </span>
-                      <span className="text-xs opacity-70">
-                        {typeof msg.timestamp === 'string' 
-                          ? format(new Date(msg.timestamp), 'h:mm a')
-                          : format(msg.timestamp, 'h:mm a')}
-                      </span>
-                    </div>
-                    <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
-                  </div>
-                  
-                  {msg.userId === user?.id && (
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                      {user.username?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                  )}
-                </div>
+                  message={msg} 
+                  isCurrentUser={msg.userId === user?.id}
+                />
               ))}
             </div>
           )}
@@ -178,11 +184,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ stationId, messages, onSendMessage 
         )}
         
         <div className="mt-2 text-xs text-muted-foreground text-right">
-          Last sync: {format(lastSync, 'h:mm:ss a')}
+          Last sync: {lastSyncTime ? format(lastSyncTime, 'h:mm:ss a') : 'Never'}
         </div>
       </CardContent>
     </Card>
   );
 };
 
-export default ChatRoom;
+export default memo(ChatRoom);

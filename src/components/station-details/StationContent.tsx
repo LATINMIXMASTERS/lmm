@@ -17,6 +17,7 @@ interface StationContentProps {
   onToggleChat: () => void;
   onToggleVideo: () => void;
   onUpdateVideoStreamUrl: (url: string) => void;
+  lastSyncTime?: Date;
 }
 
 const StationContent: React.FC<StationContentProps> = ({
@@ -29,7 +30,8 @@ const StationContent: React.FC<StationContentProps> = ({
   onToggleLiveStatus,
   onToggleChat,
   onToggleVideo,
-  onUpdateVideoStreamUrl
+  onUpdateVideoStreamUrl,
+  lastSyncTime
 }) => {
   return (
     <div className="prose prose-slate dark:prose-invert max-w-none">
@@ -68,6 +70,7 @@ const StationContent: React.FC<StationContentProps> = ({
             stationId={station.id}
             messages={chatMessages}
             onSendMessage={onSendMessage}
+            lastSyncTime={lastSyncTime}
           />
         </div>
       )}

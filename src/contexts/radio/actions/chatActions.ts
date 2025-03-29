@@ -17,11 +17,14 @@ export const useChatActions = (
       const storedMessages = localStorage.getItem('latinmixmasters_chat_messages');
       if (storedMessages) {
         const parsedMessages = JSON.parse(storedMessages);
-        dispatch({ 
-          type: 'SET_CHAT_MESSAGES', 
-          payload: parsedMessages 
-        });
-        console.log("Chat messages synchronized from localStorage", new Date().toISOString());
+        // Only dispatch if there's an actual change to prevent unnecessary re-renders
+        if (JSON.stringify(state.chatMessages) !== JSON.stringify(parsedMessages)) {
+          dispatch({ 
+            type: 'SET_CHAT_MESSAGES', 
+            payload: parsedMessages 
+          });
+          console.log("Chat messages synchronized from localStorage", new Date().toISOString());
+        }
       }
     } catch (error) {
       console.error("Failed to sync chat messages from localStorage:", error);
@@ -31,8 +34,8 @@ export const useChatActions = (
   };
 
   const getChatMessagesForStationImpl = (stationId: string): ChatMessage[] => {
-    // First, sync from localStorage to ensure we have the latest data
-    syncChatMessagesFromStorage();
+    // We don't want to sync within this function to avoid infinite loops
+    // Just return what's in the current state
     return state.chatMessages[stationId] || [];
   };
 
@@ -58,10 +61,7 @@ export const useChatActions = (
       timestamp: new Date().toISOString()
     };
 
-    // First sync to get the latest data
-    syncChatMessagesFromStorage();
-
-    // Get current messages after sync
+    // Get current messages without syncing
     const currentMessages = state.chatMessages[stationId] || [];
     const updatedMessages = [...currentMessages, newMessage];
     
@@ -82,15 +82,21 @@ export const useChatActions = (
       payload: newMessage
     });
     
-    // Force an additional sync in case multiple clients are sending messages
-    setTimeout(() => syncChatMessagesFromStorage(), 500);
-    
     console.log(`Sent chat message to station ${stationId}:`, newMessage);
   };
 
   const setStationLiveStatusImpl = (stationId: string, isLive: boolean, enableChat: boolean = false): void => {
+    // Get current station status before making changes
+    const currentStation = state.stations.find(s => s.id === stationId);
+    const statusChanged = currentStation?.isLive !== isLive;
+    
+    // Only proceed if there's an actual change in status
+    if (!statusChanged && currentStation?.chatEnabled === enableChat) {
+      return;
+    }
+    
     // Clean up chat data when station goes offline
-    if (!isLive && state.stations.find(s => s.id === stationId)?.isLive) {
+    if (!isLive && currentStation?.isLive) {
       clearChatMessagesForStationImpl(stationId);
     }
     
@@ -109,7 +115,7 @@ export const useChatActions = (
     localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
     
     // Notify users when a station goes live
-    if (isLive) {
+    if (isLive && statusChanged) {
       const stationName = state.stations.find(s => s.id === stationId)?.name || 'A station';
       toast({
         title: "Station is Live!",
@@ -119,8 +125,14 @@ export const useChatActions = (
   };
 
   const toggleChatEnabledImpl = (stationId: string, enabled: boolean): void => {
+    // Get current station to check if there's a change
+    const currentStation = state.stations.find(s => s.id === stationId);
+    if (currentStation?.chatEnabled === enabled) {
+      return; // No change, avoid unnecessary updates
+    }
+    
     // If disabling chat, clean up the messages
-    if (!enabled && state.stations.find(s => s.id === stationId)?.chatEnabled) {
+    if (!enabled && currentStation?.chatEnabled) {
       clearChatMessagesForStationImpl(stationId);
     }
     
@@ -144,22 +156,30 @@ export const useChatActions = (
     });
   };
 
-  // New function to clear chat messages for a specific station
+  // Function to clear chat messages for a specific station
   const clearChatMessagesForStationImpl = (stationId: string): void => {
-    // First sync to get the latest data
-    syncChatMessagesFromStorage();
+    // Don't sync before clearing to avoid loops
     
-    // Remove chat messages for this station
-    const { [stationId]: _, ...remainingMessages } = state.chatMessages;
-    
-    // Update localStorage
-    localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify(remainingMessages));
-    
-    // Update state
-    dispatch({ 
-      type: 'SET_CHAT_MESSAGES', 
-      payload: remainingMessages 
-    });
+    // Get current messages directly from localStorage
+    try {
+      const storedMessages = localStorage.getItem('latinmixmasters_chat_messages');
+      if (storedMessages) {
+        const parsedMessages = JSON.parse(storedMessages);
+        // Remove chat messages for this station
+        const { [stationId]: _, ...remainingMessages } = parsedMessages;
+        
+        // Update localStorage
+        localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify(remainingMessages));
+        
+        // Update state
+        dispatch({ 
+          type: 'SET_CHAT_MESSAGES', 
+          payload: remainingMessages 
+        });
+      }
+    } catch (error) {
+      console.error(`Failed to clear chat messages for station ${stationId}:`, error);
+    }
     
     console.log(`Cleared chat messages for station ${stationId}`);
   };

@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import MainLayout from '@/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,10 +15,14 @@ import { Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const StationDetails: React.FC = () => {
-  useRandomListeners();
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
-  const { syncChatMessagesFromStorage } = useRadio();
+  const { syncChatMessagesFromStorage, clearChatMessagesForStation } = useRadio();
+  const [syncTime, setSyncTime] = useState(new Date());
+  const [syncIntervalId, setSyncIntervalId] = useState<number | null>(null);
+  
+  // Custom hook for random listeners is used outside of component to avoid re-renders
+  useRandomListeners();
   
   const {
     station,
@@ -27,6 +31,7 @@ const StationDetails: React.FC = () => {
     isPrivilegedUser,
     showVideoPlayer,
     chatMessages,
+    loadingState,
     handlePlayToggle,
     handleBookShow,
     handleToggleLiveStatus,
@@ -36,19 +41,31 @@ const StationDetails: React.FC = () => {
     handleSendMessage
   } = useStationDetails(id);
 
-  // Set up more aggressive sync when chat is visible and enabled
+  // Set up more efficient sync when chat is visible and enabled
   useEffect(() => {
+    // Clean up any existing interval first
+    if (syncIntervalId) {
+      clearInterval(syncIntervalId);
+      setSyncIntervalId(null);
+    }
+    
     if (!id || !station?.isLive || !station?.chatEnabled) return;
     
     // Initial sync on page load
     syncChatMessagesFromStorage();
+    setSyncTime(new Date());
     
-    // Set up periodic sync with a short interval when chat is active
-    const syncInterval = setInterval(() => {
+    // Set up periodic sync with a more efficient interval
+    const intervalId = window.setInterval(() => {
       syncChatMessagesFromStorage();
-    }, 3000); // Sync every 3 seconds when chat is active
+      setSyncTime(new Date());
+    }, 5000); // Sync every 5 seconds when chat is active
     
-    return () => clearInterval(syncInterval);
+    setSyncIntervalId(intervalId);
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [id, syncChatMessagesFromStorage, station?.isLive, station?.chatEnabled]);
 
   // Handle connection issues
@@ -67,6 +84,7 @@ const StationDetails: React.FC = () => {
         description: "You're back online. Syncing chat messages...",
       });
       syncChatMessagesFromStorage();
+      setSyncTime(new Date());
     };
     
     window.addEventListener('offline', handleOffline);
@@ -81,26 +99,15 @@ const StationDetails: React.FC = () => {
   // Automatically clean up chat messages on component unmount if not live
   useEffect(() => {
     return () => {
-      if (id && !station?.isLive && syncChatMessagesFromStorage) {
+      if (id && !station?.isLive && clearChatMessagesForStation) {
         // Clear messages for this station when user leaves the page and station is not live
-        const chatData = localStorage.getItem('latinmixmasters_chat_messages');
-        if (chatData) {
-          try {
-            const parsedData = JSON.parse(chatData);
-            if (parsedData[id]) {
-              delete parsedData[id];
-              localStorage.setItem('latinmixmasters_chat_messages', JSON.stringify(parsedData));
-              console.log(`Cleaned up chat messages for station ${id} on page leave`);
-            }
-          } catch (error) {
-            console.error("Failed to clean up chat messages:", error);
-          }
-        }
+        clearChatMessagesForStation(id);
+        console.log(`Cleaned up chat messages for station ${id} on page leave`);
       }
     };
-  }, [id, station?.isLive]);
+  }, [id, station?.isLive, clearChatMessagesForStation]);
 
-  const handleShareStation = () => {
+  const handleShareStation = useCallback(() => {
     if (!station) return;
     
     const url = window.location.href;
@@ -130,9 +137,9 @@ const StationDetails: React.FC = () => {
       // Fallback for browsers that don't support Web Share API
       handleCopyLink();
     }
-  };
+  }, [station, toast]);
   
-  const handleCopyLink = () => {
+  const handleCopyLink = useCallback(() => {
     const url = window.location.href;
     navigator.clipboard.writeText(url)
       .then(() => {
@@ -149,9 +156,9 @@ const StationDetails: React.FC = () => {
           variant: "destructive"
         });
       });
-  };
+  }, [toast]);
 
-  if (!station) {
+  if (loadingState?.isLoading || !station) {
     return <StationDetailSkeleton />;
   }
 
@@ -200,6 +207,7 @@ const StationDetails: React.FC = () => {
               onToggleChat={handleToggleChat}
               onToggleVideo={handleToggleVideo}
               onUpdateVideoStreamUrl={handleUpdateVideoStreamUrl}
+              lastSyncTime={syncTime}
             />
           </CardContent>
         </Card>

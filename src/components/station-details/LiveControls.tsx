@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useCallback, memo } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -20,7 +21,7 @@ interface LiveControlsProps {
   onUpdateVideoStreamUrl: (url: string) => void;
 }
 
-const LiveControls: React.FC<LiveControlsProps> = ({ 
+const LiveControls: React.FC<LiveControlsProps> = memo(({ 
   stationId, 
   isLive, 
   chatEnabled, 
@@ -34,7 +35,14 @@ const LiveControls: React.FC<LiveControlsProps> = ({
   const [customVideoUrl, setCustomVideoUrl] = useState(videoStreamUrl || '');
   const { toast } = useToast();
   
-  const handleSaveVideoUrl = () => {
+  // Update state when props change
+  React.useEffect(() => {
+    if (videoStreamUrl !== customVideoUrl) {
+      setCustomVideoUrl(videoStreamUrl || '');
+    }
+  }, [videoStreamUrl]);
+  
+  const handleSaveVideoUrl = useCallback(() => {
     if (!customVideoUrl.trim()) {
       toast({
         title: "URL Required",
@@ -61,7 +69,7 @@ const LiveControls: React.FC<LiveControlsProps> = ({
       title: "Video Stream URL Updated",
       description: "Your changes have been saved"
     });
-  };
+  }, [customVideoUrl, onUpdateVideoStreamUrl, toast]);
   
   return (
     <div className="mb-6 mt-4 space-y-4">
@@ -196,6 +204,8 @@ const LiveControls: React.FC<LiveControlsProps> = ({
       </p>
     </div>
   );
-};
+});
+
+LiveControls.displayName = 'LiveControls';
 
 export default LiveControls;
