@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { User as UserIcon, Music, Edit, Trash2, Share2 } from 'lucide-react';
@@ -55,9 +54,9 @@ const HostProfile: React.FC = () => {
     );
   }
   
-  // Handle profile sharing
   const handleShareProfile = () => {
-    const shareUrl = `${window.location.origin}/host/${hostUser.id}`;
+    const usernameSlug = hostUser.username.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+    const shareUrl = `${window.location.origin}/host/${usernameSlug}/${hostUser.id}`;
     
     if (navigator.share) {
       navigator.share({
@@ -73,7 +72,6 @@ const HostProfile: React.FC = () => {
     }
   };
   
-  // Copy profile link to clipboard
   const copyProfileLink = (url: string) => {
     navigator.clipboard.writeText(url).then(() => {
       toast({
@@ -174,7 +172,6 @@ const HostProfile: React.FC = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
   
-  // Can manage track - admins can manage ANY track
   const canManageTrack = (track: Track) => {
     if (!user) return false;
     return user.isAdmin || track.uploadedBy === user.id;
@@ -208,7 +205,6 @@ const HostProfile: React.FC = () => {
   return (
     <MainLayout>
       <div className="container py-8 md:py-12">
-        {/* Profile Header with Share Button */}
         <div className="flex justify-between items-start mb-6">
           <HostProfileHeader 
             hostUser={hostUser} 

@@ -78,8 +78,10 @@ export const useTrackSharing = () => {
    * @param track - The track to share
    */
   const showSharingOptions = (track: Track) => {
-    // Generate the share URL
-    const shareUrl = `${window.location.origin}/mixes?track=${track.id}`;
+    // Generate the share URL with artist name and track title for better SEO
+    const artistSlug = track.artist.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+    const titleSlug = track.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+    const shareUrl = `${window.location.origin}/mixes/${artistSlug}/${titleSlug}?track=${track.id}`;
     
     // Show toast notification with proper JSX for the action
     toast({

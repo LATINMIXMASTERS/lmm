@@ -67,7 +67,9 @@ const StationDetails: React.FC = () => {
   const handleShareStation = useCallback(() => {
     if (!station) return;
     
-    const url = window.location.href;
+    // Create a URL-friendly version of the station name
+    const stationSlug = station.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+    const url = `${window.location.origin}/stations/${stationSlug}/${id}`;
     const title = `Listen to ${station.name} on LATINMIXMASTERS`;
     const text = `Check out ${station.name} - ${station.genre} on LATINMIXMASTERS Radio!`;
     
@@ -87,17 +89,17 @@ const StationDetails: React.FC = () => {
         if (error.name !== 'AbortError') {
           console.error('Error sharing:', error);
           // Fallback to copy link if sharing fails
-          handleCopyLink();
+          handleCopyLink(url);
         }
       });
     } else {
       // Fallback for browsers that don't support Web Share API
-      handleCopyLink();
+      handleCopyLink(url);
     }
   }, [station, toast]);
   
-  const handleCopyLink = useCallback(() => {
-    const url = window.location.href;
+  const handleCopyLink = useCallback((customUrl?: string) => {
+    const url = customUrl || window.location.href;
     navigator.clipboard.writeText(url)
       .then(() => {
         toast({

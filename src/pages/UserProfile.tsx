@@ -15,6 +15,7 @@ import ProfileHeader from '@/components/profile/ProfileHeader';
 import UserTracksTab from '@/components/profile/UserTracksTab';
 import ActivityTab from '@/components/profile/ActivityTab';
 import { useTrackManagement } from '@/hooks/track/useTrackManagement';
+import { Track } from '@/models/Track';
 
 const UserProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -64,7 +65,9 @@ const UserProfile: React.FC = () => {
   
   // Handle profile sharing
   const handleShareProfile = () => {
-    const shareUrl = `${window.location.origin}/profile/${profileUser.id}`;
+    // Create a URL-friendly version of the username
+    const usernameSlug = profileUser.username.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+    const shareUrl = `${window.location.origin}/profile/${usernameSlug}/${profileUser.id}`;
     
     if (navigator.share) {
       navigator.share({
@@ -126,6 +129,19 @@ const UserProfile: React.FC = () => {
       variant
     });
   };
+
+  // Wrapper functions to adapt the parameters for UserTracksTab
+  const handleTrackLike = (trackId: string) => {
+    likeTrack(trackId);
+  };
+
+  const handleTrackEdit = (trackId: string) => {
+    handleEditTrack(trackId);
+  };
+
+  const handleTrackDelete = (track: Track) => {
+    handleDeleteTrack(track);
+  };
   
   return (
     <MainLayout>
@@ -160,15 +176,16 @@ const UserProfile: React.FC = () => {
             {/* Tracks Tab */}
             <TabsContent value="tracks">
               <UserTracksTab
+                userId={userId}
                 isRadioHost={!!profileUser.isRadioHost}
                 userTracks={userTracks}
                 isAuthenticated={isAuthenticated}
-                likeTrack={likeTrack}
+                likeTrack={handleTrackLike}
                 addComment={addComment}
                 showToast={showToast}
                 user={user}
-                handleEditTrack={handleEditTrack}
-                handleDeleteTrack={handleDeleteTrack}
+                handleEditTrack={handleTrackEdit}
+                handleDeleteTrack={handleTrackDelete}
                 canUserEditTrack={canUserEditTrack}
               />
             </TabsContent>

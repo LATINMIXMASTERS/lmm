@@ -69,7 +69,10 @@ export const createTrackInteractionActions = (
     const track = state.tracks.find(t => t.id === trackId);
     if (!track) return;
     
-    const shareUrl = `${window.location.origin}/mixes?track=${trackId}`;
+    // Create URL-friendly versions of artist and track names
+    const artistSlug = track.artist.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+    const titleSlug = track.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+    const shareUrl = `${window.location.origin}/mixes/${artistSlug}/${titleSlug}?track=${trackId}`;
     
     // Create share data
     const shareData = {
