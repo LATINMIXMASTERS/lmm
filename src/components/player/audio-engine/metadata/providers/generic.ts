@@ -1,6 +1,6 @@
 
 import { RadioMetadata } from '@/models/RadioStation';
-import { fetchWithTimeout } from '../utils';
+import { fetchWithTimeout, safeJsonParse } from '../utils';
 
 /**
  * Fetches metadata using generic methods for unknown stream types
@@ -17,6 +17,8 @@ export const fetchGenericMetadata = async (streamUrl: string): Promise<Partial<R
     streamUrl // Direct access as fallback
   ];
   
+  const allErrors: Error[] = [];
+  
   // Try different proxies in sequence until one works
   for (const url of corsProxyUrls) {
     try {
@@ -25,10 +27,11 @@ export const fetchGenericMetadata = async (streamUrl: string): Promise<Partial<R
       const response = await fetchWithTimeout(url, { 
         method: 'GET',
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      }, 3000);
+      }, 3000, 2, 1000);
       
       if (!response.ok) {
         console.log(`Fetch failed with status: ${response.status}`);
+        allErrors.push(new Error(`HTTP error ${response.status}`));
         continue; // Try next proxy
       }
       
@@ -53,9 +56,25 @@ export const fetchGenericMetadata = async (streamUrl: string): Promise<Partial<R
         };
       }
       
-      // We got a successful response but no metadata, extract what we can
+      // Check for JSON API responses that might contain metadata
       const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        try {
+          const jsonData = await response.json();
+          if (jsonData?.now_playing || jsonData?.currentTrack || jsonData?.metadata) {
+            const track = jsonData.now_playing || jsonData.currentTrack || jsonData.metadata;
+            return {
+              title: track.title || track.song || 'Live Stream',
+              artist: track.artist || track.performer || '',
+              coverArt: track.artwork_url || track.cover || ''
+            };
+          }
+        } catch (jsonError) {
+          console.error('Error parsing JSON:', jsonError);
+        }
+      }
       
+      // We got a successful response but no metadata, extract what we can
       return {
         title: 'Live Stream',
         artist: contentType.includes('audio') ? 'Radio Station' : '',
@@ -63,9 +82,13 @@ export const fetchGenericMetadata = async (streamUrl: string): Promise<Partial<R
       };
     } catch (proxyError) {
       console.log(`Error using proxy ${url}:`, proxyError);
+      allErrors.push(proxyError as Error);
       // Continue to the next proxy
     }
   }
+  
+  // All proxies failed
+  console.error('All metadata fetching attempts failed:', allErrors);
   
   // If all proxies fail, return minimal metadata
   return {

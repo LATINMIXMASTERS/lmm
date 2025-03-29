@@ -14,7 +14,7 @@ export const fetchIcecastMetadata = async (streamUrl: string): Promise<Partial<R
     // Icecast stations typically provide metadata through HTTP headers
     const response = await fetchWithTimeout(streamUrl, {
       method: 'HEAD'
-    }, 3000);
+    }, 3000, 2, 1000);
     
     if (response.ok) {
       // Extract ICY metadata from headers
@@ -23,20 +23,46 @@ export const fetchIcecastMetadata = async (streamUrl: string): Promise<Partial<R
       const icyGenre = response.headers.get('icy-genre') || '';
       const icyUrl = response.headers.get('icy-url') || '';
       
+      // Try to get more info from status-json.xsl if available
+      let additionalInfo = {};
+      try {
+        const statusUrl = new URL(streamUrl);
+        // Replace any path with /status-json.xsl
+        statusUrl.pathname = '/status-json.xsl';
+        
+        const statusResponse = await fetchWithTimeout(statusUrl.toString(), {
+          method: 'GET'
+        }, 2000, 1);
+        
+        if (statusResponse.ok) {
+          const data = await statusResponse.json();
+          if (data?.icestats?.source) {
+            const source = Array.isArray(data.icestats.source) 
+              ? data.icestats.source[0] 
+              : data.icestats.source;
+              
+            additionalInfo = {
+              title: source.title || source.server_name || icyDescription || icyName,
+              artist: source.artist || icyGenre
+            };
+          }
+        }
+      } catch (statusError) {
+        console.log('Could not fetch additional Icecast info:', statusError);
+      }
+      
       return {
-        title: icyDescription || icyName || 'Icecast Stream',
-        artist: icyGenre || '',
+        title: additionalInfo?.title || icyDescription || icyName || 'Icecast Stream',
+        artist: additionalInfo?.artist || icyGenre || '',
         album: icyName || 'Live Radio',
         coverArt: icyUrl || ''
       };
     }
+    
+    throw new Error(`Failed to fetch Icecast metadata: ${response.status}`);
   } catch (error) {
     console.error('Error fetching Icecast metadata:', error);
+    throw error; // Let the main function handle fallback
   }
-  
-  return {
-    title: 'Live Stream',
-    artist: 'Icecast Radio',
-    coverArt: ''
-  };
 };
+
