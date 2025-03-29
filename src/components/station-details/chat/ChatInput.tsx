@@ -31,8 +31,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
     }
   }, [handleSendMessage]);
   
+  // Add form submit handler to prevent default form submission
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    handleSendMessage();
+  }, [handleSendMessage]);
+  
   return (
-    <div className="flex gap-2 items-end">
+    <form onSubmit={handleSubmit} className="flex gap-2 items-end">
       <Textarea
         placeholder="Type your message here..."
         value={message}
@@ -43,13 +49,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
         disabled={isDisabled || !isOnline}
       />
       <Button 
-        onClick={handleSendMessage} 
+        type="submit"
         disabled={!message.trim() || isDisabled || !isOnline} 
         className="h-10 w-10 p-0"
       >
         <Send className="h-4 w-4" />
       </Button>
-    </div>
+    </form>
   );
 };
 
