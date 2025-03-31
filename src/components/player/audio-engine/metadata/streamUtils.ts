@@ -18,6 +18,11 @@ export const extractStreamUrl = (url: string): string => {
   return `http://${streamUrl}`;
 };
 
+// Standardize stream URL for consistent usage
+export const standardizeStreamUrl = (url: string): string => {
+  return extractStreamUrl(url);
+};
+
 // Check if a URL is a Shoutcast URL
 export const isShoutcastUrl = (url: string): boolean => {
   return url.includes('/stream') || url.includes(':8000');

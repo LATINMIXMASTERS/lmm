@@ -1,4 +1,3 @@
-
 export interface Track {
   id: string;
   title: string;
@@ -7,21 +6,19 @@ export interface Track {
   genre: string;
   coverImage: string;
   audioFile: string;
+  audioUrl?: string; // Added as optional
   fileSize: number;
-  uploadDate: string;
   uploadedBy: string;
+  uploadDate: string;
   likes: number;
-  duration?: number; // Duration in seconds
-  waveformData?: number[]; // Array of amplitude data for waveform display
   comments?: Comment[];
-  playCount?: number; // Track play count
-  plays?: number; // Add plays property for compatibility
-  description?: string; // Add description field
-  
-  // For compatibility - alias to audioFile
-  get audioUrl(): string {
-    return this.audioFile;
-  }
+  waveformData?: number[];
+}
+
+export interface Genre {
+  id: string;
+  name: string;
+  count: number;
 }
 
 export interface Comment {
@@ -30,12 +27,5 @@ export interface Comment {
   username: string;
   text: string;
   date: string;
-}
-
-export interface Genre {
-  id: string;
-  name: string;
-  createdBy: string;
-  createdAt: string;
-  trackCount?: number; // Adding trackCount property
+  userAvatar?: string;
 }

@@ -1,111 +1,63 @@
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Track } from '@/models/Track';
-import { RadioStation, BookingSlot } from '@/models/RadioStation';
-import { User } from '@/contexts/auth/types';
+import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { Host, BookingSlot } from '@/models/RadioStation';
+import { useRadio } from '@/hooks/useRadioContext';
+import { User } from '@/contexts/auth/types';
 
-interface UseDJProfileActionsProps {
-  djUser: User;
-  tracks: Track[];
-  getTracksByUser: (userId: string) => Track[];
-  selectedTabGenre: string;
-  stations: RadioStation[];
-  bookings: BookingSlot[];
-}
-
-export const useDJProfileActions = ({
-  djUser,
-  tracks,
-  getTracksByUser,
-  selectedTabGenre,
-  stations,
-  bookings
-}: UseDJProfileActionsProps) => {
-  const navigate = useNavigate();
+export const useDJProfileActions = (djProfile: User) => {
+  const { stations, bookings } = useRadio();
   const { toast } = useToast();
-  const [newComments, setNewComments] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
   
-  const userTracks = getTracksByUser(djUser.id);
-  const filteredTracks = userTracks.filter(track => 
-    selectedTabGenre === 'all' || track.genre === selectedTabGenre
+  // Find radio stations that this DJ is a host for
+  const hostStations = stations.filter(station => 
+    station.hosts.some(host => host.id === djProfile.id || host.id === djProfile.username)
   );
   
-  const djStations = stations.filter(station => 
-    station.hosts && station.hosts.includes(djUser?.id || '')
-  );
-  
+  // Find bookings for this DJ
   const djBookings = bookings.filter(booking => 
-    booking.hostId === djUser?.id
+    booking.userId === djProfile.id || booking.hostName === djProfile.username
   );
   
-  const handleTrackOperations = {
-    handleEditTrack: (trackId: string) => {
-      navigate(`/edit-track/${trackId}`);
-    }
-  };
+  // Get upcoming approved shows
+  const upcomingShows = djBookings.filter(booking => 
+    booking.approved && new Date(booking.startTime) > new Date()
+  ).sort((a, b) => 
+    new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+  );
   
-  const handlePlayTrack = (trackId: string) => {
-    // Handle track playback
-    console.log("Playing track:", trackId);
-  };
-
-  const handleLikeTrack = (trackId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    // Like track logic
-    toast({
-      title: "Track liked",
-      description: "This track has been added to your favorites",
-    });
-  };
-
-  const handleShareTrack = (trackId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    // Share track logic
-  };
-
-  const handleCommentChange = (trackId: string, value: string) => {
-    setNewComments(prev => ({
-      ...prev,
-      [trackId]: value
-    }));
-  };
-
-  const handleSubmitComment = (trackId: string, e: React.FormEvent) => {
-    e.preventDefault();
-    const comment = newComments[trackId];
-    if (!comment?.trim()) return;
-    
-    // Add comment logic
-    
-    setNewComments(prev => ({
-      ...prev,
-      [trackId]: ''
-    }));
-    
-    toast({
-      title: "Comment added",
-      description: "Your comment has been posted",
-    });
-  };
+  // Convert DJ to host
+  const getHostFromDJ = useCallback((): Host => {
+    return {
+      id: djProfile.id,
+      name: djProfile.username,
+      role: djProfile.title || 'DJ',
+      image: djProfile.avatarUrl
+    };
+  }, [djProfile]);
   
-  const trackInteractions = {
-    handlePlayTrack,
-    handleLikeTrack,
-    handleShareTrack,
-    handleCommentChange,
-    handleSubmitComment,
-    newComments
-  };
+  // Follow/unfollow a DJ
+  const toggleFollow = useCallback(() => {
+    setLoading(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      toast({
+        title: "Success!",
+        description: `You are now following ${djProfile.username}`
+      });
+      setLoading(false);
+    }, 1000);
+  }, [djProfile, toast]);
   
   return {
-    handleTrackOperations,
-    trackInteractions,
-    userTracks,
-    filteredTracks,
-    djStations,
-    djBookings
+    hostStations,
+    upcomingShows,
+    djBookings,
+    getHostFromDJ,
+    toggleFollow,
+    loading
   };
 };
 

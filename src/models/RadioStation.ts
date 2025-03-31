@@ -13,6 +13,8 @@ export interface RadioStation {
   streamDetails?: StreamDetails;
   videoStreamUrl?: string;
   s3Image?: string;
+  chatEnabled?: boolean;
+  broadcastTime?: string;
 }
 
 export interface Host {
@@ -63,4 +65,37 @@ export interface ChatMessage {
   timestamp: number;
   userRole?: string;
   userAvatar?: string;
+  stationId?: string;
+}
+
+// Add BookingSlot interface
+export interface BookingSlot {
+  id: string;
+  stationId: string;
+  userId: string;
+  hostName: string;
+  title: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  approved?: boolean;
+  rejected?: boolean;
+  rejectionReason?: string;
+}
+
+// Add AudioState interface
+export interface AudioState {
+  isPlaying: boolean;
+  volume: number;
+  isMuted: boolean;
+  currentTrack: string | null;
+  currentStation: string | null;
+  hasError: boolean;
+  errorMessage: string | null;
+}
+
+// Add FileUpload interface
+export interface FileUpload {
+  file: File;
+  dataUrl: string;
 }

@@ -1,6 +1,14 @@
 
-import { RadioStation, AudioState } from '@/models/RadioStation';
+import { RadioStation, AudioState, Host } from '@/models/RadioStation';
 import { RadioState } from './types';
+
+// Create host objects
+const hostData: Record<string, Host> = {
+  host1: { id: 'host1', name: 'DJ Carlos', role: 'Host' },
+  host2: { id: 'host2', name: 'DJ Maria', role: 'Co-Host' },
+  host3: { id: 'host3', name: 'DJ Miguel', role: 'Guest' },
+  host4: { id: 'host4', name: 'DJ Elena', role: 'Host' }
+};
 
 // Initial stations
 export const initialStations: RadioStation[] = [
@@ -18,8 +26,9 @@ export const initialStations: RadioStation[] = [
       password: 'demo123'
     },
     streamUrl: 'https://lmmradiocast.com/lmmradio',
-    hosts: ['host1', 'host2'],
-    broadcastTime: 'Weekdays 6PM-10PM'
+    hosts: [hostData.host1, hostData.host2],
+    broadcastTime: 'Weekdays 6PM-10PM',
+    chatEnabled: false
   },
   {
     id: '2',
@@ -35,8 +44,9 @@ export const initialStations: RadioStation[] = [
       password: 'demo123'
     },
     streamUrl: 'https://lmmradiocast.com/bachataradio',
-    hosts: ['host3'],
-    broadcastTime: 'Weekends 2PM-6PM'
+    hosts: [hostData.host3],
+    broadcastTime: 'Weekends 2PM-6PM',
+    chatEnabled: false
   },
   {
     id: '3',
@@ -52,8 +62,9 @@ export const initialStations: RadioStation[] = [
       password: 'demo123'
     },
     streamUrl: 'https://lmmradiocast.com/reggaetonradio',
-    hosts: ['host2', 'host4'],
-    broadcastTime: 'Daily 8PM-12AM'
+    hosts: [hostData.host2, hostData.host4],
+    broadcastTime: 'Daily 8PM-12AM',
+    chatEnabled: false
   },
   {
     id: '4',
@@ -63,7 +74,9 @@ export const initialStations: RadioStation[] = [
     description: 'Classic and contemporary salsa music.',
     listeners: 95,
     isLive: false,
-    streamUrl: 'https://lmmradiocast.com/salsaradio'
+    streamUrl: 'https://lmmradiocast.com/salsaradio',
+    hosts: [],
+    chatEnabled: false
   },
   {
     id: '5',
@@ -73,7 +86,9 @@ export const initialStations: RadioStation[] = [
     description: 'Electronic dance music that keeps you moving.',
     listeners: 178,
     isLive: false,
-    streamUrl: 'https://lmmradiocast.com/edmradio'
+    streamUrl: 'https://lmmradiocast.com/edmradio',
+    hosts: [],
+    chatEnabled: false
   },
   {
     id: '6',
@@ -83,7 +98,9 @@ export const initialStations: RadioStation[] = [
     description: 'Urban beats and street vibes.',
     listeners: 156,
     isLive: false,
-    streamUrl: 'https://lmmradiocast.com/urbanradio'
+    streamUrl: 'https://lmmradiocast.com/urbanradio',
+    hosts: [],
+    chatEnabled: false
   },
   {
     id: '7',
@@ -93,7 +110,9 @@ export const initialStations: RadioStation[] = [
     description: 'Eclectic mix of the hottest tracks.',
     listeners: 125,
     isLive: false,
-    streamUrl: 'https://lmmradiocast.com/latokadaradio'
+    streamUrl: 'https://lmmradiocast.com/latokadaradio',
+    hosts: [],
+    chatEnabled: false
   }
 ];
 

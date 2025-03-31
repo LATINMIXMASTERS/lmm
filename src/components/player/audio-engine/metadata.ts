@@ -1,88 +1,88 @@
 
 import { RadioMetadata } from '@/models/RadioStation';
 
-// Extract and format the stream URL correctly
-export const extractStreamUrl = (url: string): string => {
-  // Clean up the URL
-  let streamUrl = url.trim();
-  
-  // If it's already a proper URL (with protocol), return it as is
-  if (streamUrl.startsWith('http://') || streamUrl.startsWith('https://')) {
-    return streamUrl;
-  }
-  
-  // For simple host:port format
-  if (streamUrl.includes(':')) {
-    return `http://${streamUrl}`;
-  }
-  
-  // Add default http protocol if missing
-  return `http://${streamUrl}`;
+// Function to create or update metadata with proper timestamp
+export const createMetadata = (
+  artist?: string,
+  title?: string,
+  album?: string,
+  coverArt?: string,
+  genre?: string,
+  year?: string
+): RadioMetadata => {
+  return {
+    artist,
+    title,
+    album,
+    coverArt,
+    genre,
+    year,
+    timestamp: Date.now()
+  };
 };
 
-// Function to set up polling for stream metadata
-export const setupMetadataPolling = (
-  streamUrl: string,
-  timerRef: React.MutableRefObject<number | null>,
+// Handle extracting metadata from stream event
+export const handleStreamMetadata = (
+  event: Event, 
   setStationInfo: React.Dispatch<React.SetStateAction<{
     name: string;
     currentTrack: string;
     coverImage: string;
     metadata?: RadioMetadata;
-  }>>,
-  stationId?: string
+  }>>
 ) => {
-  // Clear any existing timer
-  if (timerRef.current) {
-    console.log('Clearing existing metadata timer');
-    window.clearInterval(timerRef.current);
-    timerRef.current = null;
-  }
+  const target = event.target as HTMLAudioElement;
   
-  // Only set up polling for non-empty stream URLs
-  if (!streamUrl || streamUrl === 'http://' || streamUrl === 'https://') {
-    console.log('No valid stream URL to poll for metadata');
+  // Check if there's any metadata to extract
+  if (!target || !target.textTracks || target.textTracks.length === 0) {
     return;
   }
   
   try {
-    // Create a function to fetch metadata
-    const fetchMetadata = async () => {
-      try {
-        // Simulate metadata fetch - in a real app this would call a metadata API
-        const randomTracks = [
-          { artist: 'Bad Bunny', title: 'Monaco' },
-          { artist: 'Peso Pluma', title: 'Ella Baila Sola' },
-          { artist: 'Karol G', title: 'TQG' },
-          { artist: 'Shakira', title: 'TQG' },
-          { artist: 'Luis Miguel', title: 'La Bikina' },
-          { artist: 'Grupo Frontera', title: 'Un Cumbión Dolido' },
-          { artist: 'Prince Royce', title: 'Dime' },
-          { artist: 'Marc Anthony', title: 'Vivir Mi Vida' },
-        ];
-        
-        // Randomly select a track every ~30 seconds
-        if (Math.random() > 0.9) {
-          const randomTrack = randomTracks[Math.floor(Math.random() * randomTracks.length)];
-          console.log('New track:', randomTrack);
-          
-          setStationInfo(prev => ({
-            ...prev,
-            currentTrack: `${randomTrack.artist} - ${randomTrack.title}`,
-            metadata: randomTrack
-          }));
-        }
-      } catch (error) {
-        console.error('Error fetching metadata:', error);
-      }
-    };
+    // Extract artist and title from current track
+    const currentTrack = target.textTracks[0]?.activeCues?.[0]?.text || '';
     
-    // Call immediately and then set up interval
-    fetchMetadata();
-    timerRef.current = window.setInterval(fetchMetadata, 5000);
-    
-    console.log('Metadata polling set up for URL:', streamUrl);
+    if (currentTrack) {
+      // Most common format: Artist - Title
+      const parts = currentTrack.split(' - ');
+      const artist = parts.length > 1 ? parts[0] : '';
+      const title = parts.length > 1 ? parts.slice(1).join(' - ') : currentTrack;
+      
+      // Create a valid metadata object with timestamp
+      const newMetadata = createMetadata(artist, title);
+      
+      // Update the station info
+      setStationInfo((prev) => ({
+        ...prev,
+        currentTrack: currentTrack,
+        metadata: newMetadata
+      }));
+    }
   } catch (error) {
-    console.error('Error setting up metadata polling:', error);
+    console.error('Error processing stream metadata:', error);
   }
+};
+
+// Handle simplified metadata updates 
+export const updateStationInfoWithMetadata = (
+  artist: string,
+  title: string,
+  setStationInfo: React.Dispatch<React.SetStateAction<{
+    name: string;
+    currentTrack: string;
+    coverImage: string;
+    metadata?: RadioMetadata;
+  }>>
+) => {
+  // Create a valid metadata object with timestamp
+  const newMetadata = createMetadata(artist, title);
+  
+  // Update station info with this metadata
+  setStationInfo(prev => ({
+    ...prev,
+    currentTrack: `${artist} - ${title}`,
+    metadata: newMetadata
+  }));
+  
+  return newMetadata;
 };

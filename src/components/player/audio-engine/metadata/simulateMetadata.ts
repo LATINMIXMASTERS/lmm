@@ -1,133 +1,135 @@
 
 import { RadioMetadata } from '@/models/RadioStation';
 
-// Latin music artists and songs for simulation
-const latinArtists = [
-  'Bad Bunny',
-  'Karol G',
-  'J Balvin',
-  'Shakira',
-  'Daddy Yankee',
-  'Maluma',
-  'Ozuna',
-  'Luis Fonsi',
-  'Nicky Jam',
-  'Rosalía',
-  'Rauw Alejandro',
-  'Anuel AA',
-  'Sech',
-  'Becky G',
-  'Romeo Santos',
-  'Farruko',
-  'Marc Anthony',
-  'Enrique Iglesias',
-  'Prince Royce',
-  'Ricky Martin',
-  'Grupo Frontera',
-  'Peso Pluma',
-  'Feid',
-  'Reik',
-  'Camilo',
-  'Sebastián Yatra',
-  'Wisin & Yandel',
-  'Don Omar',
-  'Juanes',
-  'Aventura'
+interface TrackSimulation {
+  artist: string;
+  title: string;
+  album?: string;
+  coverArt?: string;
+}
+
+// Sample tracks for simulation
+const sampleTracks: TrackSimulation[] = [
+  {
+    artist: "Marc Anthony",
+    title: "Vivir Mi Vida",
+    album: "3.0",
+    coverArt: "https://example.com/images/marcanthony.jpg"
+  },
+  {
+    artist: "Bad Bunny",
+    title: "Callaíta",
+    album: "X 100PRE",
+    coverArt: "https://example.com/images/badbunny.jpg"
+  },
+  {
+    artist: "Daddy Yankee",
+    title: "Gasolina",
+    album: "Barrio Fino",
+    coverArt: "https://example.com/images/daddyyankee.jpg"
+  },
+  {
+    artist: "Shakira",
+    title: "Hips Don't Lie",
+    album: "Oral Fixation Vol. 2",
+    coverArt: "https://example.com/images/shakira.jpg"
+  },
+  {
+    artist: "J Balvin",
+    title: "Mi Gente",
+    album: "Vibras",
+    coverArt: "https://example.com/images/jbalvin.jpg"
+  },
+  {
+    artist: "Ozuna",
+    title: "Taki Taki",
+    album: "Aura",
+    coverArt: "https://example.com/images/ozuna.jpg"
+  },
+  {
+    artist: "Enrique Iglesias",
+    title: "Bailando",
+    album: "Sex and Love",
+    coverArt: "https://example.com/images/enrique.jpg"
+  },
+  {
+    artist: "Maluma",
+    title: "Felices los 4",
+    album: "F.A.M.E.",
+    coverArt: "https://example.com/images/maluma.jpg"
+  },
+  {
+    artist: "Karol G",
+    title: "Tusa",
+    album: "KG0516",
+    coverArt: "https://example.com/images/karolg.jpg"
+  },
+  {
+    artist: "Nicky Jam",
+    title: "El Amante",
+    album: "Fénix",
+    coverArt: "https://example.com/images/nickyjam.jpg"
+  }
 ];
 
-const latinSongs = [
-  'Monaco',
-  'Tusa',
-  'La Canción',
-  'TQG',
-  'Despacito',
-  'Felices los 4',
-  'Dákiti',
-  'Con Calma',
-  'X',
-  'Con Altura',
-  'Todo de Ti',
-  'China',
-  'Otro Trago',
-  'Sin Pijama',
-  'Propuesta Indecente',
-  'Pepas',
-  'Vivir Mi Vida',
-  'Bailando',
-  'Darte un Beso',
-  'Livin\' la Vida Loca',
-  'Ella Baila Sola',
-  'Provenza',
-  'Ojitos Lindos',
-  'Bichota',
-  'Hawái',
-  'Mi Gente',
-  'Gasolina',
-  'Danza Kuduro',
-  'La Camisa Negra',
-  'El Perdón'
-];
+const bachataArtists = ["Romeo Santos", "Prince Royce", "Juan Luis Guerra", "Aventura", "Monchy & Alexandra"];
+const reggaetonArtists = ["Bad Bunny", "J Balvin", "Daddy Yankee", "Ozuna", "Anuel AA"];
+const salsaArtists = ["Marc Anthony", "Héctor Lavoe", "Celia Cruz", "Willie Colón", "El Gran Combo"];
 
-// Album covers for Latin artists
-const albumCovers = [
-  'https://i.scdn.co/image/ab67616d0000b2739416ed64daf84936d89e671c', // Un Verano Sin Ti
-  'https://i.scdn.co/image/ab67616d0000b273a543f68c31b395bb46d6f8c0', // KG0516
-  'https://i.scdn.co/image/ab67616d0000b273fc2101e6c215cc5d3a45c0c4', // Colores
-  'https://i.scdn.co/image/ab67616d0000b273a9e6784e5d6ad8a4c983d31e', // El Dorado
-  'https://i.scdn.co/image/ab67616d0000b273ef0d4234e1a645740f77d59c', // Legendaddy
-  'https://i.scdn.co/image/ab67616d0000b2738b752d1f529a8e7a3a328c0a', // 11:11
-  'https://i.scdn.co/image/ab67616d0000b2739894d3d6bbd772f153a2aece', // Saturno
-  'https://i.scdn.co/image/ab67616d0000b273f46142b3ddb69d602bd28987', // Vida
-  'https://i.scdn.co/image/ab67616d0000b273c4d7d2faf29e064d1c309019', // Fenix
-  'https://i.scdn.co/image/ab67616d0000b2739a95e89d24214b94ada7afc2'  // El Último Tour Del Mundo
-];
-
-// Different radio station types for simulation
-const stationTypes = [
-  'Latin Mix Masters Radio',
-  'Reggaeton Club',
-  'Bachata Romántica',
-  'Salsa Sensations',
-  'Latin Urban',
-  'Tropical Hits',
-  'Latin Pop Favorites',
-  'Merengue Mix'
-];
-
-/**
- * Generates simulated metadata for a radio station
- * @returns Object containing a formatted track string and RadioMetadata object
- */
-export const generateSimulatedMetadata = (): { 
-  trackString: string; 
-  metadata: RadioMetadata;
-} => {
-  // Get random artist and song
-  const artistIndex = Math.floor(Math.random() * latinArtists.length);
-  const songIndex = Math.floor(Math.random() * latinSongs.length);
-  
-  const artist = latinArtists[artistIndex];
-  const title = latinSongs[songIndex];
-  
-  // Get random album cover
-  const coverIndex = Math.floor(Math.random() * albumCovers.length);
-  const coverArt = albumCovers[coverIndex];
-  
-  // Get random station type
-  const stationIndex = Math.floor(Math.random() * stationTypes.length);
-  const album = stationTypes[stationIndex];
-  
-  // Create track string and metadata object
-  const trackString = `${artist} - ${title}`;
-  const metadata: RadioMetadata = {
+// A table of genre-specific data we can use for different stations
+const genreSpecificData: Record<string, TrackSimulation[]> = {
+  "Bachata": bachataArtists.map(artist => ({
     artist,
-    title,
-    album,
-    coverArt,
-    startedAt: new Date(),
-    duration: Math.floor(Math.random() * 180) + 120 // Random duration between 2-5 minutes
-  };
-  
-  return { trackString, metadata };
+    title: `Bachata Mix ${Math.floor(Math.random() * 100)}`,
+    album: "Bachata Hits",
+    coverArt: `https://example.com/images/bachata${Math.floor(Math.random() * 5)}.jpg`
+  })),
+  "Reggaeton": reggaetonArtists.map(artist => ({
+    artist,
+    title: `Reggaeton Mix ${Math.floor(Math.random() * 100)}`,
+    album: "Reggaeton Hits",
+    coverArt: `https://example.com/images/reggaeton${Math.floor(Math.random() * 5)}.jpg`
+  })),
+  "Salsa": salsaArtists.map(artist => ({
+    artist,
+    title: `Salsa Mix ${Math.floor(Math.random() * 100)}`,
+    album: "Salsa Hits",
+    coverArt: `https://example.com/images/salsa${Math.floor(Math.random() * 5)}.jpg`
+  }))
 };
 
+/**
+ * Simulates metadata from a stream for testing purposes
+ * @param stationId The ID of the station
+ * @returns Simulated metadata
+ */
+export const simulateMetadata = (stationId: string): RadioMetadata => {
+  // Select a random track based on the stationId if possible
+  let selectedTrack: TrackSimulation;
+  
+  // Try to match by station ID
+  if (stationId.includes("bachata")) {
+    const tracks = genreSpecificData["Bachata"] || sampleTracks;
+    selectedTrack = tracks[Math.floor(Math.random() * tracks.length)];
+  } else if (stationId.includes("reggaeton")) {
+    const tracks = genreSpecificData["Reggaeton"] || sampleTracks;
+    selectedTrack = tracks[Math.floor(Math.random() * tracks.length)];
+  } else if (stationId.includes("salsa")) {
+    const tracks = genreSpecificData["Salsa"] || sampleTracks;
+    selectedTrack = tracks[Math.floor(Math.random() * tracks.length)];
+  } else {
+    // Default to random track
+    selectedTrack = sampleTracks[Math.floor(Math.random() * sampleTracks.length)];
+  }
+  
+  // Create metadata with required timestamp
+  const metadata: RadioMetadata = {
+    artist: selectedTrack.artist,
+    title: selectedTrack.title,
+    album: selectedTrack.album,
+    coverArt: selectedTrack.coverArt,
+    timestamp: Date.now()
+  };
+  
+  return metadata;
+};

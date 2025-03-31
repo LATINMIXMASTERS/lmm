@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Music, BarChart2, Radio, Calendar } from 'lucide-react';
@@ -11,7 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import ProfileEditor from '@/components/ProfileEditor';
 
-// Import the components
 import Sidebar from '@/components/host-dashboard/Sidebar';
 import MixesList from '@/components/host-dashboard/MixesList';
 import RadioShows from '@/components/host-dashboard/RadioShows';
@@ -35,6 +33,13 @@ const DJDashboard: React.FC = () => {
     navigate('/');
     return null;
   }
+
+  const host: Host = {
+    id: user.id || user.username,
+    name: user.username,
+    role: user.isAdmin ? 'Admin' : 'Host',
+    image: user.avatarUrl
+  };
 
   const userTracks = getTracksByUser(user.id);
   const userStations = stations.filter(station => 
@@ -98,13 +103,11 @@ const DJDashboard: React.FC = () => {
     <MainLayout>
       <div className="container py-8">
         <div className="flex flex-col md:flex-row gap-6">
-          {/* Sidebar Component */}
           <Sidebar 
             user={user} 
             onEditProfile={() => setEditingProfile(true)} 
           />
           
-          {/* Main content */}
           <div className="flex-1">
             {editingProfile ? (
               <>
@@ -146,7 +149,6 @@ const DJDashboard: React.FC = () => {
                     </TabsTrigger>
                   </TabsList>
                   
-                  {/* Mixes Tab */}
                   <TabsContent value="mixes" className="mt-4">
                     <MixesList 
                       tracks={userTracks} 
@@ -155,12 +157,10 @@ const DJDashboard: React.FC = () => {
                     />
                   </TabsContent>
                   
-                  {/* Shows Tab */}
                   <TabsContent value="shows" className="mt-4">
                     <RadioShows stations={userStations} />
                   </TabsContent>
                   
-                  {/* Bookings Tab */}
                   <TabsContent value="bookings" className="mt-4">
                     <BookingsList 
                       approvedBookings={approvedBookings}
@@ -172,7 +172,6 @@ const DJDashboard: React.FC = () => {
                     />
                   </TabsContent>
                   
-                  {/* Stats Tab */}
                   <TabsContent value="stats" className="mt-4">
                     <StatisticsPanel tracks={userTracks} />
                   </TabsContent>

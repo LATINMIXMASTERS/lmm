@@ -1,145 +1,150 @@
-
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { useTrack } from '@/hooks/useTrackContext';
+import { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import { useToast } from '@/hooks/use-toast';
-import { useS3Upload } from './upload/useS3Upload';
-import { useFileHandling } from './upload/useFileHandling';
-import { useTrackFormState } from './upload/useTrackFormState';
+import { useTrack } from '@/hooks/useTrackContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { Track } from '@/models/Track';
 
-export const useTrackUploadForm = () => {
-  const { user, users } = useAuth();
+interface FormState {
+  title: string;
+  artist: string;
+  artistId: string;
+  genre: string;
+  coverImage: string;
+  audioFile: string;
+  fileSize: number;
+}
+
+const initialFormState: FormState = {
+  title: '',
+  artist: '',
+  artistId: '',
+  genre: '',
+  coverImage: '/placeholder-album.png',
+  audioFile: '',
+  fileSize: 0
+};
+
+export const useTrackUploadForm = (onSuccess?: (track: Track) => void) => {
+  const [formState, setFormState] = useState(initialFormState);
+  const [isValid, setIsValid] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const { addTrack } = useTrack();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const { toast } = useToast();
   
-  // Use our new modular hooks
-  const {
-    title, setTitle,
-    selectedArtistId, setSelectedArtistId,
-    selectedGenre, setSelectedGenre,
-    resetForm
-  } = useTrackFormState();
+  // Validation function
+  const validateForm = useCallback(() => {
+    const requiredFieldsFilled = formState.title && formState.artist && formState.genre && formState.audioFile;
+    setIsValid(!!requiredFieldsFilled);
+  }, [formState.title, formState.artist, formState.genre, formState.audioFile]);
   
-  const {
-    coverImage, setCoverImage,
-    audioFile, setAudioFile,
-    coverPreview, setCoverPreview,
-    maxAudioFileSize, maxImageFileSize
-  } = useFileHandling();
+  // Reset form to initial state
+  const resetForm = useCallback(() => {
+    setFormState(initialFormState);
+    setError(null);
+    setIsValid(false);
+  }, []);
   
-  const {
-    uploadFiles,
-    isUploading,
-    uploadProgress,
-    coverProgress,
-    s3Configured,
-    uploadError,
-    setUploadError
-  } = useS3Upload();
+  // Handle form input changes
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormState(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+    validateForm();
+  }, [validateForm]);
   
-  // Handle form submission
+  // Handle file drop with Dropzone
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    
+    if (file) {
+      const audioURL = URL.createObjectURL(file);
+      setFormState(prevState => ({
+        ...prevState,
+        audioFile: audioURL,
+        fileSize: file.size
+      }));
+      validateForm();
+    }
+  }, [validateForm]);
+  
+  // Configure Dropzone
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: 'audio/*',
+    maxFiles: 1
+  });
+  
+  // Modify the handleSubmit function to include audioUrl
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "You must be logged in to upload tracks",
-        variant: "destructive"
-      });
+    if (!isValid || submitting) {
       return;
     }
     
-    if (!title || !selectedArtistId || !selectedGenre || !coverImage || !audioFile) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all fields and upload required files",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Verify that the user is only uploading as themselves or they are an admin
-    if (selectedArtistId !== user.id && !user.isAdmin) {
-      toast({
-        title: "Permission denied",
-        description: "You can only upload tracks to your own profile",
-        variant: "destructive"
-      });
-      return;
-    }
+    setSubmitting(true);
     
     try {
-      console.log('Starting upload process...');
-      // Find the selected artist name
-      const selectedArtist = users.find(u => u.id === selectedArtistId);
-      if (!selectedArtist) {
-        throw new Error("Selected artist not found");
-      }
-      
-      // Upload files and get URLs
-      const uploadResult = await uploadFiles(coverImage, audioFile);
-      if (!uploadResult) {
-        return; // Error already handled in uploadFiles
-      }
-      
-      // Add track to our context
-      const newTrack = {
-        title,
-        artist: selectedArtist.username,
-        artistId: selectedArtistId,
-        genre: selectedGenre,
-        coverImage: uploadResult.coverUrl,
-        audioFile: uploadResult.audioUrl,
-        fileSize: audioFile.size,
-        uploadedBy: user.id,
-        uploadDate: new Date().toISOString() // Make sure we use uploadDate for the track
+      // For demo purposes, we'll just use the file directly
+      // In a real app, you would upload to a server/storage
+      const trackData = {
+        title: formState.title,
+        artist: formState.artist,
+        artistId: formState.artistId || user?.id || 'unknown',
+        genre: formState.genre,
+        coverImage: formState.coverImage || '/placeholder-album.png',
+        audioFile: formState.audioFile,
+        audioUrl: formState.audioFile, // Set audioUrl to match audioFile for now
+        fileSize: formState.fileSize || 0,
+        uploadedBy: user?.id || 'unknown',
+        uploadDate: new Date().toISOString()
       };
       
-      console.log('Adding track to context:', newTrack);
-      addTrack(newTrack);
+      const newTrack = addTrack(trackData);
       
-      // Show success message
+      setSuccess(true);
+      resetForm();
+      
       toast({
-        title: "Upload successful",
-        description: "Your track has been uploaded successfully",
+        title: "Track uploaded successfully!",
+        description: `Your track "${newTrack.title}" is now available on the platform.`
       });
       
-      // Reset form and redirect to mixes page
-      resetForm();
-      navigate('/mixes');
+      if (onSuccess) {
+        onSuccess(newTrack);
+      }
     } catch (error) {
-      console.error('Upload error:', error);
-      setUploadError(error instanceof Error ? error.message : 'Unknown upload error');
+      console.error("Error uploading track:", error);
+      setError("Failed to upload track. Please try again.");
+      
       toast({
         title: "Upload failed",
-        description: error instanceof Error ? error.message : "There was an error uploading your track",
+        description: "There was an error uploading your track. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setSubmitting(false);
     }
   };
   
   return {
-    title,
-    setTitle,
-    selectedArtistId,
-    setSelectedArtistId,
-    selectedGenre,
-    setSelectedGenre,
-    coverImage,
-    setCoverImage,
-    audioFile,
-    setAudioFile,
-    coverPreview,
-    setCoverPreview,
-    isUploading,
-    uploadProgress,
-    coverProgress,
-    s3Configured,
-    uploadError,
+    formState,
+    isValid,
+    error,
+    success,
+    submitting,
+    handleInputChange,
     handleSubmit,
-    maxAudioFileSize,
-    maxImageFileSize
+    getRootProps,
+    getInputProps,
+    isDragActive,
+    resetForm,
+    setFormState
   };
 };
