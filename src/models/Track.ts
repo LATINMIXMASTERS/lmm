@@ -1,3 +1,4 @@
+
 export interface Track {
   id: string;
   title: string;
@@ -6,19 +7,25 @@ export interface Track {
   genre: string;
   coverImage: string;
   audioFile: string;
-  audioUrl?: string; // Added as optional
+  audioUrl?: string;
   fileSize: number;
   uploadedBy: string;
   uploadDate: string;
   likes: number;
   comments?: Comment[];
   waveformData?: number[];
+  description?: string;
+  duration?: number;
+  playCount?: number;
+  plays?: number;
 }
 
 export interface Genre {
   id: string;
   name: string;
   count: number;
+  createdBy?: string;
+  createdAt?: string;
 }
 
 export interface Comment {

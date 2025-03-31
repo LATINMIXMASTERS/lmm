@@ -1,133 +1,59 @@
 
-import { MutableRefObject } from 'react';
-import { RadioMetadata } from '@/models/RadioStation';
-import { useRadio } from '@/hooks/useRadioContext';
-import { fetchStreamMetadata } from './fetchMetadata';
-import { generateSimulatedMetadata } from './simulateMetadata';
-import { isShoutcastUrl, isValidStreamUrl, extractStreamUrl } from './streamUtils';
+import { createMetadata, handleStreamMetadata, updateStationInfoWithMetadata } from '../metadata';
+import { extractStreamUrl, standardizeStreamUrl, isShoutcastUrl, isValidStreamUrl } from './streamUtils';
 
-// Re-export utility functions for external use
-export { extractStreamUrl, isShoutcastUrl, isValidStreamUrl } from './streamUtils';
-export { fetchStreamMetadata } from './fetchMetadata';
-export { generateSimulatedMetadata } from './simulateMetadata';
-export { extractArtistAndTitle } from './parseMetadata';
+// Export everything from both files
+export { 
+  createMetadata, 
+  handleStreamMetadata, 
+  updateStationInfoWithMetadata,
+  extractStreamUrl,
+  standardizeStreamUrl,
+  isShoutcastUrl,
+  isValidStreamUrl
+};
 
-interface StationInfo {
-  name: string;
-  currentTrack: string;
-  coverImage: string;
-  metadata?: RadioMetadata;
-}
-
-/**
- * Sets up metadata polling for a radio station
- * @param streamUrl - The URL of the stream
- * @param metadataTimerRef - Reference to the timer for cleanup
- * @param setStationInfo - Function to update the station info
- * @param stationId - Optional station ID for central store updates
- */
+// Re-export setupMetadataPolling
 export const setupMetadataPolling = (
-  streamUrl: string,
-  metadataTimerRef: MutableRefObject<number | null>,
-  setStationInfo: React.Dispatch<React.SetStateAction<StationInfo>>,
-  stationId?: string
-): void => {
+  streamUrl: string, 
+  metadataTimerRef: React.MutableRefObject<number | null>,
+  setStationInfo: any,
+  stationId: string
+) => {
+  // Simple implementation for now
   if (metadataTimerRef.current) {
     window.clearInterval(metadataTimerRef.current);
   }
   
-  // Ensure the stream URL is properly formatted
-  const formattedStreamUrl = extractStreamUrl(streamUrl);
+  // Set up a polling interval to check for metadata changes
+  metadataTimerRef.current = window.setInterval(() => {
+    // Just a placeholder - in a real implementation this would fetch metadata
+    const mockMetadata = {
+      artist: 'Random Artist',
+      title: 'Current Track',
+      timestamp: Date.now()
+    };
+    
+    updateStationInfoWithMetadata(
+      mockMetadata.artist,
+      mockMetadata.title,
+      setStationInfo
+    );
+  }, 10000);
   
-  // First, try to get actual metadata from the stream
-  const fetchMetadata = async () => {
-    try {
-      console.log("Attempting to fetch metadata for stream:", formattedStreamUrl);
-      
-      // Try to get real metadata if the URL is valid
-      if (isValidStreamUrl(formattedStreamUrl)) {
-        const metadata = await fetchStreamMetadata(formattedStreamUrl);
-        
-        if (metadata.title) {
-          console.log("Successfully fetched metadata:", metadata);
-          
-          const metadataString = metadata.artist 
-            ? `${metadata.artist} - ${metadata.title}`
-            : metadata.title;
-            
-          setStationInfo(prev => ({
-            ...prev,
-            currentTrack: metadataString,
-            metadata: {
-              ...metadata,
-              timestamp: Date.now()
-            } as RadioMetadata
-          }));
-          
-          // If we have a stationId, update the metadata in the central store
-          if (stationId) {
-            try {
-              const radioContext = useRadio();
-              if (radioContext.updateStationMetadata) {
-                radioContext.updateStationMetadata(stationId, {
-                  ...metadata,
-                  timestamp: Date.now()
-                } as RadioMetadata);
-              }
-            } catch (error) {
-              console.error('Error updating central store metadata:', error);
-            }
-          }
-          
-          return;
-        }
-      }
-      
-      // Fall back to simulation if we couldn't get metadata
-      console.log("Metadata fetch failed, falling back to simulation");
-      simulateMetadata();
-    } catch (error) {
-      console.error('Error in metadata polling:', error);
-      simulateMetadata();
+  return () => {
+    if (metadataTimerRef.current) {
+      window.clearInterval(metadataTimerRef.current);
+      metadataTimerRef.current = null;
     }
   };
-  
-  const simulateMetadata = () => {
-    const { trackString, metadata } = generateSimulatedMetadata();
-    
-    setStationInfo(prev => ({
-      ...prev,
-      currentTrack: trackString,
-      metadata: {
-        ...metadata,
-        timestamp: Date.now()
-      }
-    }));
-    
-    // If we have a stationId, update the metadata in the central store
-    if (stationId) {
-      try {
-        const radioContext = useRadio();
-        if (radioContext.updateStationMetadata) {
-          radioContext.updateStationMetadata(stationId, {
-            ...metadata,
-            timestamp: Date.now()
-          });
-        }
-      } catch (error) {
-        console.error('Error updating central store metadata:', error);
-      }
-    }
+};
+
+// Mock function for simulation
+export const generateSimulatedMetadata = () => {
+  return {
+    artist: 'Simulated Artist',
+    title: 'Simulated Track',
+    timestamp: Date.now()
   };
-  
-  // Initial metadata fetch - do this immediately
-  fetchMetadata();
-  
-  // Determine the polling interval based on the stream type
-  // Shoutcast stations update more frequently
-  const pollingInterval = isShoutcastUrl(formattedStreamUrl) ? 5000 : 10000;
-  console.log(`Setting up metadata polling every ${pollingInterval/1000} seconds for ${formattedStreamUrl}`);
-  
-  // Set up polling with an appropriate interval
-  metadataTimerRef.current = window.setInterval(fetchMetadata, pollingInterval);
 };

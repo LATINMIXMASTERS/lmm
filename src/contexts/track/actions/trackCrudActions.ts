@@ -49,7 +49,8 @@ export const createTrackCrudActions = (
       uploadDate: new Date().toISOString(),
       waveformData: generateWaveformData(),
       playCount: 0,
-      duration: Math.floor(Math.random() * 300) + 180
+      plays: 0,
+      duration: trackData.duration || Math.floor(Math.random() * 300) + 180
     };
     
     dispatch({ type: 'ADD_TRACK', payload: newTrack });
@@ -59,14 +60,14 @@ export const createTrackCrudActions = (
       // Instead of storing all tracks, store only the recent ones (last 20)
       // This helps prevent exceeding localStorage quota
       const tracksToStore = [...state.tracks.slice(-19), newTrack];
-      localStorage.setItem('latinmixmasters_tracks', JSON.stringify(tracksToStore));
+      localStorage.setItem('lmm_tracks', JSON.stringify(tracksToStore));
     } catch (error) {
       console.error('Error storing tracks in localStorage:', error);
       // Fallback: Remove oldest tracks to make space
       if (error instanceof DOMException && error.name === 'QuotaExceededError') {
         try {
           const reducedTracks = [...state.tracks.slice(-10), newTrack];
-          localStorage.setItem('latinmixmasters_tracks', JSON.stringify(reducedTracks));
+          localStorage.setItem('lmm_tracks', JSON.stringify(reducedTracks));
           toast({
             title: "Track uploaded",
             description: "Your track was uploaded, but some older tracks were removed from local storage due to space constraints.",

@@ -40,7 +40,9 @@ export const handleStreamMetadata = (
   
   try {
     // Extract artist and title from current track
-    const currentTrack = target.textTracks[0]?.activeCues?.[0]?.text || '';
+    const textTrack = target.textTracks[0];
+    const activeCue = textTrack?.activeCues?.[0] as TextTrackCue | undefined;
+    const currentTrack = activeCue?.getCueAsHTML?.().textContent || '';
     
     if (currentTrack) {
       // Most common format: Artist - Title

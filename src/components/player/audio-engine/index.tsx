@@ -1,11 +1,10 @@
-
-import React, { useRef, useEffect, useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import React, { useEffect, useRef } from 'react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useTrack } from '@/hooks/useTrackContext';
-import { setupMetadataPolling } from './metadata';
-import { extractStreamUrl } from './metadata/streamUtils';
 import { RadioMetadata } from '@/models/RadioStation';
+import { useStationPlayer } from './StationPlayer';
+import { useTrackPlayer } from './TrackPlayer';
+import { setupMetadataPolling } from './metadata';
 
 interface AudioEngineProps {
   onTimeUpdate: (currentTime: number) => void;
@@ -52,13 +51,11 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
   const lastStationId = useRef<string | null>(null);
   const lastTrackId = useRef<string | null>(null);
 
-  // Better error handling that retries failed connections
   const handleError = (error: any) => {
     console.error('Audio error:', error);
     
     if (audioRef.current) {
       if (errorRetryCount.current < 3) {
-        // Retry with progressive delay
         const delay = Math.pow(2, errorRetryCount.current) * 1000;
         console.log(`Retrying audio playback in ${delay}ms (attempt ${errorRetryCount.current + 1})`);
         
@@ -67,7 +64,6 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
             errorRetryCount.current++;
             const wasPlaying = audioState.isPlaying;
             
-            // For streams, we'll try reloading the source
             if (currentPlayingStation) {
               const station = stations.find(s => s.id === currentPlayingStation);
               if (station && station.streamUrl) {
@@ -78,9 +74,7 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
                   });
                 }
               }
-            }
-            // For tracks, we'll try reloading the track
-            else if (currentPlayingTrack) {
+            } else if (currentPlayingTrack) {
               const track = tracks.find(t => t.id === currentPlayingTrack);
               if (track && track.audioFile) {
                 audioRef.current.src = track.audioFile;
@@ -95,7 +89,6 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
         }, delay);
         
       } else {
-        // After multiple retries, show error to user
         toast({
           title: "Playback Error",
           description: "There was a problem playing this audio. Please try again later.",
@@ -107,7 +100,6 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
     }
   };
 
-  // Handle changes to audio state, stations, or currentPlayingTrack
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
@@ -119,7 +111,6 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
       audioRef.current.addEventListener('error', (e) => handleError(e));
     }
     
-    // Reset error retry count when changing tracks/stations
     if (currentPlayingStation !== lastStationId.current || 
         currentPlayingTrack !== lastTrackId.current) {
       errorRetryCount.current = 0;
@@ -127,12 +118,10 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
       lastTrackId.current = currentPlayingTrack;
     }
     
-    // Handle station playback
     if (currentPlayingStation && !currentPlayingTrack) {
       const station = stations.find(s => s.id === currentPlayingStation);
       
       if (station && station.streamUrl) {
-        // Stop any existing metadata polling
         if (metadataTimerRef.current) {
           clearInterval(metadataTimerRef.current);
           metadataTimerRef.current = null;
@@ -141,7 +130,6 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
         const streamUrl = extractStreamUrl(station.streamUrl);
         console.log(`Playing station ${station.name} from URL: ${streamUrl}`);
         
-        // Set initial station info
         setStationInfo({
           name: station.name,
           currentTrack: station.currentMetadata?.title 
@@ -153,17 +141,14 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
         
         setIsTrackPlaying(false);
         
-        // Only change the source if needed
         if (audioRef.current.src !== streamUrl) {
           audioRef.current.src = streamUrl;
           
-          // Set up metadata polling for this stream
           setupMetadataPolling(
             streamUrl, 
             metadataTimerRef, 
             (newInfo) => {
               setStationInfo(prevInfo => {
-                // Create a new info object with the updated metadata
                 const updatedMetadata = newInfo.metadata;
                 return {
                   ...prevInfo,
@@ -176,7 +161,6 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
                 };
               });
               
-              // Also update the station metadata in the context
               if (updateStationMetadata && Date.now() - lastMetadataUpdate > 2000) {
                 const updatedMetadata = newInfo.metadata;
                 if (updatedMetadata) {
@@ -186,7 +170,6 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
                   });
                   setLastMetadataUpdate(Date.now());
                   
-                  // Manually broadcast metadata to other devices
                   try {
                     const metadataWithTimestamp = {
                       ...updatedMetadata,
@@ -202,7 +185,6 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
                     
                     localStorage.setItem(`station_${currentPlayingStation}_metadata`, JSON.stringify(metadataWithTimestamp));
                     
-                    // Broadcast to other tabs/windows
                     window.dispatchEvent(new StorageEvent('storage', {
                       key: `station_${currentPlayingStation}_metadata`,
                       newValue: JSON.stringify(metadataEvent)
@@ -217,7 +199,6 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
           );
         }
         
-        // Handle play/pause based on isPlaying flag
         if (audioState.isPlaying) {
           audioRef.current.play().catch(handleError);
         } else {
@@ -226,18 +207,15 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
       }
     }
     
-    // Handle track playback
     else if (currentPlayingTrack && !currentPlayingStation) {
       const track = tracks.find(t => t.id === currentPlayingTrack);
       
       if (track) {
-        // Clear any station metadata polling
         if (metadataTimerRef.current) {
           clearInterval(metadataTimerRef.current);
           metadataTimerRef.current = null;
         }
         
-        // Set track info
         setStationInfo({
           name: track.title,
           currentTrack: `${track.artist} - ${track.title}`,
@@ -247,19 +225,15 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
         
         setIsTrackPlaying(true);
         
-        // Load track comments and likes
         setComments(track.comments || []);
         setLikes(track.likes || 0);
         
-        // Only change the source if needed
         if (audioRef.current.src !== track.audioFile) {
           audioRef.current.src = track.audioFile;
           
-          // We don't have updateListeningCount, so we'll just log that we would update it
           console.log(`Would update listening count for track: ${track.id}`);
         }
         
-        // Handle play/pause based on isPlaying flag
         if (audioState.isPlaying) {
           audioRef.current.play().catch(handleError);
         } else {
@@ -268,20 +242,17 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
       }
     }
     
-    // Nothing selected
     else {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = '';
       }
       
-      // Clear any station metadata polling
       if (metadataTimerRef.current) {
         clearInterval(metadataTimerRef.current);
         metadataTimerRef.current = null;
       }
       
-      // Reset station info
       setStationInfo({
         name: '',
         currentTrack: '',
@@ -292,16 +263,12 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
       setIsTrackPlaying(false);
     }
     
-    // Setup dedicated metadata sync interval for stations
     if (currentPlayingStation && updateStationMetadata) {
-      // Clear previous interval
       if (metadataSyncInterval.current) {
         clearInterval(metadataSyncInterval.current);
       }
       
-      // Setup new interval
       metadataSyncInterval.current = window.setInterval(() => {
-        // Check for metadata in localStorage
         try {
           const metadataKey = `station_${currentPlayingStation}_metadata`;
           const storedMetadata = localStorage.getItem(metadataKey);
@@ -309,7 +276,6 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
           if (storedMetadata) {
             const metadata = JSON.parse(storedMetadata);
             
-            // Update if newer
             if (metadata && metadata.timestamp && 
                 (metadata.timestamp > lastMetadataUpdate)) {
               
@@ -334,7 +300,6 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
       metadataSyncInterval.current = null;
     }
     
-    // Cleanup
     return () => {
       if (metadataSyncInterval.current) {
         clearInterval(metadataSyncInterval.current);
@@ -358,30 +323,24 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
     lastMetadataUpdate
   ]);
 
-  // Handle volume and mute changes
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = audioState.isMuted ? 0 : audioState.volume;
     }
   }, [audioState.volume, audioState.isMuted]);
 
-  // Effect to add fallback for cover art when it fails to load
   useEffect(() => {
     if (stationInfo.coverImage && stationInfo.coverImage !== '/placeholder-album.png') {
-      // Create an Image object to verify the image loads
       const img = new Image();
       
       img.onload = () => {
-        // Image loaded successfully
         setCoverArtFallbackRetries(0);
       };
       
       img.onerror = () => {
-        // Image failed to load, use fallback
         if (coverArtFallbackRetries < 3) {
           setCoverArtFallbackRetries(prev => prev + 1);
           
-          // Try to find a station with this image
           if (currentPlayingStation) {
             const station = stations.find(s => s.id === currentPlayingStation);
             if (station) {
@@ -391,7 +350,6 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
               }));
             }
           } else {
-            // Fallback to placeholder
             setStationInfo(prev => ({
               ...prev,
               coverImage: '/placeholder-album.png'
@@ -404,7 +362,6 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
     }
   }, [stationInfo.coverImage, stations, currentPlayingStation, setStationInfo]);
 
-  // The component doesn't render anything, it just sets up the audio element
   return null;
 };
 

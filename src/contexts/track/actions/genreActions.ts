@@ -34,12 +34,13 @@ export const createGenreActions = (
     const newGenre: Genre = {
       id: Math.random().toString(36).substring(2, 11),
       name: genreName,
+      count: 0,
       createdBy: userInfo.id || 'unknown',
       createdAt: new Date().toISOString()
     };
     
     dispatch({ type: 'ADD_GENRE', payload: newGenre });
-    localStorage.setItem('latinmixmasters_genres', JSON.stringify([...state.genres, newGenre]));
+    localStorage.setItem('lmm_genres', JSON.stringify([...state.genres, newGenre]));
     
     toast({
       title: "Genre added",

@@ -23,18 +23,21 @@ export const initialGenres: Genre[] = [
   {
     id: '1',
     name: 'Reggaeton',
+    count: 24,
     createdBy: 'admin',
     createdAt: new Date().toISOString()
   },
   {
     id: '2',
     name: 'Bachata',
+    count: 18,
     createdBy: 'admin',
     createdAt: new Date().toISOString()
   },
   {
     id: '3',
     name: 'Salsa',
+    count: 15,
     createdBy: 'admin',
     createdAt: new Date().toISOString()
   }
