@@ -1,86 +1,65 @@
-
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
+import { useRadio } from './useRadioContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRadio } from '@/hooks/useRadioContext';
-import { RadioStation } from '@/models/RadioStation';
 
-export const useBookShow = (stationId: string | undefined) => {
-  const { isAuthenticated, user } = useAuth();
-  const { stations, addBooking, hasBookingConflict } = useRadio();
-  const navigate = useNavigate();
-  const { toast } = useToast();
+export const useBookShow = () => {
+  const { addBooking } = useRadio();
+  const { user } = useAuth();
+  const [selectedStation, setSelectedStation] = useState('');
+  const [title, setTitle] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   
-  const [station, setStation] = useState<RadioStation | null>(null);
-  
-  // Check if user is admin or host (privileged users)
-  const isPrivilegedUser = isAuthenticated && (user?.isAdmin || user?.isRadioHost);
-  
-  useEffect(() => {
-    // Redirect if not authenticated or not a host/admin
-    if (!isAuthenticated) {
-      navigate('/login');
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedStation || !title || !startDate || !endDate) {
+      setError('Please fill in all fields');
       return;
     }
     
-    if (!isPrivilegedUser) {
-      navigate('/stations');
-      toast({
-        title: "Access Denied",
-        description: "Only hosts and admins can book shows",
-        variant: "destructive"
+    // Validate dates
+    if (new Date(startDate) >= new Date(endDate)) {
+      setError('End time must be after start time');
+      return;
+    }
+    
+    try {
+      addBooking({
+        stationId: selectedStation,
+        userId: user?.id || 'guest', // Add the missing userId field
+        hostId: user?.id || 'guest',
+        hostName: user?.username || 'Guest User',
+        title,
+        startTime: startDate,
+        endTime: endDate,
+        approved: false
       });
-      return;
+      
+      setSuccess('Booking request submitted!');
+      setError('');
+      setTitle('');
+      setStartDate('');
+      setEndDate('');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred');
+      setSuccess('');
     }
-    
-    if (stationId) {
-      const foundStation = stations.find(s => s.id === stationId);
-      if (foundStation) {
-        setStation(foundStation);
-      } else {
-        navigate('/stations');
-        toast({
-          title: "Station not found",
-          description: "The station you're looking for doesn't exist",
-          variant: "destructive"
-        });
-      }
-    } else {
-      navigate('/stations');
-    }
-  }, [stationId, stations, isAuthenticated, isPrivilegedUser, navigate, toast]);
-
-  const handleBookShow = (bookingData: {
-    stationId: string;
-    hostId: string;
-    hostName: string;
-    title: string;
-    startTime: string;
-    endTime: string;
-    approved: boolean;
-  }) => {
-    const newBooking = addBooking(bookingData);
-    
-    const approvalMessage = bookingData.approved 
-      ? "Your show has been booked successfully!"
-      : "Your booking request has been submitted for approval";
-    
-    toast({
-      title: bookingData.approved ? "Show Booked" : "Request Submitted",
-      description: approvalMessage,
-    });
-    
-    navigate('/stations');
-    return newBooking;
   };
 
   return {
-    station,
-    isPrivilegedUser,
-    userId: user?.id || '',
-    username: user?.username || 'Anonymous',
-    hasBookingConflict,
-    handleBookShow,
+    selectedStation,
+    setSelectedStation,
+    title,
+    setTitle,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    error,
+    success,
+    handleSubmit
   };
 };

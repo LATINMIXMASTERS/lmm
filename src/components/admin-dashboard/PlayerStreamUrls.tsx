@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Volume2, Music, Save, ExternalLink } from 'lucide-react';
 import { useRadio } from '@/hooks/useRadioContext';
@@ -7,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { extractStreamUrl } from '@/components/player/audio-engine/metadata';
+import { extractStreamUrl } from '@/components/player/audio-engine/metadata/index';
 
 const PlayerStreamUrls: React.FC = () => {
   const { stations, updateStreamUrl } = useRadio();
@@ -25,7 +24,6 @@ const PlayerStreamUrls: React.FC = () => {
       const initialDirtyState: Record<string, boolean> = {};
       
       stations.forEach(station => {
-        // Initialize with empty strings to allow changing
         initialStreamUrls[station.id] = '';
         initialDirtyState[station.id] = false;
       });
@@ -48,7 +46,6 @@ const PlayerStreamUrls: React.FC = () => {
       [stationId]: true
     }));
     
-    // Show extracted URL preview
     if (url) {
       try {
         const extracted = extractStreamUrl(url);
@@ -93,20 +90,17 @@ const PlayerStreamUrls: React.FC = () => {
     try {
       updateStreamUrl(stationId, formattedUrl);
       
-      // Update the extracted URL preview
       const extracted = extractStreamUrl(formattedUrl);
       setShowExtracted(prev => ({
         ...prev,
         [stationId]: extracted
       }));
       
-      // Reset form dirty state
       setIsFormDirty(prev => ({
         ...prev,
         [stationId]: false
       }));
       
-      // Clear the input field after successful save
       setStreamUrls(prev => ({
         ...prev,
         [stationId]: ''

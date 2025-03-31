@@ -1,9 +1,8 @@
-
 import React, { useRef, useEffect, MutableRefObject } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useTrack } from '@/hooks/useTrackContext';
-import { setupMetadataPolling } from './audio-engine/metadata';
+import { setupMetadataPolling } from './audio-engine/metadata/index';
 
 interface AudioEngineProps {
   onTimeUpdate: (currentTime: number) => void;

@@ -10,26 +10,35 @@ import SubmitButton from './SubmitButton';
 
 const UploadForm: React.FC = () => {
   const {
-    title,
-    setTitle,
-    selectedArtistId,
-    setSelectedArtistId,
-    selectedGenre,
-    setSelectedGenre,
-    coverImage,
-    setCoverImage,
-    audioFile,
-    setAudioFile,
-    coverPreview,
-    setCoverPreview,
+    formState,
     isUploading,
     uploadProgress,
     coverProgress,
     s3Configured,
     uploadError,
     handleSubmit,
+    handleInputChange,
+    setFormState,
+    setSelectedFile,
     maxAudioFileSize,
-    maxImageFileSize
+    maxImageFileSize,
+    // Destructure into proper type-compatible variables
+    fileHandling: {
+      coverImage,
+      setCoverImage,
+      audioFile,
+      setAudioFile,
+      coverPreview,
+      setCoverPreview
+    },
+    formFields: {
+      title,
+      setTitle,
+      selectedArtistId,
+      setSelectedArtistId,
+      selectedGenre,
+      setSelectedGenre
+    }
   } = useTrackUploadForm();
   
   return (

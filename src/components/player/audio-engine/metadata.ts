@@ -42,7 +42,18 @@ export const handleStreamMetadata = (
     // Extract artist and title from current track
     const textTrack = target.textTracks[0];
     const activeCue = textTrack?.activeCues?.[0] as TextTrackCue | undefined;
-    const currentTrack = activeCue?.getCueAsHTML?.().textContent || '';
+    
+    // Get text content safely without using getCueAsHTML
+    let currentTrack = '';
+    if (activeCue) {
+      // For VTTCue or other modern cues
+      if ('text' in activeCue) {
+        currentTrack = (activeCue as any).text;
+      } else {
+        // Fallback for other cue types
+        currentTrack = activeCue.toString();
+      }
+    }
     
     if (currentTrack) {
       // Most common format: Artist - Title
@@ -54,7 +65,7 @@ export const handleStreamMetadata = (
       const newMetadata = createMetadata(artist, title);
       
       // Update the station info
-      setStationInfo((prev) => ({
+      setStationInfo(prev => ({
         ...prev,
         currentTrack: currentTrack,
         metadata: newMetadata

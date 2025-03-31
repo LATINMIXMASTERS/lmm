@@ -1,8 +1,7 @@
-
 import { useEffect } from 'react';
 import { RadioStation, RadioMetadata } from '@/models/RadioStation';
 import { useToast } from '@/hooks/use-toast';
-import { setupMetadataPolling, extractStreamUrl } from './metadata';
+import { setupMetadataPolling, extractStreamUrl } from './metadata/index';
 
 interface StationPlayerProps {
   currentPlayingStation: string | null;

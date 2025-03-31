@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useTrack } from '@/hooks/useTrackContext';
 import { RadioMetadata } from '@/models/RadioStation';
 import { useStationPlayer } from './StationPlayer';
 import { useTrackPlayer } from './TrackPlayer';
-import { setupMetadataPolling } from './metadata';
+import { setupMetadataPolling, extractStreamUrl } from './metadata/index';
+import { useToast } from '@/hooks/use-toast';
 
 interface AudioEngineProps {
   onTimeUpdate: (currentTime: number) => void;

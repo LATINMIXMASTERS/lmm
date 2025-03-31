@@ -1,120 +1,84 @@
 
 import { RadioMetadata } from '@/models/RadioStation';
-import { fetchWithTimeout, extractArtistAndTitle } from '../utils';
-import { standardizeStreamUrl } from '../streamUtils';
+import { fetchWithTimeout, getValueFromPath, findBestImageUrl } from '../utils';
+import { extractStreamUrl, standardizeStreamUrl } from '../streamUtils';
 
-/**
- * Fetches metadata from a Shoutcast server
- * @param streamUrl The URL of the Shoutcast stream
- * @returns Promise with the metadata
- */
+// Fetch metadata from a Shoutcast stream
 export const fetchShoutcastMetadata = async (streamUrl: string): Promise<Partial<RadioMetadata>> => {
-  console.log('Fetching Shoutcast metadata from:', streamUrl);
-  
   try {
-    const standardUrl = standardizeStreamUrl(streamUrl);
+    // Remove trailing slashes from URL
+    let baseUrl = streamUrl.replace(/\/+$/, '');
     
-    // Try to get the status page URL
-    const statusUrl = new URL(standardUrl);
-    const hostPort = statusUrl.host;
+    // Common Shoutcast API endpoints
+    const statusEndpoint = `${baseUrl}/status-json.xsl`;
+    const statsEndpoint = `${baseUrl}/stats`;
+    const infoEndpoint = `${baseUrl}/7.html`;
     
-    // Different Shoutcast versions have different status endpoints
-    const endpoints = [
-      // Shoutcast v2 status endpoints
-      `http://${hostPort}/status-json.xsl`,
-      `http://${hostPort}/7.html`,
-      `http://${hostPort}/stats`,
+    // Try to fetch from status-json.xsl first (Shoutcast v2)
+    try {
+      const response = await fetchWithTimeout(statusEndpoint);
       
-      // Shoutcast v1 status endpoints
-      `http://${hostPort}/7.html`,
-      `http://${hostPort}/index.html`,
-      
-      // Last resort - try direct stream headers
-      standardUrl
-    ];
-    
-    // Try each endpoint in sequence
-    for (const endpoint of endpoints) {
-      try {
-        const response = await fetchWithTimeout(endpoint, {
-          method: 'GET',
-          headers: { 'User-Agent': 'Mozilla/5.0' }
-        }, 3000, 1);
+      if (response.ok) {
+        const data = await response.json();
         
-        if (!response.ok) continue;
+        // Extract metadata from Shoutcast v2 API
+        const serverName = getValueFromPath(data, 'servertitle') || '';
+        const artist = getValueFromPath(data, 'streams.0.artist') || '';
+        const title = getValueFromPath(data, 'streams.0.title') || '';
+        const song = getValueFromPath(data, 'streams.0.songtitle') || '';
         
-        // Check content type to determine response format
-        const contentType = response.headers.get('content-type') || '';
+        // Try to find an image
+        const coverArt = findBestImageUrl(data) || '';
         
-        if (contentType.includes('application/json')) {
-          // Parse JSON response (Shoutcast v2)
-          const data = await response.json();
-          
-          if (data?.streams?.[0]) {
-            // Shoutcast v2 JSON format
-            const stream = data.streams[0];
-            const songTitle = stream.songtitle || stream.song || '';
-            const { artist, title } = extractArtistAndTitle(songTitle);
-            
-            return {
-              title: title || songTitle || 'Live Stream',
-              artist: artist || stream.artist || '',
-              album: stream.album || '',
-              coverArt: stream.artwork || ''
-            };
-          } else if (data?.icestats?.source) {
-            // Alternative JSON format (sometimes used)
-            const source = Array.isArray(data.icestats.source) 
-              ? data.icestats.source[0] 
-              : data.icestats.source;
-              
-            const songTitle = source.title || source.song || '';
-            const { artist, title } = extractArtistAndTitle(songTitle);
-            
-            return {
-              title: title || songTitle || 'Live Stream',
-              artist: artist || source.artist || '',
-              album: source.server_name || '',
-              coverArt: ''
-            };
-          }
-        } else {
-          // Handle HTML or text response (Shoutcast v1 or simple status)
-          const text = await response.text();
-          
-          // Look for song info in the response
-          const songMatch = text.match(/<body>(.*?)<\/body>/s) || 
-                           text.match(/StreamTitle='(.*?)';/) ||
-                           text.match(/currentsong=(.*?)&/);
-                           
-          if (songMatch && songMatch[1]) {
-            const songTitle = songMatch[1].replace(/\+/g, ' ').trim();
-            const { artist, title } = extractArtistAndTitle(songTitle);
-            
-            return {
-              title: title || songTitle || 'Live Stream',
-              artist: artist || '',
-              album: 'Live Radio',
-              coverArt: ''
-            };
-          }
-        }
-      } catch (endpointError) {
-        console.log(`Error with endpoint ${endpoint}:`, endpointError);
-        // Continue to next endpoint
+        // Construct metadata
+        return {
+          artist: artist || (song.includes('-') ? song.split('-')[0].trim() : ''),
+          title: title || (song.includes('-') ? song.split('-')[1].trim() : song),
+          album: serverName,
+          coverArt,
+          timestamp: Date.now()
+        };
       }
+    } catch (error) {
+      console.warn("Failed to fetch Shoutcast v2 status:", error);
     }
     
-    // If all endpoints fail, return minimal info
+    // Try fallback to stats endpoint (Shoutcast v1)
+    try {
+      const response = await fetchWithTimeout(statsEndpoint);
+      
+      if (response.ok) {
+        const text = await response.text();
+        const currentSongMatch = text.match(/Current Song: <\/td><td[^>]*>([^<]+)</i);
+        
+        if (currentSongMatch && currentSongMatch[1]) {
+          const song = currentSongMatch[1];
+          
+          // Most songs are formatted as "Artist - Title"
+          const parts = song.split(' - ');
+          const artist = parts.length > 1 ? parts[0].trim() : '';
+          const title = parts.length > 1 ? parts.slice(1).join(' - ').trim() : song.trim();
+          
+          return {
+            artist,
+            title,
+            timestamp: Date.now()
+          };
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to fetch Shoutcast v1 stats:", error);
+    }
+    
+    // Minimal fallback response
     return {
-      title: 'Live Stream',
-      artist: 'Radio Station',
-      album: 'Live Radio',
-      coverArt: ''
+      artist: '',
+      title: 'Live Broadcast',
+      timestamp: Date.now()
     };
     
   } catch (error) {
-    console.error('Error fetching Shoutcast metadata:', error);
+    console.error("Error in fetchShoutcastMetadata:", error);
     throw error;
   }
 };

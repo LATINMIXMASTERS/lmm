@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Music, BarChart2, Radio, Calendar } from 'lucide-react';
@@ -9,12 +10,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import ProfileEditor from '@/components/ProfileEditor';
+import { Host } from '@/models/RadioStation'; // Import Host type
 
 import Sidebar from '@/components/host-dashboard/Sidebar';
 import MixesList from '@/components/host-dashboard/MixesList';
 import RadioShows from '@/components/host-dashboard/RadioShows';
 import BookingsList from '@/components/host-dashboard/BookingsList';
 import StatisticsPanel from '@/components/host-dashboard/StatisticsPanel';
+
+// Extended User interface to include optional avatarUrl
+interface ExtendedUser {
+  id: string;
+  username: string;
+  isAdmin?: boolean;
+  isRadioHost?: boolean;
+  avatarUrl?: string;
+}
 
 const DJDashboard: React.FC = () => {
   const { user, updateProfile } = useAuth();
@@ -34,20 +45,22 @@ const DJDashboard: React.FC = () => {
     return null;
   }
 
+  const extendedUser = user as ExtendedUser;
+
   const host: Host = {
-    id: user.id || user.username,
-    name: user.username,
-    role: user.isAdmin ? 'Admin' : 'Host',
-    image: user.avatarUrl
+    id: extendedUser.id || extendedUser.username,
+    name: extendedUser.username,
+    role: extendedUser.isAdmin ? 'Admin' : 'Host',
+    image: extendedUser.avatarUrl || ''
   };
 
   const userTracks = getTracksByUser(user.id);
   const userStations = stations.filter(station => 
-    station.hosts && station.hosts.includes(user.id)
+    station.hosts && station.hosts.some(h => h.id === user.id)
   );
   
   const userBookings = bookings.filter(booking => 
-    booking.hostId === user.id
+    booking.userId === user.id || booking.hostName === user.username
   );
 
   const approvedBookings = userBookings.filter(booking => booking.approved);
