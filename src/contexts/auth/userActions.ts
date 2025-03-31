@@ -16,7 +16,7 @@ export const useUserActions = (
     );
     
     setUsers(updatedUsers);
-    localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+    localStorage.setItem('lmm_users', JSON.stringify(updatedUsers));
     
     toast({
       title: "User approved",
@@ -28,7 +28,7 @@ export const useUserActions = (
     const updatedUsers = users.filter(u => u.id !== userId);
     
     setUsers(updatedUsers);
-    localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+    localStorage.setItem('lmm_users', JSON.stringify(updatedUsers));
     
     toast({
       title: "User rejected",
@@ -52,7 +52,7 @@ export const useUserActions = (
     );
     
     setUsers(updatedUsers);
-    localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+    localStorage.setItem('lmm_users', JSON.stringify(updatedUsers));
     
     toast({
       title: "User suspended",
@@ -66,7 +66,7 @@ export const useUserActions = (
     );
     
     setUsers(updatedUsers);
-    localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+    localStorage.setItem('lmm_users', JSON.stringify(updatedUsers));
     
     toast({
       title: "User activated",
@@ -89,12 +89,12 @@ export const useUserActions = (
     );
     
     setUsers(updatedUsers);
-    localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+    localStorage.setItem('lmm_users', JSON.stringify(updatedUsers));
     
     if (user?.id === userId) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
-      localStorage.setItem('latinmixmasters_user', JSON.stringify(updatedUser));
+      localStorage.setItem('lmm_user', JSON.stringify(updatedUser));
     }
     
     toast({
@@ -116,7 +116,7 @@ export const useUserActions = (
     const updatedUsers = users.filter(u => u.id !== userId);
     
     setUsers(updatedUsers);
-    localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+    localStorage.setItem('lmm_users', JSON.stringify(updatedUsers));
     
     toast({
       title: "User deleted",
@@ -143,8 +143,8 @@ export const useUserActions = (
     
     setUsers(updatedUsers);
     
-    localStorage.setItem('latinmixmasters_user', JSON.stringify(updatedUser));
-    localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+    localStorage.setItem('lmm_user', JSON.stringify(updatedUser));
+    localStorage.setItem('lmm_users', JSON.stringify(updatedUsers));
     
     toast({
       title: "Profile Updated",

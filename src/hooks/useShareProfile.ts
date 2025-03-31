@@ -13,8 +13,8 @@ export const useShareProfile = (profileUser: User) => {
     
     if (navigator.share) {
       navigator.share({
-        title: `${profileUser.username}'s Profile - Latin Mix Masters`,
-        text: `Check out ${profileUser.username}'s profile on Latin Mix Masters!`,
+        title: `${profileUser.username}'s Profile - LMM`,
+        text: `Check out ${profileUser.username}'s profile on LMM!`,
         url: shareUrl
       }).catch(error => {
         console.error('Error sharing:', error);

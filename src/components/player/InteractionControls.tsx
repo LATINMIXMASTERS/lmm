@@ -23,7 +23,7 @@ const InteractionControls: React.FC<InteractionControlsProps> = ({
 }) => {
   const [showShareOptions, setShowShareOptions] = useState(false);
   const { shareToWhatsApp, shareToFacebook, shareViaSMS, copyShareUrl } = useTrackSharing();
-  const { tracks, currentPlayingTrack } = useTrack();
+  const { tracks, currentPlayingTrack, getTrackById } = useTrack();
   
   // Custom share handler function that opens a share drawer
   const onShare = (e: React.MouseEvent) => {
@@ -36,8 +36,8 @@ const InteractionControls: React.FC<InteractionControlsProps> = ({
     setShowShareOptions(true);
     
     // Optional: Get the current track to provide more context to sharing methods
-    const currentTrack = currentPlayingTrack 
-      ? tracks.find(t => t.id === currentPlayingTrack) 
+    const currentTrack = currentPlayingTrack && getTrackById 
+      ? getTrackById(currentPlayingTrack) 
       : null;
       
     if (!currentTrack) return;
@@ -92,7 +92,9 @@ const InteractionControls: React.FC<InteractionControlsProps> = ({
           <div className="flex flex-col space-y-2">
             <button 
               onClick={() => {
-                const currentTrack = currentPlayingTrack ? tracks.find(t => t.id === currentPlayingTrack) as Track : null;
+                const currentTrack = currentPlayingTrack && getTrackById 
+                  ? getTrackById(currentPlayingTrack) 
+                  : null;
                 if (currentTrack) {
                   const shareUrl = `${window.location.origin}/mixes?track=${currentTrack.id}`;
                   shareToWhatsApp(currentTrack, shareUrl);
@@ -106,7 +108,9 @@ const InteractionControls: React.FC<InteractionControlsProps> = ({
             
             <button 
               onClick={() => {
-                const currentTrack = currentPlayingTrack ? tracks.find(t => t.id === currentPlayingTrack) : null;
+                const currentTrack = currentPlayingTrack && getTrackById 
+                  ? getTrackById(currentPlayingTrack) 
+                  : null;
                 if (currentTrack) {
                   const shareUrl = `${window.location.origin}/mixes?track=${currentTrack.id}`;
                   shareToFacebook(shareUrl);
@@ -120,7 +124,9 @@ const InteractionControls: React.FC<InteractionControlsProps> = ({
             
             <button 
               onClick={() => {
-                const currentTrack = currentPlayingTrack ? tracks.find(t => t.id === currentPlayingTrack) as Track : null;
+                const currentTrack = currentPlayingTrack && getTrackById 
+                  ? getTrackById(currentPlayingTrack) 
+                  : null;
                 if (currentTrack) {
                   const shareUrl = `${window.location.origin}/mixes?track=${currentTrack.id}`;
                   shareViaSMS(currentTrack, shareUrl);
@@ -134,7 +140,9 @@ const InteractionControls: React.FC<InteractionControlsProps> = ({
             
             <button 
               onClick={() => {
-                const currentTrack = currentPlayingTrack ? tracks.find(t => t.id === currentPlayingTrack) : null;
+                const currentTrack = currentPlayingTrack && getTrackById 
+                  ? getTrackById(currentPlayingTrack) 
+                  : null;
                 if (currentTrack) {
                   const shareUrl = `${window.location.origin}/mixes?track=${currentTrack.id}`;
                   copyShareUrl(shareUrl);

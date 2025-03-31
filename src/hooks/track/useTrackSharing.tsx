@@ -30,7 +30,7 @@ export const useTrackSharing = () => {
    * @param shareUrl - The URL to share
    */
   const shareToWhatsApp = (track: Track, shareUrl: string) => {
-    const text = encodeURIComponent(`Check out this awesome mix on Latin Mix Masters: ${track.artist} - ${track.title}\n${shareUrl}`);
+    const text = encodeURIComponent(`Check out this awesome mix on LMM: ${track.artist} - ${track.title}\n${shareUrl}`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
@@ -48,7 +48,7 @@ export const useTrackSharing = () => {
    * @param shareUrl - The URL to share
    */
   const shareViaSMS = (track: Track, shareUrl: string) => {
-    const text = encodeURIComponent(`Check out this awesome mix on Latin Mix Masters: ${track.artist} - ${track.title}\n${shareUrl}`);
+    const text = encodeURIComponent(`Check out this awesome mix on LMM: ${track.artist} - ${track.title}\n${shareUrl}`);
     window.open(`sms:?&body=${text}`, '_blank');
   };
 

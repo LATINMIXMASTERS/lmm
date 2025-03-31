@@ -7,7 +7,7 @@ import { generateSimulatedMetadata } from './simulateMetadata';
 import { isShoutcastUrl, isValidStreamUrl, extractStreamUrl } from './streamUtils';
 
 // Re-export utility functions for external use
-export { extractStreamUrl, isShoutcastUrl } from './streamUtils';
+export { extractStreamUrl, isShoutcastUrl, isValidStreamUrl } from './streamUtils';
 export { fetchStreamMetadata } from './fetchMetadata';
 export { generateSimulatedMetadata } from './simulateMetadata';
 export { extractArtistAndTitle } from './parseMetadata';
@@ -58,7 +58,10 @@ export const setupMetadataPolling = (
           setStationInfo(prev => ({
             ...prev,
             currentTrack: metadataString,
-            metadata: metadata as RadioMetadata
+            metadata: {
+              ...metadata,
+              timestamp: Date.now()
+            } as RadioMetadata
           }));
           
           // If we have a stationId, update the metadata in the central store
@@ -66,7 +69,10 @@ export const setupMetadataPolling = (
             try {
               const radioContext = useRadio();
               if (radioContext.updateStationMetadata) {
-                radioContext.updateStationMetadata(stationId, metadata as RadioMetadata);
+                radioContext.updateStationMetadata(stationId, {
+                  ...metadata,
+                  timestamp: Date.now()
+                } as RadioMetadata);
               }
             } catch (error) {
               console.error('Error updating central store metadata:', error);
@@ -92,7 +98,10 @@ export const setupMetadataPolling = (
     setStationInfo(prev => ({
       ...prev,
       currentTrack: trackString,
-      metadata
+      metadata: {
+        ...metadata,
+        timestamp: Date.now()
+      }
     }));
     
     // If we have a stationId, update the metadata in the central store
@@ -100,7 +109,10 @@ export const setupMetadataPolling = (
       try {
         const radioContext = useRadio();
         if (radioContext.updateStationMetadata) {
-          radioContext.updateStationMetadata(stationId, metadata);
+          radioContext.updateStationMetadata(stationId, {
+            ...metadata,
+            timestamp: Date.now()
+          });
         }
       } catch (error) {
         console.error('Error updating central store metadata:', error);

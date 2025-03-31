@@ -19,9 +19,8 @@ export interface TrackContextType {
   generateWaveformData: () => number[];
   shareTrack: (trackId: string) => void;
   canEditTrack: (trackId: string) => boolean;
-  // Add the missing properties that were causing TypeScript errors
-  getTrackById?: (trackId: string) => Track | undefined;
-  updateListeningCount?: (trackId: string) => void;
+  getTrackById: (trackId: string) => Track | undefined;
+  updateListeningCount: (trackId: string) => void;
 }
 
 const TrackContext = createContext<TrackContextType | undefined>(undefined);

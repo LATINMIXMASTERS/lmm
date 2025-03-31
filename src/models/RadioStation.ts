@@ -35,7 +35,7 @@ export interface RadioMetadata {
   coverArt?: string;
   genre?: string;
   year?: string;
-  timestamp?: number; // Adding timestamp field for tracking updates
+  timestamp: number; // Making timestamp required with a type
 }
 
 export interface UpcomingShow {

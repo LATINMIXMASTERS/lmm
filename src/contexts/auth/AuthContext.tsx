@@ -23,12 +23,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const userActions = useUserActions(setUser, setUsers, user, users);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('latinmixmasters_user');
+    const storedUser = localStorage.getItem('lmm_user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
 
-    const storedUsers = localStorage.getItem('latinmixmasters_users');
+    const storedUsers = localStorage.getItem('lmm_users');
     if (storedUsers) {
       setUsers(JSON.parse(storedUsers));
     } else {
@@ -43,82 +43,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           registeredAt: new Date().toISOString(),
           profileImage: 'https://api.dicebear.com/7.x/personas/svg?seed=lmmadmin',
           biography: 'Official Admin of Latin Mix Masters'
-        },
-        {
-          id: 'host1',
-          username: 'DJLatino',
-          email: 'djlatino@example.com',
-          password: 'password123',
-          isAdmin: false,
-          isRadioHost: true,
-          registeredAt: new Date().toISOString(),
-          profileImage: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=1000&auto=format&fit=crop',
-          biography: 'Passionate Latin music DJ with over 10 years of experience in the industry.',
-          socialLinks: {
-            facebook: 'https://facebook.com/djlatino',
-            twitter: 'https://twitter.com/djlatino',
-            instagram: 'https://instagram.com/djlatino',
-            youtube: null,
-            soundcloud: 'https://soundcloud.com/djlatino'
-          }
-        },
-        {
-          id: 'host2',
-          username: 'BachataQueen',
-          email: 'bachataqueen@example.com',
-          password: 'password123',
-          isAdmin: false,
-          isRadioHost: true,
-          registeredAt: new Date().toISOString(),
-          profileImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1000&auto=format&fit=crop',
-          biography: 'Dedicated to bringing you the best bachata mixes from around the world.',
-          socialLinks: {
-            facebook: 'https://facebook.com/bachataqueen',
-            twitter: null,
-            instagram: 'https://instagram.com/bachataqueen',
-            youtube: 'https://youtube.com/bachataqueen',
-            soundcloud: null
-          }
-        },
-        {
-          id: 'host3',
-          username: 'ReggaetonMaster',
-          email: 'reggaetonmaster@example.com',
-          password: 'password123',
-          isAdmin: false,
-          isRadioHost: true,
-          registeredAt: new Date().toISOString(),
-          profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1000&auto=format&fit=crop',
-          biography: 'Bringing you the hottest reggaeton tracks from Puerto Rico and beyond.',
-          socialLinks: {
-            facebook: null,
-            twitter: 'https://twitter.com/reggaetonmaster',
-            instagram: 'https://instagram.com/reggaetonmaster',
-            youtube: null,
-            soundcloud: 'https://soundcloud.com/reggaetonmaster'
-          }
-        },
-        {
-          id: 'host4',
-          username: 'SalsaKing',
-          email: 'salsaking@example.com',
-          password: 'password123',
-          isAdmin: false,
-          isRadioHost: true,
-          registeredAt: new Date().toISOString(),
-          profileImage: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1000&auto=format&fit=crop',
-          biography: 'Professional salsa DJ with a passion for Cuban and Puerto Rican rhythms.',
-          socialLinks: {
-            facebook: 'https://facebook.com/salsaking',
-            twitter: 'https://twitter.com/salsaking',
-            instagram: 'https://instagram.com/salsaking',
-            youtube: 'https://youtube.com/salsaking',
-            soundcloud: 'https://soundcloud.com/salsaking'
-          }
         }
       ];
       setUsers(initialUsers);
-      localStorage.setItem('latinmixmasters_users', JSON.stringify(initialUsers));
+      localStorage.setItem('lmm_users', JSON.stringify(initialUsers));
     }
     
     setIsLoading(false);

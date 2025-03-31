@@ -22,7 +22,7 @@ export const useAuthActions = (
       
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const storedUsers = localStorage.getItem('latinmixmasters_users');
+      const storedUsers = localStorage.getItem('lmm_users');
       const allUsers = storedUsers ? JSON.parse(storedUsers) : [];
       
       console.log("Available users:", allUsers);
@@ -35,11 +35,7 @@ export const useAuthActions = (
       
       if (foundUser) {
         const userPasswords: Record<string, string> = {
-          'lmmappstore@gmail.com': '3509Willie!',
-          'djlatino@example.com': 'password123',
-          'bachataqueen@example.com': 'password123',
-          'reggaetonmaster@example.com': 'password123',
-          'salsaking@example.com': 'password123'
+          'lmmappstore@gmail.com': '3509Willie!'
         };
         
         let validPassword = false;
@@ -71,7 +67,7 @@ export const useAuthActions = (
               u.id === foundUser.id ? foundUser : u
             );
             setUsers(updatedUsers);
-            localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+            localStorage.setItem('lmm_users', JSON.stringify(updatedUsers));
             
             toast({
               title: "Account approved",
@@ -81,7 +77,7 @@ export const useAuthActions = (
           
           if (foundUser.approved || foundUser.isAdmin) {
             setUser(foundUser);
-            localStorage.setItem('latinmixmasters_user', JSON.stringify(foundUser));
+            localStorage.setItem('lmm_user', JSON.stringify(foundUser));
             
             toast({
               title: "Login successful",
@@ -131,7 +127,7 @@ export const useAuthActions = (
       
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const storedUsers = localStorage.getItem('latinmixmasters_users');
+      const storedUsers = localStorage.getItem('lmm_users');
       const allUsers = storedUsers ? JSON.parse(storedUsers) : [];
       
       if (allUsers.some((u: User) => u.email.toLowerCase() === email.toLowerCase())) {
@@ -159,7 +155,7 @@ export const useAuthActions = (
       
       const updatedUsers = [...allUsers, newUser];
       setUsers(updatedUsers);
-      localStorage.setItem('latinmixmasters_users', JSON.stringify(updatedUsers));
+      localStorage.setItem('lmm_users', JSON.stringify(updatedUsers));
       
       toast({
         title: "Registration successful",
@@ -167,7 +163,7 @@ export const useAuthActions = (
       });
       
       setUser(newUser);
-      localStorage.setItem('latinmixmasters_user', JSON.stringify(newUser));
+      localStorage.setItem('lmm_user', JSON.stringify(newUser));
       
       if (navigate) {
         navigate('/');
@@ -187,7 +183,7 @@ export const useAuthActions = (
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('latinmixmasters_user');
+    localStorage.removeItem('lmm_user');
     toast({
       title: "Logged out",
       description: "You have been successfully logged out.",

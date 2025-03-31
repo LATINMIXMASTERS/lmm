@@ -23,7 +23,7 @@ export const createTrackInteractionActions = (
     const updatedTracks = state.tracks.map(track => 
       track.id === trackId ? { ...track, likes: track.likes + 1 } : track
     );
-    localStorage.setItem('latinmixmasters_tracks', JSON.stringify(updatedTracks));
+    localStorage.setItem('lmm_tracks', JSON.stringify(updatedTracks));
   };
 
   // Add a comment to a track
@@ -53,7 +53,7 @@ export const createTrackInteractionActions = (
       return track;
     });
     
-    localStorage.setItem('latinmixmasters_tracks', JSON.stringify(updatedTracks));
+    localStorage.setItem('lmm_tracks', JSON.stringify(updatedTracks));
   };
 
   // Set currently playing track
@@ -62,6 +62,38 @@ export const createTrackInteractionActions = (
     if (trackId) {
       setCurrentPlayingStation(null);
     }
+  };
+
+  // Update listening count
+  const updateListeningCount = (trackId: string) => {
+    const track = state.tracks.find(t => t.id === trackId);
+    if (!track) return;
+    
+    const updatedTrack = {
+      ...track,
+      playCount: (track.playCount || 0) + 1,
+      plays: (track.plays || 0) + 1
+    };
+    
+    dispatch({
+      type: 'UPDATE_TRACK',
+      payload: {
+        trackId,
+        trackData: updatedTrack
+      }
+    });
+    
+    // Update in localStorage
+    const updatedTracks = state.tracks.map(t => 
+      t.id === trackId ? updatedTrack : t
+    );
+    
+    localStorage.setItem('lmm_tracks', JSON.stringify(updatedTracks));
+  };
+
+  // Get track by ID
+  const getTrackById = (trackId: string): Track | undefined => {
+    return state.tracks.find(t => t.id === trackId);
   };
 
   // Share a track - Enhanced with multiple sharing options
@@ -77,7 +109,7 @@ export const createTrackInteractionActions = (
     // Create share data
     const shareData = {
       title: `${track.artist} - ${track.title}`,
-      text: 'Check out this awesome mix on Latin Mix Masters!',
+      text: 'Check out this awesome mix on LMM!',
       url: shareUrl,
     };
     
@@ -100,7 +132,6 @@ export const createTrackInteractionActions = (
     toast({
       title: "Share this track",
       description: `${track.artist} - ${track.title}`,
-      // Fix: Use JSX element instead of object with label and onClick
       action: (
         <ToastAction altText="Share" onClick={() => {
           console.log("User clicked share");
@@ -111,14 +142,14 @@ export const createTrackInteractionActions = (
         </ToastAction>
       )
     });
-    
-    // This is handled by the useTrackSharing hook elsewhere
   };
 
   return {
     likeTrack,
     addComment,
     setCurrentPlayingTrack,
-    shareTrack
+    shareTrack,
+    updateListeningCount,
+    getTrackById
   };
 };
