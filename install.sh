@@ -3,7 +3,7 @@
 set -e
 
 echo "=== Latin Mix Masters VPS Installation ==="
-echo "Optimized for low-resource VPS environments"
+echo "Optimized for low-resource VPS environments with improved synchronization"
 
 # Check if running as root and warn if necessary
 if [ "$(id -u)" = "0" ]; then
@@ -51,12 +51,36 @@ npm run build > logs/build.log 2>&1 || {
   exit 1
 }
 
+# Create optimized ecosystem file for better synchronization
+echo "Creating optimized PM2 configuration..."
+cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [{
+    name: "latinmixmasters",
+    script: "npm",
+    args: "start",
+    instances: 1,
+    exec_mode: "fork",
+    watch: false,
+    max_memory_restart: "300M",
+    env: {
+      NODE_ENV: "production",
+      REACT_APP_SYNC_INTERVAL: "2000",
+      REACT_APP_FORCE_SYNC: "true" 
+    }
+  }]
+};
+EOF
+
 # Setup PM2 for production
 echo "Setting up PM2 for production..."
 pm2 start ecosystem.config.js || {
   echo "Setting up with default configuration..."
   pm2 start npm --name "latinmixmasters" -- start
 }
+
+# Make optimize-sync script executable
+chmod +x optimize-sync.sh
 
 # Save PM2 configuration
 pm2 save
@@ -66,8 +90,12 @@ echo "Configuring PM2 to start on system boot..."
 pm2 startup | tail -n 1 > logs/pm2-startup.log
 echo "Run the command from logs/pm2-startup.log if you want PM2 to start on boot"
 
+# Apply sync optimizations
+echo "Applying synchronization optimizations..."
+./optimize-sync.sh
+
 echo "=== Installation Complete ==="
-echo "Your application is now running with PM2"
+echo "Your application is now running with PM2 and optimized for synchronization"
 echo "Access your application at http://YOUR_SERVER_IP"
 echo ""
 echo "Useful commands:"
@@ -75,3 +103,4 @@ echo "  pm2 status                  - Check application status"
 echo "  pm2 logs latinmixmasters    - View application logs"
 echo "  pm2 restart latinmixmasters - Restart the application"
 echo "  ./update.sh                 - Update the application"
+echo "  ./optimize-sync.sh          - Re-apply synchronization optimizations"

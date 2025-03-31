@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,19 +15,36 @@ import DJProfileTabs from '@/components/profile/DJProfileTabs';
 import DJTrackActions from '@/components/profile/DJTrackActions';
 import { useDJProfileActions } from '@/hooks/useDJProfileActions';
 import { formatDuration, createTrackActionsRenderer } from '@/utils/djProfileUtils';
+import useBroadcastSync from '@/hooks/useBroadcastSync'; // Import our new hook
 
 const DJProfile: React.FC = () => {
   const { username } = useParams<{ username: string }>();
   const { user, users } = useAuth();
   const { tracks, genres, getTracksByUser, deleteTrack } = useTrack();
-  const { stations, bookings, setCurrentPlayingStation } = useRadio();
+  const { stations, bookings, setCurrentPlayingStation, syncStationsFromStorage } = useRadio();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { performFullSync } = useBroadcastSync(); // Use our new hook
+
+  // Force sync when loading the DJ profile to ensure we have the latest data
+  useEffect(() => {
+    // Immediate sync
+    if (syncStationsFromStorage) {
+      syncStationsFromStorage();
+    }
+    
+    // Then use our broadcast sync
+    performFullSync();
+  }, [username, syncStationsFromStorage, performFullSync]);
 
   // Find DJ by username or by ID for backwards compatibility
+  // Use strict normalization rules to ensure consistent matching
+  const normalizedUsername = username?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+  
   const djUser = users.find(u => {
-    const normalizedUsername = u.username.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
-    return (normalizedUsername === username?.toLowerCase() || u.id === username) && u.isRadioHost;
+    const normalizedUserUsername = u.username.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+    // Either direct match on normalized username or direct ID match
+    return (normalizedUserUsername === normalizedUsername || u.id === username) && u.isRadioHost;
   });
   
   const [trackToDelete, setTrackToDelete] = useState<Track | null>(null);

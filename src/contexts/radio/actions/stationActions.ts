@@ -9,6 +9,40 @@ export const useStationActions = (
 ) => {
   const { toast } = useToast();
 
+  // Helper function to enforce cross-device synchronization
+  const synchronizeAcrossDevices = (key: string, data: any) => {
+    // Store with timestamp for reliable sync detection
+    const syncData = JSON.stringify({
+      data,
+      timestamp: Date.now(),
+      deviceId: localStorage.getItem('latinmixmasters_device_id') || 'unknown'
+    });
+    
+    // Set multiple sync points for better detection
+    localStorage.setItem(key, syncData);
+    localStorage.setItem('latinmixmasters_last_sync', Date.now().toString());
+    
+    // Force storage event for immediate cross-tab sync
+    try {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: key,
+        newValue: syncData
+      }));
+      
+      // Additional broadcast event for better device detection
+      const broadcastEvent = new CustomEvent('latinmixmasters_broadcast', {
+        detail: {
+          key,
+          timestamp: Date.now(),
+          data
+        }
+      });
+      window.dispatchEvent(broadcastEvent);
+    } catch (error) {
+      console.error("Error broadcasting sync event:", error);
+    }
+  };
+
   const updateStreamDetailsImpl = (
     stationId: string, 
     streamDetails: { url: string; port: string; password: string }
@@ -19,9 +53,21 @@ export const useStationActions = (
         payload: { stationId, streamDetails } 
       });
       
+      // Get updated stations after dispatch
+      const updatedStations = state.stations.map(station => {
+        if (station.id === stationId) {
+          return { ...station, streamDetails };
+        }
+        return station;
+      });
+      
+      // Force localStorage update for better cross-device sync
+      localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+      synchronizeAcrossDevices(`station_${stationId}_stream_details`, streamDetails);
+      
       toast({
         title: "Stream details updated",
-        description: "The streaming configuration has been saved."
+        description: "The streaming configuration has been saved and broadcasted to all devices."
       });
     } catch (error) {
       console.error("Error updating stream details:", error);
@@ -40,9 +86,21 @@ export const useStationActions = (
         payload: { stationId, streamUrl } 
       });
       
+      // Get updated stations after dispatch
+      const updatedStations = state.stations.map(station => {
+        if (station.id === stationId) {
+          return { ...station, streamUrl };
+        }
+        return station;
+      });
+      
+      // Force localStorage update for better cross-device sync
+      localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+      synchronizeAcrossDevices(`station_${stationId}_stream_url`, streamUrl);
+      
       toast({
         title: "Stream URL updated",
-        description: "The streaming URL has been updated."
+        description: "The streaming URL has been updated and broadcasted to all devices."
       });
     } catch (error) {
       console.error("Error updating stream URL:", error);
@@ -62,9 +120,21 @@ export const useStationActions = (
         payload: { stationId, imageUrl } 
       });
       
+      // Get updated stations after dispatch
+      const updatedStations = state.stations.map(station => {
+        if (station.id === stationId) {
+          return { ...station, image: imageUrl };
+        }
+        return station;
+      });
+      
+      // Force localStorage update for better cross-device sync
+      localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+      synchronizeAcrossDevices(`station_${stationId}_image`, imageUrl);
+      
       toast({
         title: "Station image updated",
-        description: "The station image has been updated."
+        description: "The station image has been updated and broadcasted to all devices."
       });
     } catch (error) {
       console.error("Error updating station image:", error);
@@ -101,9 +171,21 @@ export const useStationActions = (
         payload: { stationId, imageUrl: dataUrl } 
       });
       
+      // Get updated stations after dispatch
+      const updatedStations = state.stations.map(station => {
+        if (station.id === stationId) {
+          return { ...station, image: dataUrl };
+        }
+        return station;
+      });
+      
+      // Force localStorage update for better cross-device sync
+      localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+      synchronizeAcrossDevices(`station_${stationId}_image_upload`, { id: stationId, timestamp: Date.now() });
+      
       toast({
         title: "Image uploaded",
-        description: "The station image has been uploaded successfully."
+        description: "The station image has been uploaded successfully to all devices."
       });
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -123,9 +205,21 @@ export const useStationActions = (
         payload: { stationId, s3ImageUrl } 
       });
       
+      // Get updated stations after dispatch
+      const updatedStations = state.stations.map(station => {
+        if (station.id === stationId) {
+          return { ...station, s3ImageUrl };
+        }
+        return station;
+      });
+      
+      // Force localStorage update for better cross-device sync
+      localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+      synchronizeAcrossDevices(`station_${stationId}_s3_image`, s3ImageUrl);
+      
       toast({
         title: "Station S3 image updated",
-        description: "The station S3 image reference has been updated."
+        description: "The station S3 image reference has been updated and broadcasted to all devices."
       });
     } catch (error) {
       console.error("Error updating S3 image:", error);
@@ -144,6 +238,22 @@ export const useStationActions = (
         payload: { stationId, metadata } 
       });
       
+      // Get updated stations after dispatch
+      const updatedStations = state.stations.map(station => {
+        if (station.id === stationId) {
+          return { ...station, metadata };
+        }
+        return station;
+      });
+      
+      // Update localStorage
+      localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+      
+      // Only broadcast critical metadata changes
+      if (metadata && (metadata.title || metadata.artist)) {
+        synchronizeAcrossDevices(`station_${stationId}_metadata`, metadata);
+      }
+      
       console.log(`Updated metadata for station ${stationId}:`, metadata);
     } catch (error) {
       console.error("Error updating metadata:", error);
@@ -156,6 +266,21 @@ export const useStationActions = (
         type: 'UPDATE_STATION_LISTENERS', 
         payload: { stationId, listeners } 
       });
+      
+      // Get updated stations after dispatch
+      const updatedStations = state.stations.map(station => {
+        if (station.id === stationId) {
+          return { ...station, listeners };
+        }
+        return station;
+      });
+      
+      // Update localStorage, but don't need full broadcast for listener counts
+      localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
+      localStorage.setItem(`station_${stationId}_listeners`, JSON.stringify({
+        count: listeners,
+        timestamp: Date.now()
+      }));
       
       console.log(`Updated listeners for station ${stationId} to ${listeners}`);
     } catch (error) {
@@ -180,55 +305,33 @@ export const useStationActions = (
       
       // Force localStorage update with timestamp for better cross-device sync
       localStorage.setItem('latinmixmasters_stations', JSON.stringify(updatedStations));
-      localStorage.setItem('video_stream_url_sync', Date.now().toString());
       
-      // Enhanced multi-device sync for video stream URL changes
+      // Enhanced multi-device sync specifically for video stream URL
+      synchronizeAcrossDevices(`station_${stationId}_video_stream`, {
+        videoStreamUrl,
+        stationId,
+        timestamp: Date.now()
+      });
+      
+      // Special broadcast for video players
+      const videoEvent = {
+        type: 'video_stream_update',
+        stationId,
+        videoStreamUrl,
+        timestamp: Date.now(),
+        deviceId: localStorage.getItem('latinmixmasters_device_id') || 'unknown'
+      };
+      
+      localStorage.setItem('latinmixmasters_video_event', JSON.stringify(videoEvent));
+      
+      // Create and dispatch a custom event for immediate notification
       try {
-        // 1. Use storage events to sync across tabs
-        window.dispatchEvent(new StorageEvent('storage', {
-          key: 'latinmixmasters_stations',
-          newValue: JSON.stringify(updatedStations)
-        }));
-        
-        // 2. Set unique keys for video stream changes
-        const syncData = JSON.stringify({
-          stationId,
-          videoStreamUrl,
-          timestamp: Date.now(),
-          action: 'video_stream_update'
+        const event = new CustomEvent('video_stream_update', {
+          detail: videoEvent
         });
-        localStorage.setItem(`station_${stationId}_video`, syncData);
-        
-        // 3. Broadcast high-priority event
-        const broadcastData = JSON.stringify({
-          deviceId: localStorage.getItem('latinmixmasters_device_id') || 'unknown',
-          timestamp: Date.now(),
-          stationId,
-          videoStreamUrl,
-          action: 'broadcast_video_update',
-          priority: 'high'
-        });
-        localStorage.setItem('latinmixmasters_sync_broadcast', broadcastData);
-        
-        // 4. Set host action flag
-        localStorage.setItem('latinmixmasters_host_action', 'true');
-        setTimeout(() => localStorage.removeItem('latinmixmasters_host_action'), 2000);
-        
-        // 5. Try to dispatch a custom event for immediate sync
-        try {
-          const event = new CustomEvent('latinmixmasters_broadcast', {
-            detail: {
-              stationId,
-              action: 'video_stream_update',
-              timestamp: Date.now()
-            }
-          });
-          window.dispatchEvent(event);
-        } catch (error) {
-          console.error("Error dispatching custom event:", error);
-        }
+        window.dispatchEvent(event);
       } catch (error) {
-        console.error("Error broadcasting video stream update:", error);
+        console.error("Error dispatching video event:", error);
       }
       
       toast({

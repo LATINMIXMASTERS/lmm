@@ -13,11 +13,13 @@ import useRandomListeners from '@/hooks/useRandomListeners';
 import { useToast } from '@/hooks/use-toast';
 import { Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import useBroadcastSync from '@/hooks/useBroadcastSync'; // Import our new hook
 
 const StationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
-  const { stations } = useRadio();
+  const { stations, syncStationsFromStorage } = useRadio();
+  const { performFullSync } = useBroadcastSync(); // Use our new hook
   
   // Find station by id or slug (url-friendly name)
   const realStationId = React.useMemo(() => {
@@ -34,6 +36,26 @@ const StationDetails: React.FC = () => {
     
     return slugMatch ? slugMatch.id : id;
   }, [id, stations]);
+  
+  // Force sync when page loads to ensure we have the latest data
+  useEffect(() => {
+    if (realStationId) {
+      // Immediate sync
+      if (syncStationsFromStorage) {
+        syncStationsFromStorage();
+      }
+      
+      // Then use our broadcast sync
+      performFullSync();
+      
+      // And set up a regular sync every 5 seconds while on this page
+      const intervalId = setInterval(() => {
+        performFullSync();
+      }, 5000);
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [realStationId, syncStationsFromStorage, performFullSync]);
   
   // Custom hook for random listeners is used outside of component to avoid re-renders
   useRandomListeners();
@@ -71,6 +93,9 @@ const StationDetails: React.FC = () => {
         title: "Connection Restored",
         description: "You're back online. Syncing chat messages...",
       });
+      
+      // Force a full sync when we come back online
+      performFullSync();
     };
     
     window.addEventListener('offline', handleOffline);
@@ -80,7 +105,7 @@ const StationDetails: React.FC = () => {
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('online', handleOnline);
     };
-  }, [toast]);
+  }, [toast, performFullSync]);
 
   const handleShareStation = useCallback(() => {
     if (!station) return;
