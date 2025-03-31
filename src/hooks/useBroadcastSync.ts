@@ -3,6 +3,12 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { RadioMetadata } from '@/models/RadioStation';
+
+// Extended RadioMetadata with timestamp
+interface MetadataWithTimestamp extends RadioMetadata {
+  timestamp?: number;
+}
 
 /**
  * Hook to synchronize broadcast changes between devices with improved metadata syncing
@@ -110,7 +116,7 @@ export const useBroadcastSync = () => {
             const parsedStations = JSON.parse(storedStations);
             
             // Apply metadata updates for each station directly
-            parsedStations.forEach(station => {
+            parsedStations.forEach((station: any) => {
               if (station.currentMetadata) {
                 updateStationMetadata(station.id, station.currentMetadata);
               }
@@ -188,13 +194,13 @@ export const useBroadcastSync = () => {
           const storedMetadata = localStorage.getItem(metadataKey);
           
           if (storedMetadata) {
-            const metadata = JSON.parse(storedMetadata);
+            const metadata = JSON.parse(storedMetadata) as MetadataWithTimestamp;
             
             // Check if metadata is newer than what we have
             if (metadata && metadata.timestamp && 
                 (!station.currentMetadata || 
-                 !station.currentMetadata.timestamp || 
-                 metadata.timestamp > station.currentMetadata.timestamp)) {
+                 !(station.currentMetadata as MetadataWithTimestamp).timestamp || 
+                 metadata.timestamp > ((station.currentMetadata as MetadataWithTimestamp).timestamp || 0))) {
               
               updateStationMetadata(station.id, metadata);
               console.log(`[BroadcastSync] Updated metadata for station ${station.id}:`, metadata);

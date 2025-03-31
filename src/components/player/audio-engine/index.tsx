@@ -3,10 +3,34 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useTrack } from '@/hooks/useTrackContext';
-import { setupMetadataPolling, extractStreamUrl } from './metadata';
+import { setupMetadataPolling } from './metadata';
+import { extractStreamUrl } from './metadata/streamUtils';
 import { RadioMetadata } from '@/models/RadioStation';
 
-const AudioEngineComponent = ({
+interface AudioEngineProps {
+  onTimeUpdate: (currentTime: number) => void;
+  onDurationChange: (duration: number) => void;
+  onPlayStateChange: (isPlaying: boolean) => void;
+  audioRef: React.MutableRefObject<HTMLAudioElement | null>;
+  metadataTimerRef: React.MutableRefObject<number | null>;
+  stationInfo: {
+    name: string;
+    currentTrack: string;
+    coverImage: string;
+    metadata?: RadioMetadata;
+  };
+  setStationInfo: React.Dispatch<React.SetStateAction<{
+    name: string;
+    currentTrack: string;
+    coverImage: string;
+    metadata?: RadioMetadata;
+  }>>;
+  setIsTrackPlaying: React.Dispatch<React.SetStateAction<boolean>>;
+  setComments: React.Dispatch<React.SetStateAction<any[]>>;
+  setLikes: React.Dispatch<React.SetStateAction<number>>;
+}
+
+const AudioEngineComponent: React.FC<AudioEngineProps> = ({
   onTimeUpdate,
   onDurationChange,
   onPlayStateChange,
@@ -18,18 +42,18 @@ const AudioEngineComponent = ({
   setComments,
   setLikes
 }) => {
-  const { audioState, stations, setAudioError, updateStationMetadata, currentPlayingStation } = useRadio();
-  const { tracks, currentPlayingTrack, getTrackById, setCurrentPlayingTrack, updateListeningCount } = useTrack();
+  const { audioState, stations, updateStationMetadata, currentPlayingStation } = useRadio();
+  const { tracks, currentPlayingTrack, updateListeningCount } = useTrack();
   const { toast } = useToast();
   const [lastMetadataUpdate, setLastMetadataUpdate] = useState(0);
   const [coverArtFallbackRetries, setCoverArtFallbackRetries] = useState(0);
-  const metadataSyncInterval = useRef(null);
+  const metadataSyncInterval = useRef<number | null>(null);
   const errorRetryCount = useRef(0);
-  const lastStationId = useRef(null);
-  const lastTrackId = useRef(null);
+  const lastStationId = useRef<string | null>(null);
+  const lastTrackId = useRef<string | null>(null);
 
   // Better error handling that retries failed connections
-  const handleError = (error) => {
+  const handleError = (error: any) => {
     console.error('Audio error:', error);
     
     if (audioRef.current) {
@@ -57,7 +81,7 @@ const AudioEngineComponent = ({
             }
             // For tracks, we'll try reloading the track
             else if (currentPlayingTrack) {
-              const track = getTrackById(currentPlayingTrack);
+              const track = tracks.find(t => t.id === currentPlayingTrack);
               if (track && track.audioUrl) {
                 audioRef.current.src = track.audioUrl;
                 if (wasPlaying) {
@@ -72,10 +96,6 @@ const AudioEngineComponent = ({
         
       } else {
         // After multiple retries, show error to user
-        if (setAudioError) {
-          setAudioError(true, `Playback error: ${error.message || 'Could not play audio'}`);
-        }
-        
         toast({
           title: "Playback Error",
           description: "There was a problem playing this audio. Please try again later.",
@@ -91,8 +111,8 @@ const AudioEngineComponent = ({
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
-      audioRef.current.addEventListener('timeupdate', () => onTimeUpdate(audioRef.current.currentTime));
-      audioRef.current.addEventListener('durationchange', () => onDurationChange(audioRef.current.duration));
+      audioRef.current.addEventListener('timeupdate', () => onTimeUpdate(audioRef.current?.currentTime || 0));
+      audioRef.current.addEventListener('durationchange', () => onDurationChange(audioRef.current?.duration || 0));
       audioRef.current.addEventListener('play', () => onPlayStateChange(true));
       audioRef.current.addEventListener('pause', () => onPlayStateChange(false));
       audioRef.current.addEventListener('ended', () => onPlayStateChange(false));
@@ -127,7 +147,8 @@ const AudioEngineComponent = ({
           currentTrack: station.currentMetadata?.title 
             ? `${station.currentMetadata.artist || ''} - ${station.currentMetadata.title}`
             : 'Live Stream',
-          coverImage: station.currentMetadata?.coverArt || station.image || '/placeholder-album.png'
+          coverImage: station.currentMetadata?.coverArt || station.image || '/placeholder-album.png',
+          metadata: station.currentMetadata
         });
         
         setIsTrackPlaying(false);
@@ -140,46 +161,55 @@ const AudioEngineComponent = ({
           setupMetadataPolling(
             streamUrl, 
             metadataTimerRef, 
-            (info) => {
-              setStationInfo(prev => ({
-                ...prev,
-                name: station.name,
-                currentTrack: info.metadata?.title 
-                  ? `${info.metadata.artist || ''} - ${info.metadata.title}`
-                  : prev.currentTrack || 'Live Stream',
-                coverImage: info.metadata?.coverArt || station.image || '/placeholder-album.png',
-                metadata: info.metadata
-              }));
+            (newInfo) => {
+              setStationInfo(prev => {
+                // Create a new info object with the updated metadata
+                const metadataInfo = newInfo.metadata;
+                return {
+                  ...prev,
+                  name: station.name,
+                  currentTrack: metadataInfo?.title 
+                    ? `${metadataInfo.artist || ''} - ${metadataInfo.title}`
+                    : prev.currentTrack || 'Live Stream',
+                  coverImage: metadataInfo?.coverArt || station.image || '/placeholder-album.png',
+                  metadata: metadataInfo
+                };
+              });
               
               // Also update the station metadata in the context
-              if (info.metadata && updateStationMetadata && Date.now() - lastMetadataUpdate > 2000) {
-                updateStationMetadata(currentPlayingStation, {
-                  ...info.metadata,
-                  timestamp: Date.now()
-                });
-                setLastMetadataUpdate(Date.now());
-                
-                // Manually broadcast metadata to other devices
-                try {
-                  const metadataEvent = {
-                    stationId: currentPlayingStation,
-                    metadata: info.metadata,
-                    timestamp: Date.now(),
-                    deviceId: localStorage.getItem('latinmixmasters_device_id') || 'unknown'
-                  };
-                  
-                  localStorage.setItem(`station_${currentPlayingStation}_metadata`, JSON.stringify({
-                    ...info.metadata,
+              if (updateStationMetadata && Date.now() - lastMetadataUpdate > 2000) {
+                const metadataInfo = newInfo.metadata;
+                if (metadataInfo) {
+                  updateStationMetadata(currentPlayingStation, {
+                    ...metadataInfo,
                     timestamp: Date.now()
-                  }));
+                  });
+                  setLastMetadataUpdate(Date.now());
                   
-                  // Broadcast to other tabs/windows
-                  window.dispatchEvent(new StorageEvent('storage', {
-                    key: `station_${currentPlayingStation}_metadata`,
-                    newValue: JSON.stringify(metadataEvent)
-                  }));
-                } catch (error) {
-                  console.error('Error broadcasting metadata:', error);
+                  // Manually broadcast metadata to other devices
+                  try {
+                    const metadataWithTimestamp = {
+                      ...metadataInfo,
+                      timestamp: Date.now()
+                    };
+                    
+                    const metadataEvent = {
+                      stationId: currentPlayingStation,
+                      metadata: metadataWithTimestamp,
+                      timestamp: Date.now(),
+                      deviceId: localStorage.getItem('latinmixmasters_device_id') || 'unknown'
+                    };
+                    
+                    localStorage.setItem(`station_${currentPlayingStation}_metadata`, JSON.stringify(metadataWithTimestamp));
+                    
+                    // Broadcast to other tabs/windows
+                    window.dispatchEvent(new StorageEvent('storage', {
+                      key: `station_${currentPlayingStation}_metadata`,
+                      newValue: JSON.stringify(metadataEvent)
+                    }));
+                  } catch (error) {
+                    console.error('Error broadcasting metadata:', error);
+                  }
                 }
               }
             },
@@ -198,7 +228,7 @@ const AudioEngineComponent = ({
     
     // Handle track playback
     else if (currentPlayingTrack && !currentPlayingStation) {
-      const track = getTrackById(currentPlayingTrack);
+      const track = tracks.find(t => t.id === currentPlayingTrack);
       
       if (track) {
         // Clear any station metadata polling
@@ -211,7 +241,8 @@ const AudioEngineComponent = ({
         setStationInfo({
           name: track.title,
           currentTrack: `${track.artist} - ${track.title}`,
-          coverImage: track.coverImage || '/placeholder-album.png'
+          coverImage: track.coverImage || '/placeholder-album.png',
+          metadata: undefined
         });
         
         setIsTrackPlaying(true);
@@ -225,7 +256,9 @@ const AudioEngineComponent = ({
           audioRef.current.src = track.audioUrl;
           
           // Update listening count for track
-          updateListeningCount(track.id);
+          if (updateListeningCount) {
+            updateListeningCount(track.id);
+          }
         }
         
         // Handle play/pause based on isPlaying flag
@@ -254,7 +287,8 @@ const AudioEngineComponent = ({
       setStationInfo({
         name: '',
         currentTrack: '',
-        coverImage: ''
+        coverImage: '',
+        metadata: undefined
       });
       
       setIsTrackPlaying(false);
@@ -268,7 +302,7 @@ const AudioEngineComponent = ({
       }
       
       // Setup new interval
-      metadataSyncInterval.current = setInterval(() => {
+      metadataSyncInterval.current = window.setInterval(() => {
         // Check for metadata in localStorage
         try {
           const metadataKey = `station_${currentPlayingStation}_metadata`;
@@ -313,8 +347,7 @@ const AudioEngineComponent = ({
     stations, 
     currentPlayingStation, 
     currentPlayingTrack, 
-    getTrackById, 
-    setAudioError,
+    tracks, 
     updateStationMetadata,
     setStationInfo,
     setIsTrackPlaying,

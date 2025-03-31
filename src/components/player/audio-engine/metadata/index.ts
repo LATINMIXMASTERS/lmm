@@ -64,9 +64,9 @@ export const setupMetadataPolling = (
           // If we have a stationId, update the metadata in the central store
           if (stationId) {
             try {
-              const { updateStationMetadata } = useRadio();
-              if (updateStationMetadata) {
-                updateStationMetadata(stationId, metadata as RadioMetadata);
+              const radioContext = useRadio();
+              if (radioContext.updateStationMetadata) {
+                radioContext.updateStationMetadata(stationId, metadata as RadioMetadata);
               }
             } catch (error) {
               console.error('Error updating central store metadata:', error);
@@ -98,9 +98,9 @@ export const setupMetadataPolling = (
     // If we have a stationId, update the metadata in the central store
     if (stationId) {
       try {
-        const { updateStationMetadata } = useRadio();
-        if (updateStationMetadata) {
-          updateStationMetadata(stationId, metadata);
+        const radioContext = useRadio();
+        if (radioContext.updateStationMetadata) {
+          radioContext.updateStationMetadata(stationId, metadata);
         }
       } catch (error) {
         console.error('Error updating central store metadata:', error);

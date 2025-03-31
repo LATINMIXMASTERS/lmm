@@ -38,6 +38,26 @@ export const isIcecastUrl = (url: string): boolean => {
 };
 
 /**
+ * Check if a URL is potentially a valid stream URL
+ * @param url URL to check
+ * @returns Boolean indicating if it's likely a valid stream URL
+ */
+export const isValidStreamUrl = (url: string): boolean => {
+  if (!url) return false;
+  
+  // Check if it's a URL with http/https
+  if (!/^https?:\/\//i.test(url)) return false;
+  
+  // Check if it has a valid hostname
+  try {
+    const urlObj = new URL(url);
+    return !!urlObj.hostname;
+  } catch (e) {
+    return false;
+  }
+};
+
+/**
  * Get a standardized stream URL from various formats
  * @param url Input URL (may be incomplete)
  * @returns Properly formatted stream URL
@@ -56,6 +76,15 @@ export const standardizeStreamUrl = (url: string): string => {
   }
   
   return url;
+};
+
+/**
+ * Extract a clean stream URL from any URL format
+ * @param url Original URL that may need formatting
+ * @returns Properly formatted stream URL
+ */
+export const extractStreamUrl = (url: string): string => {
+  return standardizeStreamUrl(url);
 };
 
 /**
