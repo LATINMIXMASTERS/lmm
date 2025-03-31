@@ -4,7 +4,7 @@ import { RadioMetadata } from '@/models/RadioStation';
 import { useRadio } from '@/hooks/useRadioContext';
 import { fetchStreamMetadata } from './fetchMetadata';
 import { generateSimulatedMetadata } from './simulateMetadata';
-import { isValidStreamUrl, extractStreamUrl, isShoutcastUrl } from './streamUtils';
+import { isShoutcastUrl, isValidStreamUrl, extractStreamUrl } from './streamUtils';
 
 // Re-export utility functions for external use
 export { extractStreamUrl, isShoutcastUrl } from './streamUtils';

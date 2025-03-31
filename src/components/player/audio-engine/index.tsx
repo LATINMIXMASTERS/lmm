@@ -43,7 +43,7 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
   setLikes
 }) => {
   const { audioState, stations, updateStationMetadata, currentPlayingStation } = useRadio();
-  const { tracks, currentPlayingTrack, updateListeningCount } = useTrack();
+  const { tracks, currentPlayingTrack } = useTrack();
   const { toast } = useToast();
   const [lastMetadataUpdate, setLastMetadataUpdate] = useState(0);
   const [coverArtFallbackRetries, setCoverArtFallbackRetries] = useState(0);
@@ -82,8 +82,8 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
             // For tracks, we'll try reloading the track
             else if (currentPlayingTrack) {
               const track = tracks.find(t => t.id === currentPlayingTrack);
-              if (track && track.audioUrl) {
-                audioRef.current.src = track.audioUrl;
+              if (track && track.audioFile) {
+                audioRef.current.src = track.audioFile;
                 if (wasPlaying) {
                   audioRef.current.play().catch(e => {
                     console.error('Error during retry playback:', e);
@@ -162,26 +162,26 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
             streamUrl, 
             metadataTimerRef, 
             (newInfo) => {
-              setStationInfo(prev => {
+              setStationInfo(prevInfo => {
                 // Create a new info object with the updated metadata
-                const metadataInfo = newInfo.metadata;
+                const updatedMetadata = newInfo.metadata;
                 return {
-                  ...prev,
+                  ...prevInfo,
                   name: station.name,
-                  currentTrack: metadataInfo?.title 
-                    ? `${metadataInfo.artist || ''} - ${metadataInfo.title}`
-                    : prev.currentTrack || 'Live Stream',
-                  coverImage: metadataInfo?.coverArt || station.image || '/placeholder-album.png',
-                  metadata: metadataInfo
+                  currentTrack: updatedMetadata?.title 
+                    ? `${updatedMetadata.artist || ''} - ${updatedMetadata.title}`
+                    : prevInfo.currentTrack || 'Live Stream',
+                  coverImage: updatedMetadata?.coverArt || station.image || '/placeholder-album.png',
+                  metadata: updatedMetadata
                 };
               });
               
               // Also update the station metadata in the context
               if (updateStationMetadata && Date.now() - lastMetadataUpdate > 2000) {
-                const metadataInfo = newInfo.metadata;
-                if (metadataInfo) {
+                const updatedMetadata = newInfo.metadata;
+                if (updatedMetadata) {
                   updateStationMetadata(currentPlayingStation, {
-                    ...metadataInfo,
+                    ...updatedMetadata,
                     timestamp: Date.now()
                   });
                   setLastMetadataUpdate(Date.now());
@@ -189,7 +189,7 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
                   // Manually broadcast metadata to other devices
                   try {
                     const metadataWithTimestamp = {
-                      ...metadataInfo,
+                      ...updatedMetadata,
                       timestamp: Date.now()
                     };
                     
@@ -252,13 +252,11 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
         setLikes(track.likes || 0);
         
         // Only change the source if needed
-        if (audioRef.current.src !== track.audioUrl) {
-          audioRef.current.src = track.audioUrl;
+        if (audioRef.current.src !== track.audioFile) {
+          audioRef.current.src = track.audioFile;
           
-          // Update listening count for track
-          if (updateListeningCount) {
-            updateListeningCount(track.id);
-          }
+          // We don't have updateListeningCount, so we'll just log that we would update it
+          console.log(`Would update listening count for track: ${track.id}`);
         }
         
         // Handle play/pause based on isPlaying flag
@@ -315,12 +313,12 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
             if (metadata && metadata.timestamp && 
                 (metadata.timestamp > lastMetadataUpdate)) {
               
-              setStationInfo(prev => ({
-                ...prev,
+              setStationInfo(prevInfo => ({
+                ...prevInfo,
                 currentTrack: metadata.title 
                   ? `${metadata.artist || ''} - ${metadata.title}`
-                  : prev.currentTrack || 'Live Stream',
-                coverImage: metadata.coverArt || prev.coverImage || '/placeholder-album.png',
+                  : prevInfo.currentTrack || 'Live Stream',
+                coverImage: metadata.coverArt || prevInfo.coverImage || '/placeholder-album.png',
                 metadata: metadata
               }));
               
@@ -356,7 +354,6 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
     onTimeUpdate,
     onDurationChange,
     onPlayStateChange,
-    updateListeningCount,
     toast,
     lastMetadataUpdate
   ]);

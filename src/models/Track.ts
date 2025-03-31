@@ -17,6 +17,11 @@ export interface Track {
   playCount?: number; // Track play count
   plays?: number; // Add plays property for compatibility
   description?: string; // Add description field
+  
+  // For compatibility - alias to audioFile
+  get audioUrl(): string {
+    return this.audioFile;
+  }
 }
 
 export interface Comment {
