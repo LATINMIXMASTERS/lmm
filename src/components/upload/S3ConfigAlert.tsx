@@ -25,8 +25,8 @@ const S3ConfigAlert: React.FC<S3ConfigAlertProps> = ({ s3Configured }) => {
       <AlertTitle>S3 Storage Required</AlertTitle>
       <AlertDescription className="mt-2">
         <p className="mb-2">
-          S3 storage configuration is <strong>mandatory</strong> for all uploads. 
-          All audio tracks (up to 250MB) and images (up to 1MB) must be uploaded to S3.
+          Backblaze B2 storage configuration is <strong>mandatory</strong> for all uploads. 
+          All audio tracks (up to 250MB) and images (up to 1MB) must be uploaded to cloud storage.
         </p>
         
         {isAdmin ? (
@@ -36,11 +36,11 @@ const S3ConfigAlert: React.FC<S3ConfigAlertProps> = ({ s3Configured }) => {
             onClick={() => navigate('/admin-dashboard')}
             className="mt-2"
           >
-            Configure S3 Storage
+            Configure B2 Cloud Storage
           </Button>
         ) : (
           <p className="text-sm italic">
-            Please contact an administrator to configure S3 storage.
+            Please contact an administrator to configure B2 cloud storage.
           </p>
         )}
       </AlertDescription>

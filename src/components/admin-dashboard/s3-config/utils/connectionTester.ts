@@ -15,12 +15,12 @@ export const testS3Connection = async (
   
   try {
     // Determine the endpoint URL
-    let endpoint = config.endpoint || `https://s3.${config.region}.wasabisys.com`;
+    let endpoint = config.endpoint || `https://s3.${config.region}.backblazeb2.com`;
     
-    // For Wasabi, ensure we have the correct domain format
-    if (!endpoint.includes('wasabisys.com') && config.region && !endpoint.includes(config.region)) {
-      endpoint = `https://s3.${config.region}.wasabisys.com`;
-      console.log("Corrected Wasabi endpoint for testing:", endpoint);
+    // For Backblaze B2, ensure we have the correct domain format
+    if (!endpoint.includes('backblazeb2.com') && config.region && !endpoint.includes(config.region)) {
+      endpoint = `https://s3.${config.region}.backblazeb2.com`;
+      console.log("Corrected Backblaze B2 endpoint for testing:", endpoint);
     }
     
     console.log("Testing S3 connection with endpoint:", endpoint);
@@ -37,18 +37,21 @@ export const testS3Connection = async (
     }
     console.log("Auth headers:", debugHeaders);
     
-    // Make a GET request to check bucket location
-    const response = await fetch(`${endpoint}/${config.bucketName}?location`, {
+    // For Backblaze B2, we need to list the bucket contents to verify access
+    const listUrl = `${endpoint}/${config.bucketName}?list-type=2&max-keys=1`;
+    
+    // Make a GET request to list bucket contents
+    const response = await fetch(listUrl, {
       method: 'GET',
       headers
     });
     
-    console.log("S3 test response status:", response.status);
+    console.log("B2 test response status:", response.status);
     
     if (response.ok) {
       return { 
         success: true, 
-        message: "Successfully connected to S3 storage" 
+        message: "Successfully connected to Backblaze B2 storage" 
       };
     } else {
       // Parse error response if possible
@@ -76,7 +79,7 @@ export const testS3Connection = async (
       };
     }
   } catch (error) {
-    console.error("S3 connection test error:", error);
+    console.error("B2 connection test error:", error);
     return {
       success: false,
       message: error instanceof Error 

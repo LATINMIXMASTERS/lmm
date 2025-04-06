@@ -11,12 +11,12 @@ export const createAuthHeaders = async (
   path: string
 ): Promise<Record<string, string>> => {
   if (!config.secretAccessKey || !config.accessKeyId) {
-    throw new Error('Missing S3 credentials');
+    throw new Error('Missing B2 credentials');
   }
   
   // Determine the endpoint URL, removing any trailing slashes
   const endpoint = config.endpoint?.replace(/\/$/, '') || 
-    `https://s3.${config.region}.wasabisys.com`;
+    `https://s3.${config.region}.backblazeb2.com`;
   const host = new URL(endpoint).host;
   
   // Prepare headers for signature

@@ -14,17 +14,18 @@ export async function createAwsSignature(
   try {
     // Determine the endpoint URL, removing any trailing slashes
     let endpoint = config.endpoint?.replace(/\/$/, '') || 
-      `https://s3.${config.region}.wasabisys.com`;
+      `https://s3.${config.region}.backblazeb2.com`;
     
-    // For Wasabi, ensure we have the correct domain format
-    if (!endpoint.includes('wasabisys.com') && config.region && !endpoint.includes(config.region)) {
-      endpoint = `https://s3.${config.region}.wasabisys.com`;
-      console.log("Using Wasabi endpoint:", endpoint);
+    // For Backblaze, ensure we have the correct domain format
+    if (!endpoint.includes('backblazeb2.com') && config.region && !endpoint.includes(config.region)) {
+      endpoint = `https://s3.${config.region}.backblazeb2.com`;
+      console.log("Using Backblaze B2 endpoint:", endpoint);
     }
     
     const host = new URL(endpoint).host;
     
     // Create the full path for the signature
+    // For Backblaze B2, the path format is slightly different
     const s3Path = `${config.bucketName}/${filePath}`;
     
     // Standard headers for S3 upload
@@ -59,7 +60,7 @@ export async function createAwsSignature(
       headers
     );
     
-    // Upload URL
+    // Upload URL - Backblaze B2 uses a different URL format
     const uploadUrl = `${endpoint}/${config.bucketName}/${filePath}`;
     
     console.log('Uploading to URL:', uploadUrl);
@@ -94,13 +95,15 @@ export async function createAwsSignature(
           console.log('S3 upload successful with status:', xhr.status);
           
           // Construct the public URL
+          // Backblaze B2 URLs are structured differently
           let publicUrl;
           
           if (config.publicUrlBase) {
             // Use the configured public base URL if provided
             publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${filePath}`;
           } else {
-            // Construct URL based on the bucket endpoint
+            // Construct URL based on the bucket and endpoint
+            // Backblaze format: https://s3.{region}.backblazeb2.com/{bucket}/{path}
             publicUrl = `${endpoint}/${config.bucketName}/${filePath}`;
           }
           
@@ -112,23 +115,23 @@ export async function createAwsSignature(
             url: publicUrl
           });
         } else {
-          console.error('S3 upload failed with status:', xhr.status);
+          console.error('B2 upload failed with status:', xhr.status);
           console.error('Response text:', xhr.responseText);
           if (onProgress) onProgress(0);
-          reject(new Error(`S3 upload failed with status ${xhr.status}: ${xhr.responseText}`));
+          reject(new Error(`B2 upload failed with status ${xhr.status}: ${xhr.responseText}`));
         }
       };
       
       xhr.onerror = () => {
-        console.error('S3 upload network error');
+        console.error('B2 upload network error');
         if (onProgress) onProgress(0);
-        reject(new Error('Network error during S3 upload'));
+        reject(new Error('Network error during B2 upload'));
       };
       
       xhr.onabort = () => {
-        console.error('S3 upload aborted');
+        console.error('B2 upload aborted');
         if (onProgress) onProgress(0);
-        reject(new Error('S3 upload was aborted'));
+        reject(new Error('B2 upload was aborted'));
       };
       
       // Send the file
@@ -137,7 +140,7 @@ export async function createAwsSignature(
     
     return await uploadPromise;
   } catch (error) {
-    console.error('S3 upload error:', error);
+    console.error('B2 upload error:', error);
     
     // Ensure we return 0 progress on error
     if (onProgress) {

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { S3StorageConfig, TestResult, wasabiRegions } from './S3ConfigTypes';
+import { S3StorageConfig, TestResult, backblazeRegions } from './S3ConfigTypes';
 import { loadS3Config, saveS3Config } from './utils/configStorage';
 import { testS3Connection } from './utils/connectionTester';
 import { useToast } from '@/hooks/use-toast';
@@ -24,28 +24,28 @@ const S3ConfigurationPanel: React.FC = () => {
   const handleChange = (field: keyof S3StorageConfig, value: string) => {
     setConfig(prev => ({ ...prev, [field]: value }));
 
-    // Special case for region: auto-update endpoint for Wasabi
+    // Special case for region: auto-update endpoint for Backblaze B2
     if (field === 'region') {
-      const selectedRegion = wasabiRegions.find(r => r.value === value);
+      const selectedRegion = backblazeRegions.find(r => r.value === value);
       if (selectedRegion) {
         setConfig(prev => ({
           ...prev,
           region: value,
           endpoint: `https://${selectedRegion.endpoint}`,
           publicUrlBase: prev.bucketName ? 
-            `https://${prev.bucketName}.${selectedRegion.endpoint}` : prev.publicUrlBase
+            `https://${selectedRegion.endpoint}/${prev.bucketName}` : prev.publicUrlBase
         }));
       }
     }
 
     // Special case for bucket name: auto-update public URL base
     if (field === 'bucketName' && value && config.region) {
-      const selectedRegion = wasabiRegions.find(r => r.value === config.region);
+      const selectedRegion = backblazeRegions.find(r => r.value === config.region);
       if (selectedRegion) {
         setConfig(prev => ({
           ...prev,
           bucketName: value,
-          publicUrlBase: `https://${value}.${selectedRegion.endpoint}`
+          publicUrlBase: `https://${selectedRegion.endpoint}/${value}`
         }));
       }
     }
@@ -134,7 +134,7 @@ const S3ConfigurationPanel: React.FC = () => {
             S3 Storage Configuration
           </CardTitle>
           <CardDescription>
-            Configure S3-compatible cloud storage for file uploads (Wasabi recommended)
+            Configure Backblaze B2 Cloud Storage for file uploads
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -168,7 +168,7 @@ const S3ConfigurationPanel: React.FC = () => {
                           <SelectValue placeholder="Select a region" />
                         </SelectTrigger>
                         <SelectContent>
-                          {wasabiRegions.map(region => (
+                          {backblazeRegions.map(region => (
                             <SelectItem key={region.value} value={region.value}>
                               {region.label}
                             </SelectItem>
@@ -184,36 +184,36 @@ const S3ConfigurationPanel: React.FC = () => {
                       id="endpoint"
                       value={config.endpoint}
                       onChange={(e) => handleChange('endpoint', e.target.value)}
-                      placeholder="https://s3.us-west-1.wasabisys.com"
+                      placeholder="https://s3.us-west-004.backblazeb2.com"
                     />
                     <p className="text-sm text-muted-foreground">
-                      For Wasabi, this should be https://s3.[region].wasabisys.com
+                      For Backblaze B2, this should be https://s3.[region].backblazeb2.com
                     </p>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="publicUrlBase">Public URL Base (optional)</Label>
+                    <Label htmlFor="publicUrlBase">Public URL Base</Label>
                     <Input
                       id="publicUrlBase"
                       value={config.publicUrlBase || ''}
                       onChange={(e) => handleChange('publicUrlBase', e.target.value)}
-                      placeholder="https://bucketname.s3.us-west-1.wasabisys.com"
+                      placeholder="https://s3.us-west-004.backblazeb2.com/bucketname"
                     />
                     <p className="text-sm text-muted-foreground">
-                      URL used to access uploaded files. For Wasabi, typically https://[bucketname].[endpoint]
+                      URL used to access uploaded files. For Backblaze B2, typically https://s3.[region].backblazeb2.com/[bucketname]
                     </p>
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="accessKeyId" className="flex items-center">
                       <Key className="h-4 w-4 mr-1" />
-                      Access Key ID
+                      Application Key ID
                     </Label>
                     <Input
                       id="accessKeyId"
                       value={config.accessKeyId || ''}
                       onChange={(e) => handleChange('accessKeyId', e.target.value)}
-                      placeholder="Your access key ID"
+                      placeholder="Your Backblaze B2 application key ID"
                       type={showSecrets ? "text" : "password"}
                     />
                   </div>
@@ -221,13 +221,13 @@ const S3ConfigurationPanel: React.FC = () => {
                   <div className="space-y-2">
                     <Label htmlFor="secretAccessKey" className="flex items-center">
                       <Lock className="h-4 w-4 mr-1" />
-                      Secret Access Key
+                      Application Key
                     </Label>
                     <Input
                       id="secretAccessKey"
                       value={config.secretAccessKey || ''}
                       onChange={(e) => handleChange('secretAccessKey', e.target.value)}
-                      placeholder="Your secret access key"
+                      placeholder="Your Backblaze B2 application key"
                       type={showSecrets ? "text" : "password"}
                     />
                   </div>
@@ -297,19 +297,16 @@ const S3ConfigurationPanel: React.FC = () => {
             
             <TabsContent value="help">
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Setting Up Wasabi S3 Storage</h3>
+                <h3 className="text-lg font-medium">Setting Up Backblaze B2 Cloud Storage</h3>
                 <ol className="list-decimal pl-5 space-y-2">
                   <li>
-                    <span className="font-medium">Create a Wasabi account:</span> If you don't have one, sign up at <a href="https://wasabi.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">wasabi.com</a>
+                    <span className="font-medium">Create a Backblaze account:</span> If you don't have one, sign up at <a href="https://www.backblaze.com/sign-up/cloud-storage" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">backblaze.com</a>
                   </li>
                   <li>
-                    <span className="font-medium">Create a bucket:</span> In your Wasabi dashboard, create a new bucket with a unique name.
+                    <span className="font-medium">Create a bucket:</span> In your Backblaze B2 dashboard, create a new bucket with a unique name. Make sure it's set to "Public".
                   </li>
                   <li>
-                    <span className="font-medium">Set bucket policy:</span> Make the bucket publicly readable by setting appropriate permissions.
-                  </li>
-                  <li>
-                    <span className="font-medium">Create access keys:</span> Generate an access key ID and secret key from your Wasabi account.
+                    <span className="font-medium">Create application keys:</span> Generate an application key with access to this bucket. Go to App Keys and create a new application key.
                   </li>
                   <li>
                     <span className="font-medium">Configure CORS:</span> Add a CORS policy to allow uploads from your domain.
@@ -321,10 +318,17 @@ const S3ConfigurationPanel: React.FC = () => {
                   <pre className="text-xs overflow-x-auto">
                     {JSON.stringify([
                       {
-                        "AllowedHeaders": ["*"],
-                        "AllowedMethods": ["GET", "PUT", "POST", "DELETE"],
-                        "AllowedOrigins": ["*"],
-                        "ExposeHeaders": ["ETag"]
+                        "allowedOrigins": ["*"],
+                        "allowedOperations": [
+                          "s3_delete",
+                          "s3_get",
+                          "s3_head",
+                          "s3_post",
+                          "s3_put"
+                        ],
+                        "allowedHeaders": ["*"],
+                        "exposeHeaders": ["ETag"],
+                        "maxAgeSeconds": 3600
                       }
                     ], null, 2)}
                   </pre>
@@ -334,7 +338,7 @@ const S3ConfigurationPanel: React.FC = () => {
                   <ShieldCheck className="h-4 w-4" />
                   <AlertTitle>Important Security Note</AlertTitle>
                   <AlertDescription>
-                    Your S3 credentials are stored in your browser's localStorage. For production use, 
+                    Your Backblaze B2 credentials are stored in your browser's localStorage. For production use, 
                     we recommend implementing server-side upload authentication.
                   </AlertDescription>
                 </Alert>
