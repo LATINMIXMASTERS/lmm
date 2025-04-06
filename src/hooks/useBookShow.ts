@@ -2,10 +2,12 @@
 import { useState } from 'react';
 import { useRadio } from './useRadioContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from './use-toast';
 
 export const useBookShow = () => {
   const { addBooking, stations } = useRadio();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedStation, setSelectedStation] = useState('');
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -36,25 +38,38 @@ export const useBookShow = () => {
         return;
       }
       
-      addBooking({
+      const result = addBooking({
         stationId: selectedStation,
         userId: user?.id || 'guest',
         hostName: user?.username || 'Guest User',
         title,
         startTime: startDate,
         endTime: endDate,
-        stationName: station.name, // Add the station name
+        stationName: station.name,
         approved: false
       });
       
-      setSuccess('Booking request submitted!');
-      setError('');
-      setTitle('');
-      setStartDate('');
-      setEndDate('');
+      if (result) {
+        setSuccess('Booking request submitted!');
+        toast({
+          title: "Booking submitted",
+          description: "Your show booking request has been submitted successfully",
+        });
+        
+        // Reset form
+        setError('');
+        setTitle('');
+        setStartDate('');
+        setEndDate('');
+      }
     } catch (err: any) {
       setError(err.message || 'An error occurred');
       setSuccess('');
+      toast({
+        title: "Booking error",
+        description: err.message || 'An error occurred while submitting your booking',
+        variant: "destructive"
+      });
     }
   };
 

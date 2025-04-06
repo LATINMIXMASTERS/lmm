@@ -16,6 +16,33 @@ const DateTimeInputs: React.FC<DateTimeInputsProps> = ({
   endDate,
   setEndDate,
 }) => {
+  // Function to ensure we don't select dates in the past
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newStartDate = e.target.value;
+    setStartDate(newStartDate);
+    
+    // If end date is now before start date, update it
+    if (endDate && new Date(newStartDate) >= new Date(endDate)) {
+      // Set end date to start date + 1 hour
+      const newEndDate = new Date(newStartDate);
+      newEndDate.setHours(newEndDate.getHours() + 1);
+      setEndDate(newEndDate.toISOString().slice(0, 16));
+    }
+  };
+
+  // Ensure we can't select end dates before start dates
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEndDate = e.target.value;
+    if (!startDate || new Date(newEndDate) > new Date(startDate)) {
+      setEndDate(newEndDate);
+    } else {
+      // If invalid selection, set to start date + 1 hour
+      const newEndDate = new Date(startDate);
+      newEndDate.setHours(newEndDate.getHours() + 1);
+      setEndDate(newEndDate.toISOString().slice(0, 16));
+    }
+  };
+
   return (
     <div className="grid grid-cols-2 gap-4">
       <div>
@@ -24,7 +51,8 @@ const DateTimeInputs: React.FC<DateTimeInputsProps> = ({
           id="startDate"
           type="datetime-local"
           value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
+          onChange={handleStartDateChange}
+          min={new Date().toISOString().slice(0, 16)}
         />
       </div>
       <div>
@@ -33,7 +61,8 @@ const DateTimeInputs: React.FC<DateTimeInputsProps> = ({
           id="endDate"
           type="datetime-local"
           value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
+          onChange={handleEndDateChange}
+          min={startDate || new Date().toISOString().slice(0, 16)}
         />
       </div>
     </div>

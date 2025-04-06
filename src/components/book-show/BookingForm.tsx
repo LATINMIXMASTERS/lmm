@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { RadioStation } from '@/models/RadioStation';
 
-// Import our new components
+// Import our form components
 import {
   StationSelector,
   ShowTitleInput,
@@ -44,12 +44,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
   error,
   success,
   handleSubmit: onSubmitBooking,
-  isPrivilegedUser,
-  userId,
-  username
+  isPrivilegedUser
 }) => {
-  const { toast } = useToast();
-  
   // Handle the form submission
   const processSubmit = (e: React.FormEvent) => {
     e.preventDefault();
