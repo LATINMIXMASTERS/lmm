@@ -14,9 +14,30 @@ export const createAuthHeaders = async (
     throw new Error('Missing B2 credentials');
   }
   
-  // Determine the endpoint URL, removing any trailing slashes
-  const endpoint = config.endpoint?.replace(/\/$/, '') || 
-    `https://s3.${config.region}.backblazeb2.com`;
+  // Ensure endpoint is a valid URL
+  let endpoint = config.endpoint || '';
+  
+  // Make sure it starts with https://
+  if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
+    endpoint = `https://${endpoint}`;
+  }
+  
+  // Remove any trailing slashes
+  endpoint = endpoint.replace(/\/+$/, '');
+  
+  if (!endpoint) {
+    // Fallback to regional endpoint if none provided
+    endpoint = `https://s3.${config.region}.backblazeb2.com`;
+  }
+  
+  // Validate URL to avoid 'Invalid URL' errors
+  try {
+    new URL(endpoint);
+  } catch (error) {
+    console.error("Invalid endpoint URL:", endpoint);
+    throw new Error(`Invalid endpoint URL: ${endpoint}. Please check your B2 configuration.`);
+  }
+  
   const host = new URL(endpoint).host;
   
   // Prepare headers for signature

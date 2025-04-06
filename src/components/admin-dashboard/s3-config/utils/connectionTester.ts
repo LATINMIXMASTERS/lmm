@@ -14,28 +14,34 @@ export const testS3Connection = async (
   }
   
   try {
-    // Determine the endpoint URL
-    let endpoint = config.endpoint || `https://s3.${config.region}.backblazeb2.com`;
+    // Ensure the endpoint is a valid URL
+    let endpoint = config.endpoint || '';
     
-    // For Backblaze B2, ensure we have the correct domain format
-    if (!endpoint.includes('backblazeb2.com') && config.region && !endpoint.includes(config.region)) {
-      endpoint = `https://s3.${config.region}.backblazeb2.com`;
-      console.log("Corrected Backblaze B2 endpoint for testing:", endpoint);
+    // Make sure it starts with https://
+    if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
+      endpoint = `https://${endpoint}`;
     }
+    
+    // Remove any trailing slashes to avoid double slashes in URLs
+    endpoint = endpoint.replace(/\/+$/, '');
     
     console.log("Testing S3 connection with endpoint:", endpoint);
     console.log("Bucket:", config.bucketName);
     console.log("Region:", config.region);
     
+    // Validate URL before proceeding
+    try {
+      new URL(endpoint);
+    } catch (error) {
+      console.error("Invalid endpoint URL:", endpoint);
+      return { 
+        success: false, 
+        message: `Invalid endpoint URL: ${endpoint}. Make sure it's a complete URL like https://s3.us-west-004.backblazeb2.com` 
+      };
+    }
+    
     // Get auth headers for the request
     const headers = await createAuthHeaders(config, 'GET', '');
-    
-    // Display headers for debugging (removing secret key)
-    const debugHeaders = {...headers};
-    if (headers.Authorization) {
-      debugHeaders.Authorization = headers.Authorization.substring(0, 50) + '...';
-    }
-    console.log("Auth headers:", debugHeaders);
     
     // For Backblaze B2, we need to list the bucket contents to verify access
     const listUrl = `${endpoint}/${config.bucketName}?list-type=2&max-keys=1`;

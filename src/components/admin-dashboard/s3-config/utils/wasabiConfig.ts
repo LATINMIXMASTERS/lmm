@@ -7,16 +7,25 @@ import { backblazeRegions } from '../S3ConfigTypes';
  */
 export const getDefaultEndpoint = (regionCode: string): string => {
   const region = backblazeRegions.find(r => r.value === regionCode);
-  return region ? `https://${region.endpoint}` : '';
+  if (!region) return '';
+  
+  return `https://${region.endpoint}`;
 };
 
 /**
  * Generate public URL base from bucket and endpoint
  */
 export const generatePublicUrlBase = (bucketName: string, endpoint: string): string => {
-  // Remove any trailing slashes
-  const cleanEndpoint = endpoint.replace(/\/+$/, '');
-  return `${cleanEndpoint}/${bucketName}`;
+  if (!endpoint || !bucketName) return '';
+  
+  try {
+    // Remove any trailing slashes
+    const cleanEndpoint = endpoint.replace(/\/+$/, '');
+    return `${cleanEndpoint}/${bucketName}`;
+  } catch (error) {
+    console.error('Error generating public URL base:', error);
+    return '';
+  }
 };
 
 /**
