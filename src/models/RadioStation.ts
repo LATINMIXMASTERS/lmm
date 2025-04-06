@@ -74,6 +74,7 @@ export interface BookingSlot {
   stationId: string;
   userId: string;
   hostName: string;
+  stationName: string; // Added the missing stationName property
   title: string;
   description?: string;
   startTime: string;

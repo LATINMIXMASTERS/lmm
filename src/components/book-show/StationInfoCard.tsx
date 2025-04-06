@@ -7,9 +7,10 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface StationInfoCardProps {
   station: RadioStation;
+  isPrivilegedUser: boolean; // Added the missing prop
 }
 
-const StationInfoCard: React.FC<StationInfoCardProps> = ({ station }) => {
+const StationInfoCard: React.FC<StationInfoCardProps> = ({ station, isPrivilegedUser }) => {
   return (
     <Card>
       <CardHeader>

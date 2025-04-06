@@ -55,7 +55,7 @@ const BookShow: React.FC = () => {
               handleSubmit={handleSubmit}
               isPrivilegedUser={isPrivilegedUser}
               userId={user?.id}
-              username={user?.username} 
+              username={user?.username}
             />
           </div>
           

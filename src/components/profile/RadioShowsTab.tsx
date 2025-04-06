@@ -66,7 +66,7 @@ const RadioShowsTab: React.FC<RadioShowsTabProps> = ({
                         {format(new Date(booking.startTime), "MMM dd, yyyy 'at' h:mm a")}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Station: {booking.stationName}
+                        Station: {booking.stationId}
                       </p>
                     </div>
                     {booking.stationId && (

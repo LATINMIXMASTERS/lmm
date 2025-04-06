@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, addHours, isBefore, startOfDay } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
@@ -24,31 +23,39 @@ import { useToast } from '@/hooks/use-toast';
 import { RadioStation } from '@/models/RadioStation';
 
 interface BookingFormProps {
-  station: RadioStation;
-  isVerifiedHost: boolean;
-  userId: string;
-  username: string;
-  onBookShow: (bookingData: {
-    stationId: string;
-    hostId: string;
-    hostName: string;
-    title: string;
-    startTime: string;
-    endTime: string;
-    approved: boolean;
-  }) => void;
-  hasBookingConflict: (stationId: string, startTime: Date, endTime: Date) => boolean;
-  onCancel: () => void;
+  stations: RadioStation[];
+  selectedStation: string;
+  setSelectedStation: (stationId: string) => void;
+  title: string;
+  setTitle: (title: string) => void;
+  startDate: string;
+  setStartDate: (date: string) => void;
+  endDate: string;
+  setEndDate: (date: string) => void;
+  error: string;
+  success: string;
+  handleSubmit: (e: React.FormEvent) => void;
+  isPrivilegedUser: boolean;
+  userId: string | undefined;
+  username: string | undefined;
 }
 
 const BookingForm: React.FC<BookingFormProps> = ({
-  station,
-  isVerifiedHost,
+  stations,
+  selectedStation,
+  setSelectedStation,
+  title,
+  setTitle,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
+  error,
+  success,
+  handleSubmit,
+  isPrivilegedUser,
   userId,
-  username,
-  onBookShow,
-  hasBookingConflict,
-  onCancel
+  username
 }) => {
   const { toast } = useToast();
   const [showTitle, setShowTitle] = useState('');
@@ -159,7 +166,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
     return endDateTime;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!validateForm()) return;
     
     const startDateTime = new Date(showDate!);
@@ -177,24 +186,24 @@ const BookingForm: React.FC<BookingFormProps> = ({
       return;
     }
     
-    if (hasBookingConflict(station.id, startDateTime, endDateTime)) {
-      toast({
-        title: "Time slot unavailable",
-        description: "This time slot conflicts with an existing booking",
-        variant: "destructive"
-      });
-      return;
-    }
+    // if (hasBookingConflict(station.id, startDateTime, endDateTime)) {
+    //   toast({
+    //     title: "Time slot unavailable",
+    //     description: "This time slot conflicts with an existing booking",
+    //     variant: "destructive"
+    //   });
+    //   return;
+    // }
     
-    onBookShow({
-      stationId: station.id,
-      hostId: userId,
-      hostName: username,
-      title: showTitle,
-      startTime: startDateTime.toISOString(),
-      endTime: endDateTime.toISOString(),
-      approved: isVerifiedHost // Auto-approve for verified hosts
-    });
+    // onBookShow({
+    //   stationId: station.id,
+    //   hostId: userId,
+    //   hostName: username,
+    //   title: showTitle,
+    //   startTime: startDateTime.toISOString(),
+    //   endTime: endDateTime.toISOString(),
+    //   approved: isVerifiedHost // Auto-approve for verified hosts
+    // });
   };
 
   // Disable past dates in the calendar
@@ -205,110 +214,66 @@ const BookingForm: React.FC<BookingFormProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Show Details</CardTitle>
+        <CardTitle>Book a Radio Show</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="showTitle">Show Title</Label>
-            <Input
-              id="showTitle"
-              value={showTitle}
-              onChange={(e) => setShowTitle(e.target.value)}
-              placeholder="Enter your show title"
-              className={errors.title ? "border-red-500" : ""}
-            />
-            {errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
-            <Input
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What's your show about?"
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !showDate && "text-muted-foreground",
-                      errors.date && "border-red-500"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {showDate ? format(showDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={showDate}
-                    onSelect={setShowDate}
-                    disabled={isDateDisabled}
-                    initialFocus
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-              {errors.date && <p className="text-sm text-red-500">{errors.date}</p>}
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Start Time</Label>
-              <Select 
-                value={startTime} 
-                onValueChange={setStartTime}
-              >
-                <SelectTrigger className={errors.time ? "border-red-500" : ""}>
-                  <SelectValue placeholder="Select time" />
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="station">Select Station</Label>
+              <Select value={selectedStation} onValueChange={setSelectedStation}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a station" />
                 </SelectTrigger>
                 <SelectContent>
-                  {timeSlots.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
+                  {stations.map((station) => (
+                    <SelectItem key={station.id} value={station.id}>
+                      {station.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {errors.time && <p className="text-sm text-red-500">{errors.time}</p>}
             </div>
             
-            <div className="space-y-2">
-              <Label>Duration (hours)</Label>
-              <Select 
-                value={duration} 
-                onValueChange={setDuration}
-              >
-                <SelectTrigger className={errors.duration ? "border-red-500" : ""}>
-                  <SelectValue placeholder="Select duration" />
-                </SelectTrigger>
-                <SelectContent>
-                  {durationOptions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option} hour{option !== '1' ? 's' : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.duration && <p className="text-sm text-red-500">{errors.duration}</p>}
+            <div>
+              <Label htmlFor="title">Show Title</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter your show title"
+              />
             </div>
-          </div>
-          
-          <div className="pt-4">
-            <Button onClick={handleSubmit} className="w-full">
-              Book Show
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="startDate">Start Date and Time</Label>
+                <Input
+                  id="startDate"
+                  type="datetime-local"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="endDate">End Date and Time</Label>
+                <Input
+                  id="endDate"
+                  type="datetime-local"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            {error && <div className="text-red-500 text-sm">{error}</div>}
+            {success && <div className="text-green-500 text-sm">{success}</div>}
+            
+            <Button type="submit" className="w-full">
+              {isPrivilegedUser ? 'Book Show' : 'Request Booking'}
             </Button>
           </div>
-        </div>
+        </form>
       </CardContent>
     </Card>
   );
