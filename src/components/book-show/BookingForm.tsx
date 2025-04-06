@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, addHours, isBefore, startOfDay } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
@@ -52,7 +53,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
   setEndDate,
   error,
   success,
-  handleSubmit,
+  handleSubmit: onSubmitBooking, // Rename the prop to avoid conflict
   isPrivilegedUser,
   userId,
   username
@@ -166,7 +167,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
     return endDateTime;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Renamed to processSubmit to avoid conflict with the prop
+  const processSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
@@ -186,24 +188,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
       return;
     }
     
-    // if (hasBookingConflict(station.id, startDateTime, endDateTime)) {
-    //   toast({
-    //     title: "Time slot unavailable",
-    //     description: "This time slot conflicts with an existing booking",
-    //     variant: "destructive"
-    //   });
-    //   return;
-    // }
-    
-    // onBookShow({
-    //   stationId: station.id,
-    //   hostId: userId,
-    //   hostName: username,
-    //   title: showTitle,
-    //   startTime: startDateTime.toISOString(),
-    //   endTime: endDateTime.toISOString(),
-    //   approved: isVerifiedHost // Auto-approve for verified hosts
-    // });
+    // Use the parent's handleSubmit (renamed to onSubmitBooking)
+    onSubmitBooking(e);
   };
 
   // Disable past dates in the calendar
@@ -217,7 +203,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <CardTitle>Book a Radio Show</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={processSubmit}>
           <div className="space-y-4">
             <div>
               <Label htmlFor="station">Select Station</Label>

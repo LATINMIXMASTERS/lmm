@@ -4,7 +4,7 @@ import { useRadio } from './useRadioContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const useBookShow = () => {
-  const { addBooking } = useRadio();
+  const { addBooking, stations } = useRadio();
   const { user } = useAuth();
   const [selectedStation, setSelectedStation] = useState('');
   const [title, setTitle] = useState('');
@@ -28,6 +28,14 @@ export const useBookShow = () => {
     }
     
     try {
+      // Find the station to get its name
+      const station = stations.find(s => s.id === selectedStation);
+      
+      if (!station) {
+        setError('Selected station not found');
+        return;
+      }
+      
       addBooking({
         stationId: selectedStation,
         userId: user?.id || 'guest',
@@ -35,6 +43,7 @@ export const useBookShow = () => {
         title,
         startTime: startDate,
         endTime: endDate,
+        stationName: station.name, // Add the station name
         approved: false
       });
       
