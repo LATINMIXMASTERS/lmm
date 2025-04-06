@@ -4,8 +4,8 @@ import MainLayout from '@/layout/MainLayout';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBookShow } from '@/hooks/useBookShow';
-import { StationInfoCard } from '@/components/book-show/StationInfoCard';
-import { BookingForm } from '@/components/book-show/BookingForm';
+import StationInfoCard from '@/components/book-show/StationInfoCard';
+import BookingForm from '@/components/book-show/BookingForm';
 
 const BookShow: React.FC = () => {
   const { stations } = useRadio();

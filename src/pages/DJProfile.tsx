@@ -12,15 +12,14 @@ import RadioShowsTab from '@/components/profile/RadioShowsTab';
 import MixesTabContent from '@/components/profile/MixesTabContent';
 import UserNotFound from '@/components/profile/UserNotFound';
 import { useAuth } from '@/contexts/AuthContext';
-import { djProfileUsers } from '@/utils/djProfileUtils'; // Sample DJ data
+import { djProfileUsers } from '@/utils/djProfileUtils';
 import useDJProfileActions from '@/hooks/useDJProfileActions';
 import { MouseEvent, FormEvent } from 'react';
 
 // Extended User interface to include optional fields that might only exist on DJ profiles
-interface ExtendedUser extends Omit<User, 'email'> {
+interface ExtendedUser extends User {
   title?: string;
   avatarUrl?: string;
-  email?: string;
   bio?: string;
   socialLinks?: {
     facebook?: string;
@@ -52,11 +51,13 @@ const DJProfile: React.FC = () => {
           setDjProfile({
             id: foundDJ.id,
             username: foundDJ.username,
-            isAdmin: foundDJ.isAdmin,
+            isAdmin: foundDJ.isAdmin || false,
             title: foundDJ.title,
             avatarUrl: foundDJ.avatarUrl,
             bio: foundDJ.bio,
-            socialLinks: foundDJ.socialLinks
+            socialLinks: foundDJ.socialLinks,
+            email: '', // Add required email field
+            isRadioHost: foundDJ.isRadioHost || false // Add isRadioHost field
           });
         } else {
           setDjProfile(null);
@@ -103,10 +104,10 @@ const DJProfile: React.FC = () => {
     },
     trackInteractions: {
       handlePlayTrack: (_: string) => {},
-      handleLikeTrack: (_: string, __: MouseEvent) => {},
-      handleShareTrack: (_: string, __: MouseEvent) => {},
+      handleLikeTrack: (_: Track) => {},
+      handleShareTrack: (_: Track) => {},
       handleCommentChange: (_: string, __: string) => {},
-      handleSubmitComment: (_: string, __: FormEvent) => {},
+      handleSubmitComment: (_: string, __: string) => {},
       newComments: {}
     },
     userTracks: [],
@@ -114,63 +115,45 @@ const DJProfile: React.FC = () => {
     djStations: []
   };
   
-  // Create a safe user object for the DJProfileHeader
-  const safeUserObj: ExtendedUser = {
-    id: djProfile.id,
-    username: djProfile.username,
-    isAdmin: djProfile.isAdmin || false,
-    title: djProfile.title,
-    avatarUrl: djProfile.avatarUrl,
-    bio: djProfile.bio,
-    socialLinks: djProfile.socialLinks
-  };
-  
   return (
     <MainLayout>
       <div className="container py-8">
         <DJProfileHeader 
-          user={safeUserObj} 
-          stations={hostStations}
-          upcomingShows={upcomingShows}
-          onToggleFollow={djActions?.toggleFollow}
-          isLoading={djActions?.loading || false}
+          hostUser={djProfile}
+          onEditProfile={() => {}} 
         />
         
         <DJProfileTabs 
-          activeTab={selectedTab} 
-          onTabChange={setSelectedTab}
-          genreFilter={selectedGenre}
-          onGenreChange={setSelectedGenre}
+          djUser={djProfile}
+          userTracks={userTracks}
+          filteredTracks={filteredTracks}
+          selectedTabGenre={selectedGenre}
+          setSelectedTabGenre={setSelectedGenre}
+          currentPlayingTrack={null}
+          genres={[]} // Add appropriate genres
+          user={user}
+          djStations={djStations}
+          djBookings={djBookings}
+          handlePlayTrack={trackInteractions.handlePlayTrack}
+          handleLikeTrack={(trackId, e) => {
+            const track = userTracks.find(t => t.id === trackId);
+            if (track) trackInteractions.handleLikeTrack(track);
+          }}
+          handleShareTrack={(trackId, e) => {
+            const track = userTracks.find(t => t.id === trackId);
+            if (track) trackInteractions.handleShareTrack(track);
+          }}
+          newComments={trackInteractions.newComments}
+          handleCommentChange={trackInteractions.handleCommentChange}
+          handleSubmitComment={(trackId, e) => trackInteractions.handleSubmitComment(trackId, trackInteractions.newComments[trackId] || '')}
+          formatDuration={(seconds) => {
+            const minutes = Math.floor(seconds! / 60);
+            const remainingSecs = Math.floor(seconds! % 60);
+            return `${minutes}:${remainingSecs.toString().padStart(2, '0')}`;
+          }}
+          renderTrackActions={() => null}
+          startListening={() => {}}
         />
-        
-        <div className="mt-6">
-          <TabsContent value="radio" className="space-y-4">
-            <RadioShowsTab stations={djStations} bookings={djBookings} />
-          </TabsContent>
-          
-          <TabsContent value="mixes" className="space-y-4">
-            <MixesTabContent 
-              tracks={filteredTracks}
-              onLike={(trackId, e) => {
-                const track = userTracks.find(t => t.id === trackId);
-                if (track) trackInteractions.handleLikeTrack(track);
-              }}
-              onShare={(trackId, e) => {
-                const track = userTracks.find(t => t.id === trackId);
-                if (track) trackInteractions.handleShareTrack(track);
-              }}
-              onPlay={trackInteractions.handlePlayTrack}
-              onComment={(trackId, e: FormEvent) => {
-                const comment = trackInteractions.newComments[trackId] || '';
-                trackInteractions.handleSubmitComment(trackId, comment);
-              }}
-              onCommentChange={trackInteractions.handleCommentChange}
-              newComments={trackInteractions.newComments}
-              currentUserId={user?.id || ''}
-              isDJ={true}
-            />
-          </TabsContent>
-        </div>
       </div>
     </MainLayout>
   );

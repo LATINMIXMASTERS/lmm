@@ -38,3 +38,34 @@ export const createTrackActionsRenderer = (
     };
   };
 };
+
+// Sample DJ profile data for development/testing purposes
+export const djProfileUsers = [
+  {
+    id: "dj1",
+    username: "DJ_RhythmMaster",
+    isAdmin: false,
+    isRadioHost: true,
+    title: "Resident DJ",
+    avatarUrl: "https://api.dicebear.com/7.x/personas/svg?seed=DJ_RhythmMaster",
+    bio: "Spinning the hottest tracks every weekend. Specializes in House and Techno.",
+    socialLinks: {
+      facebook: "https://facebook.com/djrhythmmaster",
+      instagram: "https://instagram.com/djrhythmmaster",
+      soundcloud: "https://soundcloud.com/djrhythmmaster"
+    }
+  },
+  {
+    id: "dj2",
+    username: "BeatWizard",
+    isAdmin: false,
+    isRadioHost: true,
+    title: "Guest DJ",
+    avatarUrl: "https://api.dicebear.com/7.x/personas/svg?seed=BeatWizard",
+    bio: "Creating sonic journeys through hip-hop and R&B. 10+ years of experience.",
+    socialLinks: {
+      twitter: "https://twitter.com/beatwizard",
+      soundcloud: "https://soundcloud.com/beatwizard"
+    }
+  }
+];
