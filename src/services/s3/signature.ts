@@ -1,3 +1,4 @@
+
 import { S3StorageConfig, S3UploadResult } from './types';
 import { createSignatureV4 } from './utils/signatureUtils';
 
@@ -33,7 +34,7 @@ export async function createAwsSignature(
     } catch (error) {
       console.error("Invalid endpoint URL:", endpoint);
       if (onProgress) onProgress(0);
-      throw new Error(`Invalid endpoint URL: ${endpoint}. Please check your B2 configuration.`);
+      throw new Error(`Invalid endpoint URL: ${endpoint}. Please check your Backblaze B2 configuration.`);
     }
     
     // Extract host from valid URL
@@ -112,7 +113,7 @@ export async function createAwsSignature(
           let publicUrl;
           
           if (config.publicUrlBase) {
-            // Use the configured public base URL if provided
+            // Use the configured public URL base if provided
             const cleanPublicUrlBase = config.publicUrlBase.replace(/\/+$/, '');
             publicUrl = `${cleanPublicUrlBase}/${filePath}`;
           } else {

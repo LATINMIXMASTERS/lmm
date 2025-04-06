@@ -14,12 +14,33 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const S3ConfigurationPanel: React.FC = () => {
-  const [config, setConfig] = useState<S3StorageConfig>(loadS3Config);
+  // Default to US East (Columbus) region
+  const defaultConfig = {
+    ...loadS3Config(),
+    region: loadS3Config().region || 'us-east-005'
+  };
+
+  const [config, setConfig] = useState<S3StorageConfig>(defaultConfig);
   const [showSecrets, setShowSecrets] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+
+  // Set default endpoint when component mounts if not already set
+  useEffect(() => {
+    if (!config.endpoint && config.region) {
+      const selectedRegion = backblazeRegions.find(r => r.value === config.region);
+      if (selectedRegion) {
+        setConfig(prev => ({
+          ...prev,
+          endpoint: `https://${selectedRegion.endpoint}`,
+          publicUrlBase: prev.bucketName ? 
+            `https://${selectedRegion.endpoint}/${prev.bucketName}` : prev.publicUrlBase
+        }));
+      }
+    }
+  }, []);
 
   const handleChange = (field: keyof S3StorageConfig, value: string) => {
     setConfig(prev => ({ ...prev, [field]: value }));
@@ -184,7 +205,7 @@ const S3ConfigurationPanel: React.FC = () => {
                       id="endpoint"
                       value={config.endpoint}
                       onChange={(e) => handleChange('endpoint', e.target.value)}
-                      placeholder="https://s3.us-west-004.backblazeb2.com"
+                      placeholder="https://s3.us-east-005.backblazeb2.com"
                     />
                     <p className="text-sm text-muted-foreground">
                       For Backblaze B2, this should be https://s3.[region].backblazeb2.com
@@ -197,7 +218,7 @@ const S3ConfigurationPanel: React.FC = () => {
                       id="publicUrlBase"
                       value={config.publicUrlBase || ''}
                       onChange={(e) => handleChange('publicUrlBase', e.target.value)}
-                      placeholder="https://s3.us-west-004.backblazeb2.com/bucketname"
+                      placeholder="https://s3.us-east-005.backblazeb2.com/bucketname"
                     />
                     <p className="text-sm text-muted-foreground">
                       URL used to access uploaded files. For Backblaze B2, typically https://s3.[region].backblazeb2.com/[bucketname]

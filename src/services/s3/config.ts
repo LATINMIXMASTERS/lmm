@@ -8,6 +8,10 @@ let cachedConfig: S3StorageConfig | null = null;
 // Use the same storage key as the admin panel
 const STORAGE_KEY = 'latinmixmasters_s3config';
 
+// Default endpoint for US East
+const DEFAULT_REGION = 'us-east-005';
+const DEFAULT_ENDPOINT = 'https://s3.us-east-005.backblazeb2.com';
+
 /**
  * Get S3 configuration from localStorage
  */
@@ -25,6 +29,15 @@ export function getS3Config(): S3StorageConfig | null {
     }
     
     const config = JSON.parse(configStr) as S3StorageConfig;
+    
+    // Ensure endpoint uses the default if not set
+    if (!config.endpoint && config.region) {
+      config.endpoint = `https://s3.${config.region}.backblazeb2.com`;
+    } else if (!config.endpoint) {
+      // Default to US East if no region or endpoint
+      config.region = DEFAULT_REGION;
+      config.endpoint = DEFAULT_ENDPOINT;
+    }
     
     // Cache the config
     cachedConfig = config;
@@ -52,6 +65,11 @@ export function saveS3Config(config: S3StorageConfig): void {
     // Validate required fields
     if (!config.bucketName || !config.region) {
       throw new Error('Missing required S3 configuration fields');
+    }
+    
+    // Set default endpoint if not provided
+    if (!config.endpoint) {
+      config.endpoint = `https://s3.${config.region}.backblazeb2.com`;
     }
     
     // Cache the config

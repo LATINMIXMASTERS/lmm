@@ -35,7 +35,7 @@ export const createAuthHeaders = async (
     new URL(endpoint);
   } catch (error) {
     console.error("Invalid endpoint URL:", endpoint);
-    throw new Error(`Invalid endpoint URL: ${endpoint}. Please check your B2 configuration.`);
+    throw new Error(`Invalid endpoint URL: ${endpoint}. Please check your Backblaze B2 configuration.`);
   }
   
   const host = new URL(endpoint).host;

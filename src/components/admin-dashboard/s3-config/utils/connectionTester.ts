@@ -36,7 +36,7 @@ export const testS3Connection = async (
       console.error("Invalid endpoint URL:", endpoint);
       return { 
         success: false, 
-        message: `Invalid endpoint URL: ${endpoint}. Make sure it's a complete URL like https://s3.us-west-004.backblazeb2.com` 
+        message: `Invalid endpoint URL: ${endpoint}. Make sure it's a complete URL like https://s3.us-east-005.backblazeb2.com` 
       };
     }
     
