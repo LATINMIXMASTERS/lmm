@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useRadio } from './useRadioContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,8 +30,7 @@ export const useBookShow = () => {
     try {
       addBooking({
         stationId: selectedStation,
-        userId: user?.id || 'guest', // Add the missing userId field
-        hostId: user?.id || 'guest',
+        userId: user?.id || 'guest',
         hostName: user?.username || 'Guest User',
         title,
         startTime: startDate,
