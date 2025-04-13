@@ -12,6 +12,8 @@ export const loadS3Config = (): S3StorageConfig => {
     bucketName: '',
     region: 'us-east-1',
     endpoint: '',
+    accessKeyId: '',  // Added missing property
+    secretAccessKey: '',  // Added missing property
     publicUrlBase: '',
   };
   
