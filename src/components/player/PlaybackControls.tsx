@@ -31,7 +31,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   handleProgressChange,
   isTrackPlaying
 }) => {
-  // Make sure volume is within 0-100 range for the volume control slider
+  // Ensure volume is in 0-100 range for display
   const displayVolume = formatVolumeForDisplay(volume);
   
   return (

@@ -21,7 +21,7 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
   className,
   showLabel = false
 }) => {
-  // Make sure volume is within 0-100 range for display
+  // Ensure volume is always in 0-100 range
   const displayVolume = formatVolumeForDisplay(volume);
   
   return (

@@ -66,8 +66,10 @@ export function useVideoControls(videoRef: RefObject<HTMLVideoElement>) {
   // Handle volume change from slider
   const handleVolumeChange = (value: number[]) => {
     if (value.length > 0) {
+      // Always normalize volume to ensure it's in the 0-1 range
       const normalizedValue = normalizeVolume(value[0]);
       console.log('Video volume set via slider:', normalizedValue);
+      
       setVolume(normalizedValue);
       if (normalizedValue === 0) {
         setIsMuted(true);

@@ -4,6 +4,7 @@ import { useRadio } from '@/hooks/useRadioContext';
 import { useTrack } from '@/hooks/useTrackContext';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from "@/components/ui/toast";
+import { normalizeVolume, formatVolumeForDisplay } from '@/utils/audioUtils';
 
 interface UsePlayerProps {
   audioRef: React.MutableRefObject<HTMLAudioElement | null>;
@@ -15,8 +16,9 @@ const usePlayer = ({ audioRef }: UsePlayerProps) => {
   const { audioState, setAudioState } = useRadio();
   const { toast } = useToast();
   
-  // Initialize with normalized volume value
-  const initialVolume = audioState.volume > 1 ? Math.min(100, audioState.volume) : Math.round(audioState.volume * 100);
+  // Make sure to normalize the initial volume value
+  // Store as 0-100 for UI consistency
+  const initialVolume = formatVolumeForDisplay(audioState.volume);
   const prevVolume = useRef(initialVolume);
   
   // State for player UI
@@ -60,7 +62,7 @@ const usePlayer = ({ audioRef }: UsePlayerProps) => {
       setIsMuted(false);
       setAudioState(prev => ({
         ...prev,
-        volume: prevVolume.current,
+        volume: normalizeVolume(prevVolume.current),
         isMuted: false
       }));
       console.log('Unmuted, restored volume to:', prevVolume.current);
@@ -83,15 +85,16 @@ const usePlayer = ({ audioRef }: UsePlayerProps) => {
     const newVolume = Math.min(100, Math.max(0, parseInt(e.target.value, 10)));
     console.log('Volume changed to:', newVolume);
     
+    // Store the UI volume (0-100)
     setVolume(newVolume);
     setIsMuted(newVolume === 0);
+    
+    // Store the normalized volume (0-1) in global state
     setAudioState(prev => ({ 
       ...prev, 
-      volume: newVolume, 
+      volume: normalizeVolume(newVolume), 
       isMuted: newVolume === 0 
     }));
-    
-    // Don't directly set volume here - the useVolumeEffect hook will handle that
   };
 
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>, audioRef: React.MutableRefObject<HTMLAudioElement | null>) => {

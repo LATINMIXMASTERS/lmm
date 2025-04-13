@@ -5,6 +5,12 @@
  * @returns Normalized volume in 0-1 range
  */
 export const normalizeVolume = (volume: number): number => {
+  // Handle invalid inputs
+  if (volume === undefined || volume === null || isNaN(volume)) {
+    console.warn('Invalid volume value provided:', volume);
+    return 0;
+  }
+  
   // Convert from 0-100 range to 0-1 range if needed
   const normalizedVolume = volume > 1 ? volume / 100 : volume;
   
@@ -18,6 +24,12 @@ export const normalizeVolume = (volume: number): number => {
  * @returns Display-ready volume in 0-100 range
  */
 export const formatVolumeForDisplay = (volume: number): number => {
+  // Handle invalid inputs
+  if (volume === undefined || volume === null || isNaN(volume)) {
+    console.warn('Invalid volume value provided:', volume);
+    return 0;
+  }
+  
   // Convert from 0-1 range to 0-100 range if needed
   const displayVolume = volume <= 1 ? Math.round(volume * 100) : volume;
   
