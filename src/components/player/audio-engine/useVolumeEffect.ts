@@ -14,7 +14,8 @@ export const useVolumeEffect = ({
 }: UseVolumeEffectProps) => {
   useEffect(() => {
     if (audioRef.current) {
+      // Convert volume from 0-100 range to 0-1 range
       audioRef.current.volume = isMuted ? 0 : volume / 100;
     }
-  }, [volume, isMuted]);
+  }, [volume, isMuted, audioRef]);
 };

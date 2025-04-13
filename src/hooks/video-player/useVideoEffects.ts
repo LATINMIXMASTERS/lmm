@@ -11,7 +11,10 @@ export function useVideoEffects({ videoRef, volume, isMuted }: UseVideoEffectsPr
   // Handle volume and mute changes
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.volume = volume;
+      // Ensure volume is within the valid range (0-1)
+      // If volume is provided in 0-100 range, normalize it to 0-1
+      const normalizedVolume = volume > 1 ? volume / 100 : volume;
+      videoRef.current.volume = normalizedVolume;
       videoRef.current.muted = isMuted;
     }
   }, [volume, isMuted, videoRef]);
