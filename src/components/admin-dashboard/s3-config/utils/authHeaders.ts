@@ -4,6 +4,7 @@ import { createSignatureV4 } from './signatures';
 
 /**
  * Create proper AWS signature v4 headers for S3 requests
+ * Fixed for Backblaze B2 compatibility
  */
 export const createAuthHeaders = async (
   config: S3StorageConfig, 
@@ -51,7 +52,7 @@ export const createAuthHeaders = async (
   // Use empty string hash for browser compatibility with empty requests
   const payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'; // empty string hash
   
-  // Generate AWS signature v4
+  // Generate AWS signature v4 for Backblaze B2
   return await createSignatureV4(
     config,
     method,

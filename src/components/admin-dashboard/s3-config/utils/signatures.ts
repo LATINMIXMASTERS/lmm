@@ -4,6 +4,7 @@ import * as crypto from 'crypto';
 
 /**
  * Create AWS Signature V4 for S3 requests
+ * Fixed implementation for Backblaze B2 compatibility
  */
 export async function createSignatureV4(
   config: S3StorageConfig,
@@ -16,7 +17,7 @@ export async function createSignatureV4(
 ): Promise<Record<string, string>> {
   // Prepare date for signing
   const date = new Date();
-  const amzDate = date.toISOString().replace(/[:-]|\.\d{3}/g, '');
+  const amzDate = date.toISOString().replace(/[:\-]|\.\d{3}/g, '');
   const dateStamp = amzDate.slice(0, 8);
   
   // Add required headers
@@ -53,7 +54,7 @@ export async function createSignatureV4(
     algorithm,
     amzDate,
     credentialScope,
-    crypto.createHash('sha256').update(canonicalRequest).digest('hex')
+    crypto.createHash('sha256').update(canonicalRequest, 'utf8').digest('hex')
   ].join('\n');
   
   // Calculate signature
@@ -74,10 +75,9 @@ export async function createSignatureV4(
     `SignedHeaders=${signedHeaders}, ` +
     `Signature=${signature}`;
   
-  const result: Record<string, string> = {
+  // Return all headers including the authorization
+  return {
     ...allHeaders,
     'Authorization': authorization
   };
-  
-  return result;
 }

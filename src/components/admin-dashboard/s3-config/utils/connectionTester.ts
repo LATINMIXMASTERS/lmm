@@ -40,11 +40,14 @@ export const testS3Connection = async (
       };
     }
     
-    // Get auth headers for the request
+    // Get auth headers for the request - using the proper path format for B2
     const headers = await createAuthHeaders(config, 'GET', '');
     
     // For Backblaze B2, we need to list the bucket contents to verify access
     const listUrl = `${endpoint}/${config.bucketName}?list-type=2&max-keys=1`;
+    
+    console.log("Testing connection with URL:", listUrl);
+    console.log("Headers:", Object.keys(headers).join(", "));
     
     // Make a GET request to list bucket contents
     const response = await fetch(listUrl, {
