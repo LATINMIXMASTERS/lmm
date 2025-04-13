@@ -1,8 +1,7 @@
 
 import { S3UploadResult } from './types';
-import { uploadToLocalStorage } from './fallbackUpload';
 import { generateS3FileName, getS3Config, isS3Configured } from './config';
-import { createAwsSignature } from './signature';
+import { createSignatureV4 } from './utils/signatureGenerator';
 
 /**
  * Upload a file to S3-compatible storage using fetch API
@@ -18,42 +17,11 @@ export const uploadFileToS3 = async (
     onProgress(0);
   }
   
-  // Check if file is within size limits
-  if (folder.includes('audio') && file.size > 250 * 1024 * 1024) {
-    console.error('Audio file exceeds maximum size limit of 250MB');
-    return {
-      success: false,
-      url: '',
-      error: 'Audio file exceeds maximum size limit of 250MB'
-    };
-  }
-  
-  if ((folder.includes('covers') || folder.includes('image')) && file.size > 1 * 1024 * 1024) {
-    console.error('Image file exceeds maximum size limit of 1MB');
-    return {
-      success: false,
-      url: '',
-      error: 'Image file exceeds maximum size limit of 1MB'
-    };
-  }
-  
   // Get S3 configuration
   const config = getS3Config();
-  console.log('S3 config loaded:', { 
-    hasBucket: !!config?.bucketName, 
-    hasRegion: !!config?.region,
-    hasEndpoint: !!config?.endpoint,
-    hasAccessKey: !!config?.accessKeyId,
-    hasSecretKey: !!config?.secretAccessKey,
-    publicUrlBase: config?.publicUrlBase || 'not set',
-    fileSize: `${(file.size / (1024 * 1024)).toFixed(2)}MB`,
-    filename: file.name,
-    folder: folder
-  });
   
-  // S3 is now mandatory for all files
+  // S3 is mandatory for all files
   if (!config || !isS3Configured()) {
-    console.error('S3 storage is not configured but is required for file uploads');
     return {
       success: false,
       url: '',
@@ -65,30 +33,111 @@ export const uploadFileToS3 = async (
     // Generate a unique file name for S3
     const fileName = generateS3FileName(file);
     const filePath = `${folder}/${fileName}`;
-    console.log('Uploading to S3 path:', filePath);
     
-    // Upload to S3 using the proper signature method
-    const result = await createAwsSignature(config, file, filePath, onProgress);
+    // Normalize and validate the endpoint URL - Backblaze B2 specific
+    let endpoint = config.endpoint || '';
+    if (!endpoint.startsWith('http')) endpoint = `https://${endpoint}`;
+    endpoint = endpoint.replace(/\/+$/, '');
     
-    // Update progress to 100% on successful upload
-    if (onProgress && result.success) {
-      onProgress(100);
-    }
+    const host = new URL(endpoint).host;
     
-    console.log('S3 upload successful, URL:', result.url);
-    return result;
+    // Set appropriate content-type based on file
+    const contentType = file.type || 'application/octet-stream';
+    
+    // Standard headers for Backblaze B2 upload
+    const headers: Record<string, string> = {
+      'Host': host,
+      'Content-Type': contentType,
+      'Content-Length': file.size.toString(),
+      'Cache-Control': 'public, max-age=31536000',
+      'x-amz-acl': 'public-read'
+    };
+    
+    if (onProgress) onProgress(10);
+    
+    // Create the full path for the signature - Backblaze expects the bucket name in the path
+    const s3Path = `/${config.bucketName}/${filePath}`;
+    
+    // Generate AWS signature v4
+    const signedHeaders = await createSignatureV4(
+      config,
+      'PUT',
+      s3Path,
+      config.region || 'us-west-004',
+      's3',
+      'UNSIGNED-PAYLOAD',
+      headers
+    );
+    
+    // Construct the full upload URL for Backblaze
+    const uploadUrl = `${endpoint}/${config.bucketName}/${filePath}`;
+    
+    if (onProgress) onProgress(20);
+    
+    // Upload using XHR to track progress
+    const uploadPromise = new Promise<S3UploadResult>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      
+      // Set up progress monitoring
+      if (onProgress) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            // Scale from 20-90%
+            const percentComplete = 20 + Math.round((event.loaded / event.total) * 70);
+            onProgress(percentComplete);
+          }
+        };
+      }
+      
+      xhr.open('PUT', uploadUrl, true);
+      
+      // Add all signed headers
+      Object.keys(signedHeaders).forEach(key => {
+        xhr.setRequestHeader(key, signedHeaders[key]);
+      });
+      
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          // Construct the public URL
+          let publicUrl;
+          
+          if (config.publicUrlBase) {
+            // Use the configured public base URL if provided
+            publicUrl = `${config.publicUrlBase.replace(/\/$/, '')}/${filePath}`;
+          } else {
+            // Construct URL based on the bucket endpoint
+            publicUrl = `${endpoint}/${config.bucketName}/${filePath}`;
+          }
+          
+          // Indicate complete
+          if (onProgress) onProgress(100);
+          
+          resolve({
+            success: true,
+            url: publicUrl
+          });
+        } else {
+          if (onProgress) onProgress(0);
+          reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText}`));
+        }
+      };
+      
+      xhr.onerror = () => {
+        if (onProgress) onProgress(0);
+        reject(new Error('Network error during upload'));
+      };
+      
+      xhr.send(file);
+    });
+    
+    return await uploadPromise;
   } catch (error) {
-    console.error('Error uploading to S3:', error);
-    
-    // Ensure we return 0 progress on error
-    if (onProgress) {
-      onProgress(0);
-    }
+    if (onProgress) onProgress(0);
     
     return {
       success: false,
       url: '',
-      error: error instanceof Error ? error.message : 'S3 upload failed. Please check your configuration.'
+      error: error instanceof Error ? error.message : 'Unknown error during upload'
     };
   }
-};
+}

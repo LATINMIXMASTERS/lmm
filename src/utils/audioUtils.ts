@@ -1,5 +1,9 @@
 
 /**
+ * Audio utility functions for volume handling and media element operations
+ */
+
+/**
  * Normalizes a volume value to be within the valid range for HTML media elements (0-1)
  * @param volume Volume value (can be in 0-100 range or 0-1 range)
  * @returns Normalized volume in 0-1 range
@@ -31,10 +35,10 @@ export const formatVolumeForDisplay = (volume: number): number => {
   }
   
   // Convert from 0-1 range to 0-100 range if needed
-  const displayVolume = volume <= 1 ? Math.round(volume * 100) : volume;
+  const displayVolume = volume <= 1 ? Math.round(volume * 100) : Math.round(volume);
   
   // Ensure the value is within the valid range
-  return Math.max(0, Math.min(100, Math.round(displayVolume)));
+  return Math.max(0, Math.min(100, displayVolume));
 };
 
 /**
@@ -57,9 +61,6 @@ export const applyVolumeToElement = (
     // Apply volume and mute settings
     element.volume = safeVolume;
     element.muted = isMuted;
-    
-    // Log for debugging
-    console.debug(`Applied volume: ${safeVolume.toFixed(2)} (from ${volume}), muted: ${isMuted}`);
   } catch (error) {
     console.error(`Failed to set volume (${volume}) on media element:`, error);
   }

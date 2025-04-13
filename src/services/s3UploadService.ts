@@ -3,7 +3,7 @@ import { uploadFileToS3 as s3Upload } from './s3/uploader';
 import { getS3Config, isS3Configured as checkS3Config } from './s3/config';
 
 /**
- * Upload a file to S3 - now mandatory, no fallback to localStorage
+ * Upload a file to S3 Backblaze B2
  */
 export const uploadFileToS3 = async (
   file: File,
@@ -11,12 +11,8 @@ export const uploadFileToS3 = async (
   onProgress?: (progress: number) => void
 ) => {
   try {
-    console.log(`Uploading file ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB) to folder ${folder}...`);
-    
     // Check file size limits
     if (folder.includes('audio') && file.size > 250 * 1024 * 1024) {
-      console.error('Audio file exceeds maximum size limit of 250MB');
-      if (onProgress) onProgress(0);
       return {
         success: false,
         url: '',
@@ -25,8 +21,6 @@ export const uploadFileToS3 = async (
     }
     
     if ((folder.includes('covers') || folder.includes('image')) && file.size > 1 * 1024 * 1024) {
-      console.error('Image file exceeds maximum size limit of 1MB');
-      if (onProgress) onProgress(0);
       return {
         success: false,
         url: '',
@@ -38,8 +32,6 @@ export const uploadFileToS3 = async (
     const s3Available = checkS3Config();
     
     if (!s3Available) {
-      console.error('S3 storage is not configured but is required for file uploads');
-      if (onProgress) onProgress(0);
       return {
         success: false,
         url: '',
@@ -48,10 +40,7 @@ export const uploadFileToS3 = async (
     }
     
     // Use S3 for all uploads - no fallback
-    const result = await s3Upload(file, folder, onProgress);
-    
-    console.log('Upload result:', result);
-    return result;
+    return await s3Upload(file, folder, onProgress);
   } catch (error) {
     console.error('Error in S3 upload service:', error);
     if (onProgress) onProgress(0);
@@ -69,9 +58,7 @@ export const uploadFileToS3 = async (
 /**
  * Check if S3 is properly configured
  */
-export const isS3Configured = () => {
-  return checkS3Config();
-};
+export const isS3Configured = checkS3Config;
 
 /**
  * Get the current S3 configuration
