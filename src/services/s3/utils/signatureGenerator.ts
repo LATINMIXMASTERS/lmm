@@ -4,7 +4,7 @@ import { S3StorageConfig } from '../types';
 
 /**
  * Create AWS Signature V4 for S3 requests
- * Fixed implementation for Backblaze B2 compatibility
+ * Optimized specifically for Backblaze B2 compatibility
  */
 export function createSignatureV4(
   config: S3StorageConfig,
@@ -16,7 +16,7 @@ export function createSignatureV4(
   headers: Record<string, string>
 ): Record<string, string> {
   if (!config.secretAccessKey || !config.accessKeyId) {
-    throw new Error('Missing S3 credentials');
+    throw new Error('Missing Backblaze B2 credentials');
   }
   
   // If region is empty or undefined, use a default value to prevent errors
@@ -35,9 +35,7 @@ export function createSignatureV4(
   };
   
   // Sort headers by lowercase key name (important for signature calculation)
-  const sortedHeaderKeys = Object.keys(allHeaders).sort((a, b) => 
-    a.toLowerCase().localeCompare(b.toLowerCase())
-  );
+  const sortedHeaderKeys = Object.keys(allHeaders).sort();
   
   // Create canonical headers string with lowercase header names
   const canonicalHeaders = sortedHeaderKeys
@@ -74,7 +72,7 @@ export function createSignatureV4(
     canonicalRequestHash
   ].join('\n');
   
-  // Calculate signature
+  // Calculate signature - Using Node.js crypto for Backblaze B2 compatibility
   const getSignatureKey = (key: string, dateStamp: string, regionName: string, serviceName: string) => {
     const kDate = crypto.createHmac('sha256', `AWS4${key}`).update(dateStamp).digest();
     const kRegion = crypto.createHmac('sha256', kDate).update(regionName).digest();

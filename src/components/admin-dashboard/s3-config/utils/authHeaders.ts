@@ -4,7 +4,7 @@ import { createSignatureV4 } from './signatures';
 
 /**
  * Create proper AWS signature v4 headers for S3 requests
- * Fixed specifically for Backblaze B2 compatibility
+ * Optimized specifically for Backblaze B2 compatibility
  */
 export const createAuthHeaders = async (
   config: S3StorageConfig, 
@@ -45,7 +45,7 @@ export const createAuthHeaders = async (
   const headers: Record<string, string> = {
     'Host': host,
     'Content-Type': 'application/json',
-    'x-amz-acl': 'public-read',  // Critical for Backblaze B2 - make objects public
+    'x-amz-acl': 'public-read', // Critical for Backblaze B2 - make objects public
     'Cache-Control': 'no-cache'
   };
   
@@ -63,7 +63,8 @@ export const createAuthHeaders = async (
     host,
     method,
     path: requestPath,
-    region
+    region,
+    endpoint
   });
   
   // Generate AWS signature v4 for Backblaze B2

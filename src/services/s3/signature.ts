@@ -5,8 +5,7 @@ import { normalizeEndpointUrl, createPublicUrl } from './utils/urlUtils';
 import { uploadFileWithProgress } from './utils/uploadHandler';
 
 /**
- * Creates AWS Signature and uploads a file to S3-compatible storage
- * Fixed specifically for Backblaze B2 compatibility
+ * Creates AWS Signature and uploads a file to Backblaze B2 storage
  */
 export async function createAwsSignature(
   config: S3StorageConfig,
@@ -27,7 +26,7 @@ export async function createAwsSignature(
     // Set appropriate content-type based on file
     const contentType = file.type || 'application/octet-stream';
     
-    // Standard headers for S3 upload with Backblaze-specific additions
+    // Standard headers for Backblaze B2 upload
     const headers: Record<string, string> = {
       'Host': host,
       'Content-Type': contentType,
@@ -52,7 +51,7 @@ export async function createAwsSignature(
     });
     
     // Create the full path for the signature - Backblaze expects the bucket name in the path
-    const s3Path = `${config.bucketName}/${filePath}`;
+    const s3Path = `/${config.bucketName}/${filePath}`;
     
     // Generate AWS signature v4
     const signedHeaders = createSignatureV4(

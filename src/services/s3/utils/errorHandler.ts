@@ -1,7 +1,7 @@
 
 /**
  * Error handling utilities for S3 uploads
- * Enhanced for Backblaze B2 error responses
+ * Optimized for Backblaze B2 error responses
  */
 
 /**

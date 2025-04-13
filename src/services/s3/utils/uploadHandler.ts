@@ -1,12 +1,9 @@
 
-import { S3StorageConfig, S3UploadResult } from '../types';
-import { normalizeEndpointUrl, createPublicUrl } from './urlUtils';
 import { formatErrorMessage } from './errorHandler';
-import { createSignatureV4 } from './signatureGenerator';
 
 /**
  * Handles the file upload to S3 using XHR for progress tracking
- * Enhanced for Backblaze B2 compatibility
+ * Optimized for Backblaze B2 compatibility
  */
 export function uploadFileWithProgress(
   file: File,
@@ -41,7 +38,8 @@ export function uploadFileWithProgress(
       url: uploadUrl,
       contentType: signedHeaders['Content-Type'],
       contentLength: file.size,
-      fileName: file.name
+      fileName: file.name,
+      headers: Object.keys(signedHeaders).join(', ')
     });
     
     xhr.onload = () => {
@@ -51,6 +49,7 @@ export function uploadFileWithProgress(
       } else {
         console.error('Backblaze B2 upload failed with status:', xhr.status);
         console.error('Response text:', xhr.responseText);
+        console.error('Response headers:', xhr.getAllResponseHeaders());
         if (onProgress) onProgress(0);
         
         const errorMsg = formatErrorMessage(xhr.status, xhr.statusText, xhr.responseText);
@@ -69,7 +68,7 @@ export function uploadFileWithProgress(
         headers: Object.keys(signedHeaders)
       });
       if (onProgress) onProgress(0);
-      reject(new Error('Network error during Backblaze B2 upload. Check your network connection and S3 configuration.'));
+      reject(new Error('Network error during Backblaze B2 upload. Check your network connection and B2 configuration.'));
     };
     
     xhr.ontimeout = () => {

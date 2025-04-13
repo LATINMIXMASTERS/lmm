@@ -2,9 +2,9 @@
 export interface S3StorageConfig {
   bucketName: string;
   region: string;
-  endpoint?: string;
-  accessKeyId?: string;
-  secretAccessKey?: string;
+  endpoint: string;
+  accessKeyId: string;
+  secretAccessKey: string;
   publicUrlBase?: string;
 }
 

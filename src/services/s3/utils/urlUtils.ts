@@ -1,7 +1,7 @@
 
 /**
  * Utility functions for handling S3 URLs and endpoints
- * Enhanced for Backblaze B2 compatibility
+ * Optimized specifically for Backblaze B2 compatibility
  */
 
 /**
@@ -24,8 +24,8 @@ export function normalizeEndpointUrl(endpoint?: string, region?: string): string
     normalizedEndpoint = `https://s3.${region}.backblazeb2.com`;
   }
   
-  // Handle legacy Backblaze endpoints (without .backblazeb2.com)
-  if (normalizedEndpoint && !normalizedEndpoint.includes('.') && region) {
+  // Handle legacy endpoints (without .backblazeb2.com)
+  if (normalizedEndpoint && !normalizedEndpoint.includes('.backblazeb2.com') && region) {
     normalizedEndpoint = `https://s3.${region}.backblazeb2.com`;
   }
   

@@ -5,7 +5,7 @@ import { isConfigComplete } from './configValidator';
 
 /**
  * Test the S3 connection by checking bucket access
- * Specifically fixed for Backblaze B2 compatibility
+ * Optimized specifically for Backblaze B2 compatibility
  */
 export const testS3Connection = async (
   config: S3StorageConfig
@@ -42,7 +42,7 @@ export const testS3Connection = async (
       console.error("Invalid Backblaze B2 endpoint URL:", endpoint);
       return { 
         success: false, 
-        message: `Invalid endpoint URL: ${endpoint}. For Backblaze B2, use format: https://s3.us-west-004.backblazeb2.com` 
+        message: `Invalid endpoint URL: ${endpoint}. For Backblaze B2, use format: https://s3.{region}.backblazeb2.com` 
       };
     }
     
@@ -51,7 +51,7 @@ export const testS3Connection = async (
     
     // Get auth headers for the request
     try {
-      // Create the authentication headers synchronously
+      // Create the authentication headers
       const headers = await createAuthHeaders(config, 'GET', testPath);
       
       // For Backblaze B2, we need to list the bucket contents to verify access
@@ -83,24 +83,25 @@ export const testS3Connection = async (
             message: "Successfully connected to Backblaze B2 storage" 
           };
         } else {
-          // Parse error response if possible
-          let errorMessage;
+          // Log the full response for debugging
+          const responseText = await response.text();
+          console.log("Backblaze B2 error response:", responseText);
+          
+          // Parse XML error response for more helpful messages
+          let errorMessage = `HTTP ${response.status} - ${response.statusText}`;
           try {
-            const text = await response.text();
-            console.log("Backblaze B2 error response:", text);
-            
-            // Try to parse XML error response
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(text, "text/xml");
-            const code = xmlDoc.getElementsByTagName("Code")[0]?.textContent;
-            const message = xmlDoc.getElementsByTagName("Message")[0]?.textContent;
-            
-            errorMessage = code && message 
-              ? `${code}: ${message}`
-              : `HTTP ${response.status} - ${response.statusText}`;
-          } catch (e) {
-            console.error("Error parsing Backblaze B2 response:", e);
-            errorMessage = `HTTP ${response.status} - ${response.statusText}`;
+            if (responseText.includes('<Error>') || responseText.includes('<?xml')) {
+              const parser = new DOMParser();
+              const xmlDoc = parser.parseFromString(responseText, "text/xml");
+              const code = xmlDoc.getElementsByTagName("Code")[0]?.textContent;
+              const message = xmlDoc.getElementsByTagName("Message")[0]?.textContent;
+              
+              if (code || message) {
+                errorMessage = `${code || 'Error'}: ${message || responseText}`;
+              }
+            }
+          } catch (xmlError) {
+            console.error("Error parsing XML response:", xmlError);
           }
           
           return {

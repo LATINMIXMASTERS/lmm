@@ -3,8 +3,8 @@ export interface S3StorageConfig {
   bucketName: string;
   region: string;
   endpoint: string;
-  accessKeyId?: string;
-  secretAccessKey?: string;
+  accessKeyId: string;
+  secretAccessKey: string;
   publicUrlBase?: string;
 }
 
@@ -13,18 +13,18 @@ export interface TestResult {
   message: string;
 }
 
-// Define Backblaze regions
 export const backblazeRegions = [
-  { label: 'US West (Sacramento)', value: 'us-west-004', endpoint: 's3.us-west-004.backblazeb2.com' },
-  { label: 'US West (Phoenix)', value: 'us-west-000', endpoint: 's3.us-west-000.backblazeb2.com' },
-  { label: 'US East (Phoenix-GCP)', value: 'us-west-001', endpoint: 's3.us-west-001.backblazeb2.com' },
-  { label: 'US East (Northern Virginia)', value: 'us-east-001', endpoint: 's3.us-east-001.backblazeb2.com' },
-  { label: 'US East (Columbus)', value: 'us-east-005', endpoint: 's3.us-east-005.backblazeb2.com' },
-  { label: 'EU Central (Netherlands)', value: 'eu-central-003', endpoint: 's3.eu-central-003.backblazeb2.com' },
-  { label: 'Asia Pacific (Tokyo)', value: 'ap-northeast-001', endpoint: 's3.ap-northeast-001.backblazeb2.com' },
-  { label: 'Asia Pacific (Singapore)', value: 'ap-southeast-001', endpoint: 's3.ap-southeast-001.backblazeb2.com' },
-  { label: 'Asia Pacific (Sydney)', value: 'ap-southeast-002', endpoint: 's3.ap-southeast-002.backblazeb2.com' }
+  { value: 'us-west-004', label: 'US West (Sacramento)', endpoint: 's3.us-west-004.backblazeb2.com' },
+  { value: 'us-west-000', label: 'US West (Phoenix)', endpoint: 's3.us-west-000.backblazeb2.com' },
+  { value: 'us-west-001', label: 'US West (Las Vegas)', endpoint: 's3.us-west-001.backblazeb2.com' },
+  { value: 'us-west-002', label: 'US West (Phoenix)', endpoint: 's3.us-west-002.backblazeb2.com' },
+  { value: 'us-east-001', label: 'US East (Virginia)', endpoint: 's3.us-east-001.backblazeb2.com' },
+  { value: 'us-east-005', label: 'US East (Columbus)', endpoint: 's3.us-east-005.backblazeb2.com' },
+  { value: 'eu-central-003', label: 'EU Central (Amsterdam)', endpoint: 's3.eu-central-003.backblazeb2.com' }
 ];
 
-// For backward compatibility, using backblazeRegions
-export const wasabiRegions = backblazeRegions;
+export interface FileUpload {
+  file: File;
+  dataUrl?: string;
+}
+

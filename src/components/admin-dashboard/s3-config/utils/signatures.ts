@@ -4,7 +4,7 @@ import * as crypto from 'crypto';
 
 /**
  * Create AWS Signature V4 for S3 requests
- * Fixed implementation for Backblaze B2 compatibility
+ * Optimized specifically for Backblaze B2 compatibility
  */
 export async function createSignatureV4(
   config: S3StorageConfig,
@@ -15,7 +15,6 @@ export async function createSignatureV4(
   payloadHash: string,
   headers: Record<string, string>
 ): Promise<Record<string, string>> {
-  // Ensure we have required credentials
   if (!config.secretAccessKey || !config.accessKeyId) {
     throw new Error('Missing Backblaze B2 credentials');
   }
