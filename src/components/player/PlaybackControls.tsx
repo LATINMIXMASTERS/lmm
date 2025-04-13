@@ -4,6 +4,7 @@ import { Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDuration } from '@/utils/formatTime';
 import VolumeControl from './VolumeControl';
+import { formatVolumeForDisplay } from '@/utils/audioUtils';
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
@@ -31,7 +32,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   isTrackPlaying
 }) => {
   // Make sure volume is within 0-100 range for the volume control slider
-  const displayVolume = Math.min(100, Math.max(0, volume));
+  const displayVolume = formatVolumeForDisplay(volume);
   
   return (
     <div className="flex items-center space-x-6">

@@ -31,6 +31,9 @@ const VideoPlayerControls: React.FC<VideoPlayerControlsProps> = ({
   handleVolumeChange,
   formatTime
 }) => {
+  // Ensure volume is normalized for the UI slider (between 0-1)
+  const displayVolume = Math.max(0, Math.min(1, volume));
+  
   return (
     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
       {/* Progress bar */}
@@ -76,7 +79,7 @@ const VideoPlayerControls: React.FC<VideoPlayerControlsProps> = ({
           
           <div className="w-24 hidden sm:block">
             <Slider
-              value={[isMuted ? 0 : volume]}
+              value={[isMuted ? 0 : displayVolume]}
               min={0}
               max={1}
               step={0.01}

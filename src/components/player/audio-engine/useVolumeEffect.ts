@@ -21,6 +21,9 @@ export const useVolumeEffect = ({
       // Double-check that normalized volume is within valid bounds
       const safeVolume = Math.max(0, Math.min(1, normalizedVolume));
       
+      // Log for debugging
+      console.log('Audio volume set to:', safeVolume, 'from original value:', volume, 'muted:', isMuted);
+      
       audioRef.current.volume = isMuted ? 0 : safeVolume;
       
       // Also ensure muted state is correctly set

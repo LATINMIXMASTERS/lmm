@@ -2,6 +2,7 @@
 import React from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatVolumeForDisplay } from '@/utils/audioUtils';
 
 interface VolumeControlProps {
   volume: number;
@@ -21,7 +22,7 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
   showLabel = false
 }) => {
   // Make sure volume is within 0-100 range for display
-  const displayVolume = Math.min(100, Math.max(0, Math.round(volume)));
+  const displayVolume = formatVolumeForDisplay(volume);
   
   return (
     <div className={cn("flex items-center space-x-2", className)}>
@@ -30,7 +31,7 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
         className="text-gray-500 hover:text-gold transition-colors duration-300"
         aria-label={isMuted ? "Unmute" : "Mute"}
       >
-        {isMuted || volume === 0 ? (
+        {isMuted || displayVolume === 0 ? (
           <VolumeX className="w-5 h-5" />
         ) : (
           <Volume2 className="w-5 h-5" />

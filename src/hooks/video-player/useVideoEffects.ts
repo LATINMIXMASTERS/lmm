@@ -18,6 +18,9 @@ export function useVideoEffects({ videoRef, volume, isMuted }: UseVideoEffectsPr
       // Double-check that normalized volume is within valid bounds
       const safeVolume = Math.max(0, Math.min(1, normalizedVolume));
       
+      // Log for debugging
+      console.log('Video volume set to:', safeVolume, 'from original value:', volume, 'muted:', isMuted);
+      
       // Apply volume and mute settings
       videoRef.current.volume = isMuted ? 0 : safeVolume;
       videoRef.current.muted = isMuted;

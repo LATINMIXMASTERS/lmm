@@ -1,10 +1,11 @@
 
 import { useState, useRef, RefObject } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { normalizeVolume } from '@/utils/audioUtils';
 
 export function useVideoControls(videoRef: RefObject<HTMLVideoElement>) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(0.7);
+  const [volume, setVolume] = useState(0.7); // Default volume (0-1 scale)
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -64,11 +65,15 @@ export function useVideoControls(videoRef: RefObject<HTMLVideoElement>) {
 
   // Handle volume change from slider
   const handleVolumeChange = (value: number[]) => {
-    setVolume(value[0]);
-    if (value[0] === 0) {
-      setIsMuted(true);
-    } else if (isMuted) {
-      setIsMuted(false);
+    if (value.length > 0) {
+      const normalizedValue = normalizeVolume(value[0]);
+      console.log('Video volume set via slider:', normalizedValue);
+      setVolume(normalizedValue);
+      if (normalizedValue === 0) {
+        setIsMuted(true);
+      } else if (isMuted) {
+        setIsMuted(false);
+      }
     }
   };
 

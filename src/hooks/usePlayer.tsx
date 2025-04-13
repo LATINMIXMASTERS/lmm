@@ -15,7 +15,9 @@ const usePlayer = ({ audioRef }: UsePlayerProps) => {
   const { audioState, setAudioState } = useRadio();
   const { toast } = useToast();
   
-  const prevVolume = useRef(audioState.volume);
+  // Initialize with normalized volume value
+  const initialVolume = audioState.volume > 1 ? Math.min(100, audioState.volume) : Math.round(audioState.volume * 100);
+  const prevVolume = useRef(initialVolume);
   
   // State for player UI
   const [stationInfo, setStationInfo] = useState({
@@ -33,9 +35,9 @@ const usePlayer = ({ audioRef }: UsePlayerProps) => {
   const [newComment, setNewComment] = useState('');
   const [isTrackPlaying, setIsTrackPlaying] = useState(false);
   
-  // Audio control state
+  // Audio control state - ensure volume is in 0-100 range for UI controls
   const [isPlaying, setIsPlaying] = useState(audioState.isPlaying);
-  const [volume, setVolume] = useState(audioState.volume);
+  const [volume, setVolume] = useState(initialVolume); 
   const [isMuted, setIsMuted] = useState(audioState.isMuted);
   
   // Player control handlers
@@ -53,19 +55,34 @@ const usePlayer = ({ audioRef }: UsePlayerProps) => {
 
   const toggleMute = () => {
     if (isMuted) {
+      // When unmuting, use the previously stored volume
       setVolume(prevVolume.current);
       setIsMuted(false);
-      setAudioState(prev => ({ ...prev, volume: prevVolume.current, isMuted: false }));
+      setAudioState(prev => ({
+        ...prev,
+        volume: prevVolume.current,
+        isMuted: false
+      }));
+      console.log('Unmuted, restored volume to:', prevVolume.current);
     } else {
+      // When muting, store the current volume
       prevVolume.current = volume;
       setVolume(0);
       setIsMuted(true);
-      setAudioState(prev => ({ ...prev, volume: 0, isMuted: true }));
+      setAudioState(prev => ({
+        ...prev,
+        volume: 0,
+        isMuted: true
+      }));
+      console.log('Muted, stored previous volume as:', volume);
     }
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseInt(e.target.value, 10);
+    // Parse as integer and ensure it's in the valid range (0-100)
+    const newVolume = Math.min(100, Math.max(0, parseInt(e.target.value, 10)));
+    console.log('Volume changed to:', newVolume);
+    
     setVolume(newVolume);
     setIsMuted(newVolume === 0);
     setAudioState(prev => ({ 
