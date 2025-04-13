@@ -27,7 +27,7 @@ export const createAuthHeaders = async (
   endpoint = endpoint.replace(/\/+$/, '');
   
   if (!endpoint) {
-    // Fallback to regional endpoint if none provided
+    // Fallback to B2 specific endpoint format
     endpoint = `https://s3.${config.region}.backblazeb2.com`;
   }
   
@@ -41,11 +41,11 @@ export const createAuthHeaders = async (
   
   const host = new URL(endpoint).host;
   
-  // Prepare headers for signature
+  // Prepare headers for signature with B2 specific requirements
   const headers: Record<string, string> = {
     'Host': host,
     'Content-Type': 'application/json',
-    // Ensure proper cache control
+    'x-amz-acl': 'public-read',  // Make objects public by default
     'Cache-Control': 'no-cache'
   };
   

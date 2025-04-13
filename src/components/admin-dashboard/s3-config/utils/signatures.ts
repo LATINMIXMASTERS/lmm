@@ -30,7 +30,7 @@ export async function createSignatureV4(
   // Sort headers and create canonical headers string
   const sortedHeaderKeys = Object.keys(allHeaders).sort();
   const canonicalHeaders = sortedHeaderKeys
-    .map(key => `${key.toLowerCase()}:${allHeaders[key]}\n`)
+    .map(key => `${key.toLowerCase()}:${allHeaders[key].trim()}\n`)
     .join('');
   const signedHeaders = sortedHeaderKeys.map(key => key.toLowerCase()).join(';');
   
