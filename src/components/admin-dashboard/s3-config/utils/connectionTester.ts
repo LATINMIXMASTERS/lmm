@@ -81,53 +81,6 @@ export const testS3Connection = async (
       success: true,
       message: "Configuration validated. Note: Due to browser security restrictions, direct connection testing isn't possible. Your uploads will work if you've entered the correct credentials."
     };
-    
-    // Note: The commented code below would work in a server environment but not in browser due to CORS
-    /*
-    // Create the authentication headers
-    const headers = await createAuthHeaders(config, 'GET', testPath);
-    
-    // For Backblaze B2, we need to list the bucket contents to verify access
-    const listUrl = `${endpoint}/${config.bucketName}?list-type=2&max-keys=1`;
-    
-    // Make a GET request to list bucket contents
-    const response = await fetch(listUrl, {
-      method: 'GET',
-      headers
-    });
-    
-    if (response.ok) {
-      return { 
-        success: true, 
-        message: "Successfully connected to Backblaze B2 storage" 
-      };
-    } else {
-      // Handle error response
-      const responseText = await response.text();
-      let errorMessage = `HTTP ${response.status} - ${response.statusText}`;
-      
-      // Parse XML error response
-      if (responseText.includes('<Error>')) {
-        try {
-          const parser = new DOMParser();
-          const xmlDoc = parser.parseFromString(responseText, "text/xml");
-          const code = xmlDoc.getElementsByTagName("Code")[0]?.textContent;
-          const message = xmlDoc.getElementsByTagName("Message")[0]?.textContent;
-          
-          if (code || message) {
-            errorMessage = `${code || 'Error'}: ${message || responseText}`;
-          }
-        } catch (xmlError) {
-          console.error("Error parsing XML response:", xmlError);
-        }
-      }
-      
-      return {
-        success: false,
-        message: `Failed to connect to Backblaze B2: ${errorMessage}`
-      };
-    }
-    */
   } catch (error) {
     console.error("Backblaze B2 connection test error:", error);
     return {
@@ -137,4 +90,3 @@ export const testS3Connection = async (
     };
   }
 };
-
