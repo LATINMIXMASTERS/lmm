@@ -6,6 +6,7 @@ import { createSignatureV4 } from './signatureGenerator';
 
 /**
  * Handles the file upload to S3 using XHR for progress tracking
+ * Enhanced for Backblaze B2 compatibility
  */
 export function uploadFileWithProgress(
   file: File,
@@ -34,12 +35,21 @@ export function uploadFileWithProgress(
       xhr.setRequestHeader(key, signedHeaders[key]);
     });
     
+    // Add more detailed logging
+    console.log('Sending request to Backblaze B2:', {
+      method: 'PUT',
+      url: uploadUrl,
+      contentType: signedHeaders['Content-Type'],
+      contentLength: file.size,
+      fileName: file.name
+    });
+    
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        console.log('S3 upload successful with status:', xhr.status);
+        console.log('Backblaze B2 upload successful with status:', xhr.status);
         resolve();
       } else {
-        console.error('S3 upload failed with status:', xhr.status);
+        console.error('Backblaze B2 upload failed with status:', xhr.status);
         console.error('Response text:', xhr.responseText);
         if (onProgress) onProgress(0);
         
@@ -49,27 +59,35 @@ export function uploadFileWithProgress(
     };
     
     xhr.onerror = () => {
-      console.error('S3 upload network error');
+      console.error('Backblaze B2 upload network error:', {
+        status: xhr.status,
+        statusText: xhr.statusText
+      });
+      console.error('Request details:', {
+        url: uploadUrl,
+        method: 'PUT',
+        headers: Object.keys(signedHeaders)
+      });
       if (onProgress) onProgress(0);
-      reject(new Error('Network error during S3 upload. Check your network connection and S3 configuration.'));
+      reject(new Error('Network error during Backblaze B2 upload. Check your network connection and S3 configuration.'));
     };
     
     xhr.ontimeout = () => {
-      console.error('S3 upload timed out');
+      console.error('Backblaze B2 upload timed out');
       if (onProgress) onProgress(0);
-      reject(new Error('Upload timed out. Try with a smaller file or check your network connection.'));
+      reject(new Error('Upload to Backblaze B2 timed out. Try with a smaller file or check your network connection.'));
     };
     
-    // Set timeout to prevent hanging uploads
-    xhr.timeout = 120000; // 2 minutes timeout
+    // Set timeout to prevent hanging uploads (increased for larger files)
+    xhr.timeout = 300000; // 5 minutes timeout for Backblaze B2
     
     // Send the file
     try {
       xhr.send(file);
     } catch (e) {
-      console.error('Error sending file:', e);
+      console.error('Error sending file to Backblaze B2:', e);
       if (onProgress) onProgress(0);
-      reject(new Error(`Error sending file: ${e instanceof Error ? e.message : 'Unknown error'}`));
+      reject(new Error(`Error sending file to Backblaze B2: ${e instanceof Error ? e.message : 'Unknown error'}`));
     }
   });
 }

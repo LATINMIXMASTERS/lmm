@@ -14,7 +14,7 @@ export function createSignatureV4(
   service: string,
   payloadHash: string,
   headers: Record<string, string>
-): Promise<Record<string, string>> {
+): Record<string, string> {
   if (!config.secretAccessKey || !config.accessKeyId) {
     throw new Error('Missing S3 credentials');
   }
@@ -92,8 +92,8 @@ export function createSignatureV4(
     `SignedHeaders=${signedHeaders}, ` +
     `Signature=${signature}`;
   
-  return Promise.resolve({
+  return {
     ...allHeaders,
     'Authorization': authorization
-  });
+  };
 }

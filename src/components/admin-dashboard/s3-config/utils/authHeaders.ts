@@ -4,7 +4,7 @@ import { createSignatureV4 } from './signatures';
 
 /**
  * Create proper AWS signature v4 headers for S3 requests
- * Fixed for Backblaze B2 compatibility
+ * Fixed specifically for Backblaze B2 compatibility
  */
 export const createAuthHeaders = async (
   config: S3StorageConfig, 
@@ -12,7 +12,7 @@ export const createAuthHeaders = async (
   path: string
 ): Promise<Record<string, string>> => {
   if (!config.secretAccessKey || !config.accessKeyId) {
-    throw new Error('Missing B2 credentials');
+    throw new Error('Missing Backblaze B2 credentials');
   }
   
   // Ensure endpoint is a valid URL
@@ -26,8 +26,8 @@ export const createAuthHeaders = async (
   // Remove any trailing slashes
   endpoint = endpoint.replace(/\/+$/, '');
   
-  if (!endpoint) {
-    // Fallback to B2 specific endpoint format
+  // If no endpoint is provided or it's just the protocol, use the B2 specific format
+  if ((!endpoint || endpoint === 'https://') && config.region) {
     endpoint = `https://s3.${config.region}.backblazeb2.com`;
   }
   
@@ -35,8 +35,8 @@ export const createAuthHeaders = async (
   try {
     new URL(endpoint);
   } catch (error) {
-    console.error("Invalid endpoint URL:", endpoint);
-    throw new Error(`Invalid endpoint URL: ${endpoint}. Please check your Backblaze B2 configuration.`);
+    console.error("Invalid Backblaze B2 endpoint URL:", endpoint);
+    throw new Error(`Invalid Backblaze B2 endpoint URL: ${endpoint}. Please use format: https://s3.{region}.backblazeb2.com`);
   }
   
   const host = new URL(endpoint).host;
@@ -45,7 +45,7 @@ export const createAuthHeaders = async (
   const headers: Record<string, string> = {
     'Host': host,
     'Content-Type': 'application/json',
-    'x-amz-acl': 'public-read',  // Make objects public by default
+    'x-amz-acl': 'public-read',  // Critical for Backblaze B2 - make objects public
     'Cache-Control': 'no-cache'
   };
   
@@ -53,17 +53,35 @@ export const createAuthHeaders = async (
   const payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'; // empty string hash
   
   // Determine the proper path for the request
-  // For bucket listing, we want to use empty string as canonicalURI and add bucket in query params
+  // For bucket listing, empty string as path and add bucket in query params
   const requestPath = path || '';
   
-  // Generate AWS signature v4 for Backblaze B2
-  return await createSignatureV4(
-    config,
+  // Set default region if not provided
+  const region = config.region || 'us-west-004';
+  
+  console.log('Creating auth headers for Backblaze B2:', {
+    host,
     method,
-    requestPath,
-    config.region,
-    's3',
-    payloadHash,
-    headers
-  );
+    path: requestPath,
+    region
+  });
+  
+  // Generate AWS signature v4 for Backblaze B2
+  try {
+    const signedHeaders = await createSignatureV4(
+      config,
+      method,
+      requestPath,
+      region,
+      's3',
+      payloadHash,
+      headers
+    );
+    
+    console.log('Generated signed headers for Backblaze B2:', Object.keys(signedHeaders).join(', '));
+    return signedHeaders;
+  } catch (error) {
+    console.error('Error generating Backblaze B2 signature:', error);
+    throw new Error(`Failed to create Backblaze B2 signature: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 };

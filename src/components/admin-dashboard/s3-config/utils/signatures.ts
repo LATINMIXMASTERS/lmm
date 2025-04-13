@@ -15,6 +15,11 @@ export async function createSignatureV4(
   payloadHash: string,
   headers: Record<string, string>
 ): Promise<Record<string, string>> {
+  // Ensure we have required credentials
+  if (!config.secretAccessKey || !config.accessKeyId) {
+    throw new Error('Missing Backblaze B2 credentials');
+  }
+  
   // Prepare date for signing
   const date = new Date();
   const amzDate = date.toISOString().replace(/[:\-]|\.\d{3}/g, '');
@@ -57,7 +62,7 @@ export async function createSignatureV4(
     crypto.createHash('sha256').update(canonicalRequest, 'utf8').digest('hex')
   ].join('\n');
   
-  // Calculate signature
+  // Calculate signature using the Node.js crypto module
   const getSignatureKey = (key: string, dateStamp: string, regionName: string, serviceName: string) => {
     const kDate = crypto.createHmac('sha256', `AWS4${key}`).update(dateStamp).digest();
     const kRegion = crypto.createHmac('sha256', kDate).update(regionName).digest();
