@@ -50,7 +50,8 @@ export const createAuthHeaders = async (
   };
   
   // Use empty string hash for browser compatibility with empty requests
-  const payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'; // empty string hash
+  // Use 'UNSIGNED-PAYLOAD' for better browser compatibility
+  const payloadHash = 'UNSIGNED-PAYLOAD'; 
   
   // Determine the proper path for the request
   // For bucket listing, empty string as path and add bucket in query params

@@ -27,4 +27,3 @@ export interface FileUpload {
   file: File;
   dataUrl?: string;
 }
-

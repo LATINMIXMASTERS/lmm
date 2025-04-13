@@ -54,7 +54,7 @@ export async function createAwsSignature(
     const s3Path = `/${config.bucketName}/${filePath}`;
     
     // Generate AWS signature v4
-    const signedHeaders = createSignatureV4(
+    const signedHeaders = await createSignatureV4(
       config,
       'PUT',
       s3Path,

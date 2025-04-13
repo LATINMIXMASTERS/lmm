@@ -1,12 +1,38 @@
 
-import * as crypto from 'crypto';
-import { S3StorageConfig } from '../types';
-
 /**
  * Create AWS Signature V4 for S3 requests
  * Optimized specifically for Backblaze B2 compatibility
+ * Using browser-compatible crypto implementation
  */
-export function createSignatureV4(
+
+import { S3StorageConfig } from '../types';
+
+// Browser-compatible crypto helpers
+function sha256(message: string): Promise<string> {
+  // Convert message to array buffer for Web Crypto API
+  const msgBuffer = new TextEncoder().encode(message);
+  
+  // Use Web Crypto API for SHA-256 hashing
+  return crypto.subtle.digest('SHA-256', msgBuffer).then(hashBuffer => {
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  });
+}
+
+async function hmacSha256(key: ArrayBuffer, message: string): Promise<ArrayBuffer> {
+  const msgBuffer = new TextEncoder().encode(message);
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  return crypto.subtle.sign('HMAC', cryptoKey, msgBuffer);
+}
+
+export async function createSignatureV4(
   config: S3StorageConfig,
   method: string,
   path: string,
@@ -14,7 +40,7 @@ export function createSignatureV4(
   service: string,
   payloadHash: string,
   headers: Record<string, string>
-): Record<string, string> {
+): Promise<Record<string, string>> {
   if (!config.secretAccessKey || !config.accessKeyId) {
     throw new Error('Missing Backblaze B2 credentials');
   }
@@ -63,7 +89,7 @@ export function createSignatureV4(
   const algorithm = 'AWS4-HMAC-SHA256';
   const credentialScope = `${dateStamp}/${safeRegion}/${service}/aws4_request`;
   
-  const canonicalRequestHash = crypto.createHash('sha256').update(canonicalRequest, 'utf8').digest('hex');
+  const canonicalRequestHash = await sha256(canonicalRequest);
   
   const stringToSign = [
     algorithm,
@@ -72,17 +98,25 @@ export function createSignatureV4(
     canonicalRequestHash
   ].join('\n');
   
-  // Calculate signature - Using Node.js crypto for Backblaze B2 compatibility
-  const getSignatureKey = (key: string, dateStamp: string, regionName: string, serviceName: string) => {
-    const kDate = crypto.createHmac('sha256', `AWS4${key}`).update(dateStamp).digest();
-    const kRegion = crypto.createHmac('sha256', kDate).update(regionName).digest();
-    const kService = crypto.createHmac('sha256', kRegion).update(serviceName).digest();
-    const kSigning = crypto.createHmac('sha256', kService).update('aws4_request').digest();
+  // Calculate signature using Web Crypto API for Backblaze B2 compatibility
+  async function getSignatureKey(key: string, dateStamp: string, regionName: string, serviceName: string) {
+    const kDate = await hmacSha256(
+      new TextEncoder().encode(`AWS4${key}`),
+      dateStamp
+    );
+    const kRegion = await hmacSha256(kDate, regionName);
+    const kService = await hmacSha256(kRegion, serviceName);
+    const kSigning = await hmacSha256(kService, 'aws4_request');
     return kSigning;
-  };
+  }
   
-  const signingKey = getSignatureKey(config.secretAccessKey, dateStamp, safeRegion, service);
-  const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex');
+  const signingKey = await getSignatureKey(config.secretAccessKey, dateStamp, safeRegion, service);
+  
+  // Convert ArrayBuffer to hex string
+  const signatureArray = new Uint8Array(await hmacSha256(signingKey, stringToSign));
+  const signature = Array.from(signatureArray)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
   
   // Create authorization header
   const authorization = `${algorithm} ` +

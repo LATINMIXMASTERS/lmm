@@ -1,10 +1,10 @@
 
 import { S3StorageConfig } from '../S3ConfigTypes';
-import * as crypto from 'crypto';
 
 /**
  * Create AWS Signature V4 for S3 requests
  * Optimized specifically for Backblaze B2 compatibility
+ * Using browser-compatible Web Crypto API
  */
 export async function createSignatureV4(
   config: S3StorageConfig,
@@ -54,24 +54,19 @@ export async function createSignatureV4(
   const algorithm = 'AWS4-HMAC-SHA256';
   const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
   
+  // Hash the canonical request using Web Crypto API
+  const canonicalRequestHash = await sha256(canonicalRequest);
+  
   const stringToSign = [
     algorithm,
     amzDate,
     credentialScope,
-    crypto.createHash('sha256').update(canonicalRequest, 'utf8').digest('hex')
+    canonicalRequestHash
   ].join('\n');
   
-  // Calculate signature using the Node.js crypto module
-  const getSignatureKey = (key: string, dateStamp: string, regionName: string, serviceName: string) => {
-    const kDate = crypto.createHmac('sha256', `AWS4${key}`).update(dateStamp).digest();
-    const kRegion = crypto.createHmac('sha256', kDate).update(regionName).digest();
-    const kService = crypto.createHmac('sha256', kRegion).update(serviceName).digest();
-    const kSigning = crypto.createHmac('sha256', kService).update('aws4_request').digest();
-    return kSigning;
-  };
-  
-  const signingKey = getSignatureKey(config.secretAccessKey || '', dateStamp, region, service);
-  const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex');
+  // Calculate signature using the Web Crypto API
+  const signingKey = await getSignatureKey(config.secretAccessKey, dateStamp, region, service);
+  const signature = await hexHmacSha256(signingKey, stringToSign);
   
   // Create authorization header
   const authorization = `${algorithm} ` +
@@ -84,4 +79,42 @@ export async function createSignatureV4(
     ...allHeaders,
     'Authorization': authorization
   };
+}
+
+// Browser-compatible crypto helpers
+async function sha256(message: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function hmacSha256(key: ArrayBuffer, message: string): Promise<ArrayBuffer> {
+  const msgBuffer = new TextEncoder().encode(message);
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  return crypto.subtle.sign('HMAC', cryptoKey, msgBuffer);
+}
+
+async function hexHmacSha256(key: ArrayBuffer, message: string): Promise<string> {
+  const signatureBuffer = await hmacSha256(key, message);
+  return Array.from(new Uint8Array(signatureBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function getSignatureKey(key: string, dateStamp: string, regionName: string, serviceName: string): Promise<ArrayBuffer> {
+  const kDate = await hmacSha256(
+    new TextEncoder().encode(`AWS4${key}`),
+    dateStamp
+  );
+  const kRegion = await hmacSha256(kDate, regionName);
+  const kService = await hmacSha256(kRegion, serviceName);
+  return hmacSha256(kService, 'aws4_request');
 }
