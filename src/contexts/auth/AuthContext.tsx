@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContextType, User, AuthProviderProps } from './types';
 import { useAuthActions } from './authActions';
@@ -11,6 +11,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const authInitialized = useRef<boolean>(false);
   
   let navigate: ReturnType<typeof useNavigate> | null = null;
   try {
@@ -23,14 +24,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const userActions = useUserActions(setUser, setUsers, user, users);
 
   useEffect(() => {
+    // Only run the auth initialization once to prevent re-rendering loops
+    if (authInitialized.current) return;
+
+    console.log("Initializing auth state...");
     const storedUser = localStorage.getItem('lmm_user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        console.log("User loaded from localStorage:", parsedUser.username);
+      } catch (error) {
+        console.error("Error parsing stored user:", error);
+        localStorage.removeItem('lmm_user');
+      }
     }
 
     const storedUsers = localStorage.getItem('lmm_users');
     if (storedUsers) {
-      setUsers(JSON.parse(storedUsers));
+      try {
+        setUsers(JSON.parse(storedUsers));
+      } catch (error) {
+        console.error("Error parsing stored users:", error);
+        localStorage.removeItem('lmm_users');
+      }
     } else {
       const initialUsers = [
         {
@@ -50,7 +67,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     
     setIsLoading(false);
+    authInitialized.current = true;
+    console.log("Auth initialization complete");
   }, []);
+
+  // Add a separate useEffect to prevent unnecessary re-renders
+  const prevUserRef = useRef<User | null>(null);
+  const prevUsersRef = useRef<User[]>([]);
+  
+  useEffect(() => {
+    // Only update localStorage when user actually changes
+    if (JSON.stringify(user) !== JSON.stringify(prevUserRef.current)) {
+      if (user) {
+        localStorage.setItem('lmm_user', JSON.stringify(user));
+        console.log("User saved to localStorage:", user.username);
+      }
+      prevUserRef.current = user;
+    }
+    
+    // Only update localStorage when users array actually changes
+    if (JSON.stringify(users) !== JSON.stringify(prevUsersRef.current)) {
+      localStorage.setItem('lmm_users', JSON.stringify(users));
+      prevUsersRef.current = [...users];
+    }
+  }, [user, users]);
 
   const contextValue: AuthContextType = {
     user,

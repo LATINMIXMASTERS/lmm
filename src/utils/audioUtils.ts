@@ -24,3 +24,31 @@ export const formatVolumeForDisplay = (volume: number): number => {
   // Ensure the value is within the valid range
   return Math.max(0, Math.min(100, Math.round(displayVolume)));
 };
+
+/**
+ * Safely applies volume to an HTML audio or video element
+ * @param element HTML audio or video element
+ * @param volume Volume value (can be in 0-100 range or 0-1 range)
+ * @param isMuted Mute state
+ */
+export const applyVolumeToElement = (
+  element: HTMLAudioElement | HTMLVideoElement | null,
+  volume: number,
+  isMuted: boolean
+): void => {
+  if (!element) return;
+  
+  try {
+    // Normalize volume to 0-1 range
+    const safeVolume = normalizeVolume(volume);
+    
+    // Apply volume and mute settings
+    element.volume = safeVolume;
+    element.muted = isMuted;
+    
+    // Log for debugging
+    console.debug(`Applied volume: ${safeVolume.toFixed(2)} (from ${volume}), muted: ${isMuted}`);
+  } catch (error) {
+    console.error(`Failed to set volume (${volume}) on media element:`, error);
+  }
+};
