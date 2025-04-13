@@ -20,6 +20,9 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
   className,
   showLabel = false
 }) => {
+  // Make sure volume is within 0-100 range for display
+  const displayVolume = Math.min(100, Math.max(0, Math.round(volume)));
+  
   return (
     <div className={cn("flex items-center space-x-2", className)}>
       <button
@@ -36,13 +39,13 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
       
       <div className="flex flex-col">
         {showLabel && (
-          <span className="text-xs text-gray-500 mb-1">{volume}%</span>
+          <span className="text-xs text-gray-500 mb-1">{displayVolume}%</span>
         )}
         <input
           type="range"
           min="0"
           max="100"
-          value={volume}
+          value={displayVolume}
           onChange={handleVolumeChange}
           className="w-24 accent-gold"
           aria-label="Volume control"

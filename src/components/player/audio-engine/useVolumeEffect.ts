@@ -17,7 +17,14 @@ export const useVolumeEffect = ({
       // Ensure volume is always in the 0-1 range
       // Convert volume from 0-100 range to 0-1 range
       const normalizedVolume = volume > 1 ? volume / 100 : volume;
-      audioRef.current.volume = isMuted ? 0 : normalizedVolume;
+      
+      // Double-check that normalized volume is within valid bounds
+      const safeVolume = Math.max(0, Math.min(1, normalizedVolume));
+      
+      audioRef.current.volume = isMuted ? 0 : safeVolume;
+      
+      // Also ensure muted state is correctly set
+      audioRef.current.muted = isMuted;
     }
   }, [volume, isMuted, audioRef]);
 };

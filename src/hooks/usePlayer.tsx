@@ -73,6 +73,8 @@ const usePlayer = ({ audioRef }: UsePlayerProps) => {
       volume: newVolume, 
       isMuted: newVolume === 0 
     }));
+    
+    // Don't directly set volume here - the useVolumeEffect hook will handle that
   };
 
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>, audioRef: React.MutableRefObject<HTMLAudioElement | null>) => {
@@ -101,7 +103,6 @@ const usePlayer = ({ audioRef }: UsePlayerProps) => {
       toast({
         title: "Share feature",
         description: "Share functionality will be implemented soon!",
-        // Fixed: using JSX element instead of object
         action: (
           <ToastAction altText="OK">OK</ToastAction>
         )

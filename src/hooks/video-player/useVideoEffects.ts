@@ -14,7 +14,12 @@ export function useVideoEffects({ videoRef, volume, isMuted }: UseVideoEffectsPr
       // Ensure volume is within the valid range (0-1)
       // If volume is provided in 0-100 range, normalize it to 0-1
       const normalizedVolume = volume > 1 ? volume / 100 : volume;
-      videoRef.current.volume = isMuted ? 0 : normalizedVolume;
+      
+      // Double-check that normalized volume is within valid bounds
+      const safeVolume = Math.max(0, Math.min(1, normalizedVolume));
+      
+      // Apply volume and mute settings
+      videoRef.current.volume = isMuted ? 0 : safeVolume;
       videoRef.current.muted = isMuted;
     }
   }, [volume, isMuted, videoRef]);

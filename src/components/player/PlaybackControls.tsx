@@ -30,11 +30,14 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   handleProgressChange,
   isTrackPlaying
 }) => {
+  // Make sure volume is within 0-100 range for the volume control slider
+  const displayVolume = Math.min(100, Math.max(0, volume));
+  
   return (
     <div className="flex items-center space-x-6">
       <div className="hidden md:block">
         <VolumeControl
-          volume={volume}
+          volume={displayVolume}
           isMuted={isMuted}
           toggleMute={toggleMute}
           handleVolumeChange={handleVolumeChange}
