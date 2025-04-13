@@ -1,5 +1,5 @@
 
-import { S3StorageConfig } from '../S3ConfigTypes';
+import { S3StorageConfig, TestResult } from '../S3ConfigTypes';
 import { createAuthHeaders } from './authHeaders';
 import { isConfigComplete } from './configValidator';
 
@@ -9,7 +9,7 @@ import { isConfigComplete } from './configValidator';
  */
 export const testS3Connection = async (
   config: S3StorageConfig
-): Promise<{ success: boolean; message: string }> => {
+): Promise<TestResult> => {
   if (!isConfigComplete(config)) {
     return { success: false, message: "Missing required configuration" };
   }
@@ -46,7 +46,7 @@ export const testS3Connection = async (
       };
     }
     
-    // Create a simple GET path for testing - just use the bucket root
+    // Create a simple GET path for testing - use a format for listing bucket contents
     const testPath = '';
     
     // Get auth headers for the request

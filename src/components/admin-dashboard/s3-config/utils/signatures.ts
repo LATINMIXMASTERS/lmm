@@ -95,7 +95,7 @@ async function hmacSha256(key: ArrayBuffer, message: string): Promise<ArrayBuffe
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
     key,
-    { name: 'HMAC', hash: 'SHA-256' },
+    { name: 'HMAC', hash: { name: 'SHA-256' } },
     false,
     ['sign']
   );
