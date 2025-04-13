@@ -52,11 +52,15 @@ export const createAuthHeaders = async (
   // Use empty string hash for browser compatibility with empty requests
   const payloadHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'; // empty string hash
   
+  // Determine the proper path for the request
+  // For bucket listing, we want to use empty string as canonicalURI and add bucket in query params
+  const requestPath = path || '';
+  
   // Generate AWS signature v4 for Backblaze B2
   return await createSignatureV4(
     config,
     method,
-    path,
+    requestPath,
     config.region,
     's3',
     payloadHash,

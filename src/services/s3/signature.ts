@@ -80,7 +80,7 @@ export async function createAwsSignature(
       config,
       'PUT',
       s3Path,
-      config.region,
+      config.region || '',  // Ensure region is never undefined
       's3',
       payloadHash,
       headers
@@ -212,6 +212,9 @@ function createSignatureV4(
     throw new Error('Missing S3 credentials');
   }
   
+  // If region is empty or undefined, use a default value to prevent errors
+  const safeRegion = region || 'us-west-004';
+  
   // Format date and time for AWS signature
   const now = new Date();
   const amzDate = now.toISOString().replace(/[:\-]|\.\d{3}/g, '');
@@ -253,7 +256,7 @@ function createSignatureV4(
   
   // Create string to sign
   const algorithm = 'AWS4-HMAC-SHA256';
-  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+  const credentialScope = `${dateStamp}/${safeRegion}/${service}/aws4_request`;
   
   const canonicalRequestHash = crypto.createHash('sha256').update(canonicalRequest, 'utf8').digest('hex');
   
@@ -273,7 +276,7 @@ function createSignatureV4(
     return kSigning;
   };
   
-  const signingKey = getSignatureKey(config.secretAccessKey, dateStamp, region, service);
+  const signingKey = getSignatureKey(config.secretAccessKey, dateStamp, safeRegion, service);
   const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex');
   
   // Create authorization header
