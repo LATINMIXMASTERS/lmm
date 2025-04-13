@@ -1,5 +1,5 @@
 
-import { formatErrorMessage } from './errorHandler';
+import { formatErrorMessage, handleNetworkError } from './errorHandler';
 
 /**
  * Handles the file upload to S3 using XHR for progress tracking
@@ -32,6 +32,9 @@ export function uploadFileWithProgress(
       xhr.setRequestHeader(key, signedHeaders[key]);
     });
     
+    // Add CORS headers - these might help in some cases
+    xhr.setRequestHeader('Cache-Control', 'no-cache');
+    
     // Add more detailed logging
     console.log('Sending request to Backblaze B2:', {
       method: 'PUT',
@@ -57,10 +60,11 @@ export function uploadFileWithProgress(
       }
     };
     
-    xhr.onerror = () => {
+    xhr.onerror = (event) => {
       console.error('Backblaze B2 upload network error:', {
         status: xhr.status,
-        statusText: xhr.statusText
+        statusText: xhr.statusText,
+        event
       });
       console.error('Request details:', {
         url: uploadUrl,
@@ -68,7 +72,9 @@ export function uploadFileWithProgress(
         headers: Object.keys(signedHeaders)
       });
       if (onProgress) onProgress(0);
-      reject(new Error('Network error during Backblaze B2 upload. Check your network connection and B2 configuration.'));
+      
+      // Use the handleNetworkError helper for better error messages
+      reject(new Error(handleNetworkError(new TypeError('Failed to fetch'))));
     };
     
     xhr.ontimeout = () => {

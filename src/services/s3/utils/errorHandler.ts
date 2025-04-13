@@ -27,3 +27,18 @@ export function formatErrorMessage(
   // Return generic error message with status code
   return `Backblaze B2 Error (HTTP ${statusCode}): ${statusText || 'Unknown error'}`;
 }
+
+/**
+ * Handle network errors specifically for S3 operations
+ */
+export function handleNetworkError(error: unknown): string {
+  if (error instanceof TypeError && error.message === 'Failed to fetch') {
+    return 'Network error: Unable to connect to Backblaze B2. Check your internet connection, B2 endpoint configuration, and ensure CORS is properly configured on your B2 bucket.';
+  }
+  
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return 'Connection timed out. Check your internet connection and B2 endpoint configuration.';
+  }
+  
+  return `S3 error: ${error instanceof Error ? error.message : String(error)}`;
+}
