@@ -102,8 +102,8 @@ fi
 # Check PM2 processes
 echo -e "\n6. Checking PM2 processes..."
 if command -v pm2 &> /dev/null; then
-    PM2_PROCESS=$(pm2 list | grep latinmixmasters)
-    if [ $? -eq 0 ]; then
+    PM2_PROCESS=$(pm2 list | grep latinmixmasters || echo "")
+    if [ -n "$PM2_PROCESS" ]; then
         echo "✓ PM2 process for latinmixmasters exists"
     else
         echo "✗ PM2 process for latinmixmasters not found!"
@@ -118,8 +118,8 @@ echo "Firewall status: $FIREWALL_STATUS"
 
 # Check port 80 availability
 if command -v netstat &> /dev/null; then
-    PORT_STATUS=$(netstat -tuln | grep ":80 ")
-    if [ $? -eq 0 ]; then
+    PORT_STATUS=$(netstat -tuln | grep ":80 " || echo "")
+    if [ -n "$PORT_STATUS" ]; then
         echo "✓ Port 80 is in use (should be by Nginx)"
     else
         echo "✗ Port 80 is not in use! Nginx may not be running correctly."

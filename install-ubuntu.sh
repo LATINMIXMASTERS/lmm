@@ -3,7 +3,7 @@
 set -e
 
 echo "=== Latin Mix Masters Ubuntu Installation Script ==="
-echo "This script will setup Latin Mix Masters on your Ubuntu server"
+echo "This script will setup Latin Mix Masters on your Ubuntu 22.04 server"
 
 # Check if running as root
 if [ "$(id -u)" != "0" ]; then
@@ -41,17 +41,17 @@ if [ ! -f "package.json" ]; then
     fi
   else
     echo "Please upload your application files to $APP_DIR and ensure package.json exists."
-    echo "You can transfer files using SCP, SFTP, or by uploading a ZIP archive."
+    echo "You can transfer files using the upload-to-server.sh script included with Latin Mix Masters."
     echo ""
-    echo "Example SCP command (run from your local machine):"
-    echo "scp -r /path/to/local/latinmixmasters/* user@your-server:$APP_DIR/"
+    echo "Example command (run from your local machine):"
+    echo "./upload-to-server.sh user@your-server-ip $APP_DIR"
     exit 1
   fi
 fi
 
 # Install Node.js if not already installed
 if ! command -v node &> /dev/null; then
-  echo "Installing Node.js..."
+  echo "Installing Node.js 18.x..."
   curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
   apt-get install -y nodejs
 fi
