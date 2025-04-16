@@ -2,7 +2,7 @@
 #!/bin/bash
 set -e
 
-echo "=== Latin Mix Masters Ubuntu Installation Script ==="
+echo "=== Latin Mix Masters Ubuntu 22.04 Installation Script ==="
 echo "This script will setup Latin Mix Masters on your Ubuntu 22.04 server"
 
 # Check if running as root
@@ -202,3 +202,4 @@ echo ""
 echo "To secure your site with HTTPS, you can run:"
 echo "sudo apt install -y certbot python3-certbot-nginx"
 echo "sudo certbot --nginx -d yourdomain.com"
+
