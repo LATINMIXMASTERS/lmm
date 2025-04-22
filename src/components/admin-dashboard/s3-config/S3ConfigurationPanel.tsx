@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Cloud, Server, ShieldCheck, Lock, Key, Globe, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +13,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const S3ConfigurationPanel: React.FC = () => {
-  // Default to US East (Columbus) region
   const defaultConfig = {
     ...loadS3Config(),
     region: loadS3Config().region || 'us-east-005'
@@ -25,9 +23,9 @@ const S3ConfigurationPanel: React.FC = () => {
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [testedConfig, setTestedConfig] = useState<S3StorageConfig | null>(null);
   const { toast } = useToast();
 
-  // Set default endpoint when component mounts if not already set
   useEffect(() => {
     if (!config.endpoint && config.region) {
       const selectedRegion = backblazeRegions.find(r => r.value === config.region);
@@ -45,7 +43,6 @@ const S3ConfigurationPanel: React.FC = () => {
   const handleChange = (field: keyof S3StorageConfig, value: string) => {
     setConfig(prev => ({ ...prev, [field]: value }));
 
-    // Special case for region: auto-update endpoint for Backblaze B2
     if (field === 'region') {
       const selectedRegion = backblazeRegions.find(r => r.value === value);
       if (selectedRegion) {
@@ -59,7 +56,6 @@ const S3ConfigurationPanel: React.FC = () => {
       }
     }
 
-    // Special case for bucket name: auto-update public URL base
     if (field === 'bucketName' && value && config.region) {
       const selectedRegion = backblazeRegions.find(r => r.value === config.region);
       if (selectedRegion) {
@@ -72,19 +68,30 @@ const S3ConfigurationPanel: React.FC = () => {
     }
   };
 
+  const isConfigEqual = (cfg1: S3StorageConfig | null, cfg2: S3StorageConfig) => {
+    if (!cfg1) return false;
+    return (
+      cfg1.bucketName === cfg2.bucketName &&
+      cfg1.region === cfg2.region &&
+      cfg1.endpoint === cfg2.endpoint &&
+      cfg1.accessKeyId === cfg2.accessKeyId &&
+      cfg1.secretAccessKey === cfg2.secretAccessKey
+    );
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
 
     try {
-      // Validate configuration
-      if (!config.bucketName || !config.region || !config.endpoint || 
-          !config.accessKeyId || !config.secretAccessKey) {
-        throw new Error('All fields are required');
+      if (!testResult || !testResult.success || !isConfigEqual(testedConfig, config)) {
+        throw new Error(
+          'Please test and validate your S3 configuration before saving. ' +
+          (testResult && !testResult.success ? 'Last test failed, fix errors first.' : '')
+        );
       }
 
-      // Save the configuration
       const saved = saveS3Config(config);
-      
+
       if (saved) {
         toast({
           title: "Configuration saved",
@@ -107,21 +114,21 @@ const S3ConfigurationPanel: React.FC = () => {
   const handleTest = async () => {
     setIsTesting(true);
     setTestResult(null);
-    
+
     try {
-      // Validate configuration
-      if (!config.bucketName || !config.region || !config.endpoint || 
+      if (!config.bucketName || !config.region || !config.endpoint ||
           !config.accessKeyId || !config.secretAccessKey) {
         throw new Error('All fields are required for testing');
       }
-      
+
       const result = await testS3Connection(config);
       setTestResult(result);
-      
+      setTestedConfig(config);
+
       if (result.success) {
         toast({
           title: "Connection successful",
-          description: "Successfully connected to S3 storage"
+          description: result.message,
         });
       } else {
         toast({
@@ -135,7 +142,7 @@ const S3ConfigurationPanel: React.FC = () => {
         success: false,
         message: error instanceof Error ? error.message : "An unknown error occurred"
       });
-      
+
       toast({
         title: "Test failed",
         description: error instanceof Error ? error.message : "An unknown error occurred",
@@ -164,7 +171,7 @@ const S3ConfigurationPanel: React.FC = () => {
               <TabsTrigger value="config">Configuration</TabsTrigger>
               <TabsTrigger value="help">Help</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="config">
               <div className="space-y-6">
                 <div className="grid gap-4">
@@ -266,15 +273,19 @@ const S3ConfigurationPanel: React.FC = () => {
                     </Label>
                   </div>
                 </div>
-                
+
                 {testResult && (
                   <Alert variant={testResult.success ? "default" : "destructive"} className="mt-4">
                     <ShieldCheck className="h-4 w-4" />
-                    <AlertTitle>{testResult.success ? "Success" : "Error"}</AlertTitle>
-                    <AlertDescription>{testResult.message}</AlertDescription>
+                    <AlertTitle>
+                      {testResult.success ? "Success" : "Error"}
+                    </AlertTitle>
+                    <AlertDescription>
+                      {testResult.message}
+                    </AlertDescription>
                   </Alert>
                 )}
-                
+
                 <div className="flex justify-end space-x-2">
                   <Button
                     variant="outline"
@@ -294,10 +305,14 @@ const S3ConfigurationPanel: React.FC = () => {
                       </>
                     )}
                   </Button>
-                  
+
                   <Button
                     onClick={handleSave}
-                    disabled={isTesting || isSaving}
+                    disabled={
+                      isTesting || isSaving ||
+                      !testResult || !testResult.success ||
+                      !isConfigEqual(testedConfig, config)
+                    }
                     className="flex items-center"
                   >
                     {isSaving ? (
@@ -313,9 +328,14 @@ const S3ConfigurationPanel: React.FC = () => {
                     )}
                   </Button>
                 </div>
+
+                <div className="text-xs text-gray-500 mt-2">
+                  To save your S3/Backblaze settings, please test your connection first. If test fails, check your Application Keys, region, or CORS settings.<br/>
+                  <span className="font-semibold">Note:</span> If test passes but uploads still don't work, check your CORS policy in Backblaze and ensure your bucket is public.
+                </div>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="help">
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Setting Up Backblaze B2 Cloud Storage</h3>
