@@ -300,7 +300,7 @@ const S3ConfigurationPanel: React.FC = () => {
                 )}
 
                 {testResult && testResult.success && (
-                  <Alert variant="warning" className="mt-2">
+                  <Alert className="mt-2">
                     <AlertCircle className="h-4 w-4 text-amber-500" />
                     <AlertTitle>Important</AlertTitle>
                     <AlertDescription>
@@ -437,6 +437,20 @@ const S3ConfigurationPanel: React.FC = () => {
                     we recommend implementing server-side upload authentication.
                   </AlertDescription>
                 </Alert>
+
+                <div className="bg-muted p-4 rounded-md mt-4">
+                  <h4 className="font-medium mb-2">Troubleshooting "AccessDenied" Errors</h4>
+                  <p className="text-sm mb-2">
+                    If you're seeing "AccessDenied" or "Unauthenticated requests are not allowed for this api" errors:
+                  </p>
+                  <ol className="list-decimal ml-5 text-sm space-y-1">
+                    <li><strong>Check key permissions:</strong> Ensure your application key has the correct permissions for the bucket</li>
+                    <li><strong>Verify key ID and secret:</strong> Double-check that you've entered the correct application key ID and secret key</li>
+                    <li><strong>Confirm bucket name:</strong> The bucket name must exactly match the one in your Backblaze account</li>
+                    <li><strong>Check bucket visibility:</strong> Make sure your bucket is set to "Public" in Backblaze B2</li>
+                    <li><strong>Valid region:</strong> Ensure you've selected the correct region where your bucket exists</li>
+                  </ol>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
