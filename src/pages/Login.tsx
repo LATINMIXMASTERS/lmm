@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/layout/MainLayout";
 import { Link } from "react-router-dom";
+import AdminPasswordReset from "@/components/AdminPasswordReset";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -180,6 +181,8 @@ const Login: React.FC = () => {
                   </Link>
                 </div>
               )}
+              
+              {!isRegistering && <AdminPasswordReset />}
             </CardContent>
           </Card>
         </div>
