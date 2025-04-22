@@ -12,6 +12,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const authInitialized = useRef<boolean>(false);
+  const checkingAuthState = useRef<boolean>(false);
   
   let navigate: ReturnType<typeof useNavigate> | null = null;
   try {
@@ -25,9 +26,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Only run the auth initialization once to prevent re-rendering loops
-    if (authInitialized.current) return;
+    if (authInitialized.current || checkingAuthState.current) return;
 
+    checkingAuthState.current = true;
     console.log("Initializing auth state...");
+    
     const storedUser = localStorage.getItem('lmm_user');
     if (storedUser) {
       try {
@@ -68,6 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     setIsLoading(false);
     authInitialized.current = true;
+    checkingAuthState.current = false;
     console.log("Auth initialization complete");
   }, []);
 
@@ -81,6 +85,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (user) {
         localStorage.setItem('lmm_user', JSON.stringify(user));
         console.log("User saved to localStorage:", user.username);
+      } else if (prevUserRef.current) {
+        // Only remove from localStorage if we're actually logging out
+        localStorage.removeItem('lmm_user');
+        console.log("User removed from localStorage");
       }
       prevUserRef.current = user;
     }

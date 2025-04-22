@@ -35,6 +35,8 @@ export const testS3Connection = async (
     console.log("Testing Backblaze B2 connection with endpoint:", endpoint);
     console.log("Bucket:", config.bucketName);
     console.log("Region:", config.region);
+    console.log("Access Key ID:", config.accessKeyId.substring(0, 3) + "***");
+    console.log("Secret Key provided:", !!config.secretAccessKey);
     
     // Validate URL before proceeding
     try {
@@ -78,7 +80,11 @@ export const testS3Connection = async (
         
         // Log the full request details for debugging
         console.log("Making test request to:", testUrl);
-        console.log("With headers:", JSON.stringify(signedHeaders, null, 2));
+        console.log("With headers:", JSON.stringify({
+          ...signedHeaders,
+          // Don't log the full Authorization header which contains sensitive data
+          Authorization: signedHeaders.Authorization?.substring(0, 20) + '...'
+        }, null, 2));
         
         // Use fetch with a timeout to prevent hanging
         const controller = new AbortController();
@@ -102,18 +108,39 @@ export const testS3Connection = async (
             };
           } else {
             // We got a response, but with an error status
-            const errorText = await response.text();
+            let errorText = await response.text();
             console.error("Backblaze B2 error response:", errorText);
             
+            // Log more detailed error information
+            console.error("Response status:", response.status, response.statusText);
+            console.error("Response headers:", response.headers);
+            
+            // Check if the response is XML and try to extract error code and message
+            if (errorText.includes('<Error>')) {
+              try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(errorText, "text/xml");
+                const code = xmlDoc.getElementsByTagName("Code")[0]?.textContent;
+                const message = xmlDoc.getElementsByTagName("Message")[0]?.textContent;
+                
+                if (code && message) {
+                  errorText = `${code}: ${message}`;
+                }
+              } catch (err) {
+                console.error("Error parsing XML response:", err);
+              }
+            }
+            
+            // Provide more specific error messages based on status code
             if (response.status === 403) {
               return {
                 success: false,
-                message: "Authentication failed: Access Denied (403). Verify your Access Key ID, Secret Access Key, and bucket permissions."
+                message: `Authentication failed: Access Denied (403). Verify:\n\n1. Your Access Key ID and Secret Access Key are correct\n2. Your application key has the correct bucket permissions\n3. Your bucket name is correct\n\nError details: ${errorText}`
               };
             } else if (response.status === 404) {
               return {
                 success: false,
-                message: "Bucket not found (404). Verify your bucket name and region."
+                message: `Bucket not found (404). Verify:\n\n1. Your bucket name "${config.bucketName}" is correct\n2. Your region "${config.region}" is correct\n3. You're using the correct endpoint: ${endpoint}`
               };
             } else {
               return {
@@ -127,6 +154,13 @@ export const testS3Connection = async (
           console.error("Fetch error:", fetchError);
           
           // CORS error or network error - this is expected in many cases
+          if (fetchError.name === 'AbortError') {
+            return {
+              success: false,
+              message: "Connection timed out after 10 seconds. This could indicate a network issue or incorrect endpoint."
+            };
+          }
+          
           // The signature validation still passed, which is a good sign
           return {
             success: true,
@@ -135,6 +169,10 @@ export const testS3Connection = async (
         }
       } catch (error) {
         console.error("Test request error:", error);
+        return {
+          success: false, 
+          message: `Error making test request: ${error instanceof Error ? error.message : String(error)}`
+        };
       }
       
       // If we get here, we couldn't make a proper test but signatures worked
@@ -146,7 +184,7 @@ export const testS3Connection = async (
       console.error("Error generating signature:", error);
       return {
         success: false,
-        message: "Failed to generate AWS signature. Please check your Access Key ID and Secret Access Key."
+        message: `Failed to generate AWS signature: ${error instanceof Error ? error.message : String(error)}. Please check your Access Key ID and Secret Access Key.`
       };
     }
   } catch (error) {
@@ -158,18 +196,33 @@ export const testS3Connection = async (
   }
 };
 
-// Helper function to check CORS configuration
-export const checkCorsConfiguration = async (config: S3StorageConfig): Promise<string> => {
-  const corsCheckUrl = `https://s3.${config.region}.backblazeb2.com/${config.bucketName}/cors-check-${Date.now()}`;
-  
-  try {
-    // This will intentionally fail due to CORS, but the error message will tell us something
-    await fetch(corsCheckUrl, {
-      method: 'OPTIONS',
-      mode: 'cors'
-    });
-    return "CORS appears to be properly configured";
-  } catch (error) {
-    return "Unable to verify CORS configuration. Make sure you've added proper CORS rules in your Backblaze B2 bucket settings.";
+// Add a new function to help validate the credentials and CORS settings
+export const validateS3Configuration = (config: S3StorageConfig): string[] => {
+  const warnings: string[] = [];
+
+  // Check bucket name
+  if (!config.bucketName || config.bucketName.includes(' ')) {
+    warnings.push('Bucket name should not contain spaces');
   }
+  
+  // Check region
+  if (!config.region) {
+    warnings.push('Region is required');
+  }
+  
+  // Check endpoint formatting
+  if (config.endpoint && !config.endpoint.startsWith('https://')) {
+    warnings.push('Endpoint should start with https://');
+  }
+  
+  // Check credentials
+  if (!config.accessKeyId || config.accessKeyId.length < 10) {
+    warnings.push('Access Key ID appears to be invalid or too short');
+  }
+  
+  if (!config.secretAccessKey || config.secretAccessKey.length < 10) {
+    warnings.push('Secret Access Key appears to be invalid or too short');
+  }
+  
+  return warnings;
 };

@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/layout/MainLayout";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AdminPasswordReset from "@/components/AdminPasswordReset";
 
 const Login: React.FC = () => {
@@ -17,8 +16,16 @@ const Login: React.FC = () => {
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
-  const { login, register, isLoading } = useAuth();
+  const { login, register, isLoading, isAuthenticated, user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log("User is already authenticated, redirecting away from login");
+      navigate('/');
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,8 +38,7 @@ const Login: React.FC = () => {
       return;
     }
     
-    // For debugging
-    console.log("Attempting login with:", { email, password });
+    console.log("Attempting login with:", { email, passwordLength: password.length });
     
     await login(email, password);
   };
@@ -48,12 +54,15 @@ const Login: React.FC = () => {
       return;
     }
     
-    // For debugging
-    console.log("Attempting registration with:", { newUsername, newEmail, newPassword });
+    console.log("Attempting registration with:", { newUsername, newEmail, passwordLength: newPassword.length });
     
     await register(newUsername, newEmail, newPassword);
     setIsRegistering(false);
   };
+
+  if (isAuthenticated && user) {
+    return <div className="p-8 text-center">Already logged in. Redirecting...</div>;
+  }
 
   return (
     <MainLayout>

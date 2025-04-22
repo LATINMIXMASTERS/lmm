@@ -14,6 +14,12 @@ const S3PostTestAlert: React.FC = () => (
         <li>Configure proper CORS settings in your Backblaze B2 bucket</li>
         <li>Ensure your browser allows cookies and local storage</li>
       </ol>
+      <p className="mt-2 text-sm">If you still get "AccessDenied" errors when uploading, double check that:</p>
+      <ol className="list-decimal ml-5 mt-1 text-sm space-y-1">
+        <li>Your application key has both <strong>read and write permissions</strong></li>
+        <li>Your application key is associated with the correct bucket</li>
+        <li>Your bucket name is <strong>exactly</strong> as specified in Backblaze B2</li>
+      </ol>
     </AlertDescription>
   </Alert>
 );
