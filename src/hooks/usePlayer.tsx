@@ -16,7 +16,7 @@ const usePlayer = ({ audioRef }: UsePlayerProps) => {
   const { audioState, setAudioState } = useRadio();
   const { toast } = useToast();
   
-  // Make sure to normalize the initial volume value
+  // Make sure to normalize the initial volume value if it's coming from audioState
   // Store as 0-100 for UI consistency
   const initialVolume = formatVolumeForDisplay(audioState.volume);
   const prevVolume = useRef(initialVolume);

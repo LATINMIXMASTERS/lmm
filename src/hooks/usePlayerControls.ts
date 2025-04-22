@@ -2,11 +2,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRadio } from '@/hooks/useRadioContext';
 import { useTrack } from '@/hooks/useTrackContext';
+import { normalizeVolume, formatVolumeForDisplay } from '@/utils/audioUtils';
 
 export const usePlayerControls = () => {
   const { audioState, setAudioState } = useRadio();
   const { currentPlayingTrack } = useTrack();
-  const prevVolume = useRef(audioState.volume);
+  
+  // Ensure volume from audioState is properly normalized for UI (0-100)
+  const uiVolume = formatVolumeForDisplay(audioState.volume);
+  const prevVolume = useRef(uiVolume);
   
   // State for player UI
   const [stationInfo, setStationInfo] = useState({
@@ -26,7 +30,7 @@ export const usePlayerControls = () => {
   
   // Audio control state
   const [isPlaying, setIsPlaying] = useState(audioState.isPlaying);
-  const [volume, setVolume] = useState(audioState.volume);
+  const [volume, setVolume] = useState(uiVolume);
   const [isMuted, setIsMuted] = useState(audioState.isMuted);
   
   // Sync with audio state
@@ -51,12 +55,20 @@ export const usePlayerControls = () => {
     if (isMuted) {
       setVolume(prevVolume.current);
       setIsMuted(false);
-      setAudioState(prev => ({ ...prev, volume: prevVolume.current, isMuted: false }));
+      setAudioState(prev => ({ 
+        ...prev, 
+        volume: normalizeVolume(prevVolume.current), 
+        isMuted: false 
+      }));
     } else {
       prevVolume.current = volume;
       setVolume(0);
       setIsMuted(true);
-      setAudioState(prev => ({ ...prev, volume: 0, isMuted: true }));
+      setAudioState(prev => ({ 
+        ...prev, 
+        volume: 0, 
+        isMuted: true 
+      }));
     }
   };
 
@@ -66,7 +78,7 @@ export const usePlayerControls = () => {
     setIsMuted(newVolume === 0);
     setAudioState(prev => ({ 
       ...prev, 
-      volume: newVolume, 
+      volume: normalizeVolume(newVolume), 
       isMuted: newVolume === 0 
     }));
   };

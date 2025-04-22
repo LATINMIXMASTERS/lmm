@@ -6,6 +6,7 @@ import { useStationPlayer } from './StationPlayer';
 import { useTrackPlayer } from './TrackPlayer';
 import { setupMetadataPolling, extractStreamUrl } from './metadata/index';
 import { useToast } from '@/hooks/use-toast';
+import { normalizeVolume } from '@/utils/audioUtils';
 
 interface AudioEngineProps {
   onTimeUpdate: (currentTime: number) => void;
@@ -326,7 +327,8 @@ const AudioEngineComponent: React.FC<AudioEngineProps> = ({
 
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = audioState.isMuted ? 0 : audioState.volume;
+      const normalizedVolume = normalizeVolume(audioState.volume);
+      audioRef.current.volume = audioState.isMuted ? 0 : normalizedVolume;
     }
   }, [audioState.volume, audioState.isMuted]);
 

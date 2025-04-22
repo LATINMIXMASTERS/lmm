@@ -14,7 +14,7 @@ export const useVolumeEffect = ({
   isMuted
 }: UseVolumeEffectProps) => {
   useEffect(() => {
-    // Use utility function to safely apply volume
+    // Make sure volume is normalized to 0-1 range before applying
     applyVolumeToElement(audioRef.current, volume, isMuted);
   }, [volume, isMuted, audioRef]);
 };
