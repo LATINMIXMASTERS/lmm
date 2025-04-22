@@ -39,6 +39,12 @@ export const uploadFileToS3 = async (
     if (!endpoint.startsWith('http')) endpoint = `https://${endpoint}`;
     endpoint = endpoint.replace(/\/+$/, '');
     
+    // Update console logs for better debugging
+    console.log(`S3 Upload - Endpoint: ${endpoint}`);
+    console.log(`S3 Upload - Bucket: ${config.bucketName}`);
+    console.log(`S3 Upload - File path: ${filePath}`);
+    console.log(`S3 Upload - File size: ${file.size} bytes`);
+    
     const host = new URL(endpoint).host;
     
     // Set appropriate content-type based on file
@@ -69,8 +75,11 @@ export const uploadFileToS3 = async (
       headers
     );
     
+    console.log('S3 Upload - Signed headers created');
+    
     // Construct the full upload URL for Backblaze
     const uploadUrl = `${endpoint}/${config.bucketName}/${filePath}`;
+    console.log(`S3 Upload - Upload URL: ${uploadUrl}`);
     
     if (onProgress) onProgress(20);
     
@@ -98,6 +107,8 @@ export const uploadFileToS3 = async (
       
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
+          console.log(`S3 Upload - Success: ${xhr.status} ${xhr.statusText}`);
+          
           // Construct the public URL
           let publicUrl;
           
@@ -109,6 +120,8 @@ export const uploadFileToS3 = async (
             publicUrl = `${endpoint}/${config.bucketName}/${filePath}`;
           }
           
+          console.log(`S3 Upload - Public URL: ${publicUrl}`);
+          
           // Indicate complete
           if (onProgress) onProgress(100);
           
@@ -117,21 +130,27 @@ export const uploadFileToS3 = async (
             url: publicUrl
           });
         } else {
+          console.error(`S3 Upload - Failed: ${xhr.status} ${xhr.statusText}`);
+          console.error(`S3 Upload - Response: ${xhr.responseText}`);
+          
           if (onProgress) onProgress(0);
-          reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText}`));
+          reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText || xhr.statusText}`));
         }
       };
       
       xhr.onerror = () => {
+        console.error('S3 Upload - Network error during upload');
         if (onProgress) onProgress(0);
         reject(new Error('Network error during upload'));
       };
       
       xhr.send(file);
+      console.log('S3 Upload - Request sent');
     });
     
     return await uploadPromise;
   } catch (error) {
+    console.error('S3 Upload - Error:', error);
     if (onProgress) onProgress(0);
     
     return {

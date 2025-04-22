@@ -2,25 +2,22 @@
 import { S3StorageConfig } from '../S3ConfigTypes';
 
 /**
- * Creates authentication headers for S3 requests
+ * Create authentication headers for S3 requests
  */
-export function createAuthHeaders(
+export const createAuthHeaders = (
   config: S3StorageConfig,
-  method: string,
-  path: string
-): Record<string, string> {
-  // Basic headers for S3 requests
-  const headers: Record<string, string> = {
-    'Host': new URL(config.endpoint || '').host,
-    'x-amz-date': new Date().toISOString().replace(/[:\-]|\.\d{3}/g, ''),
-    'Content-Type': 'application/xml'
-  };
+  method: string = 'GET',
+  path: string = '/',
+  contentType: string = 'application/json'
+): Headers => {
+  const date = new Date().toUTCString();
   
-  // For production use, we would implement AWS Signature V4 here
-  // But for testing purposes, we'll use a simplified approach
-  if (config.accessKeyId && config.secretAccessKey) {
-    headers['Authorization'] = `AWS4-HMAC-SHA256 Credential=${config.accessKeyId}`;
-  }
+  const headers = new Headers({
+    'Host': new URL(config.endpoint).host,
+    'Date': date,
+    'Content-Type': contentType,
+    'Authorization': `AWS4-HMAC-SHA256 Credential=${config.accessKeyId}/${date.substring(0, 8)}/${config.region}/s3/aws4_request`
+  });
   
   return headers;
-}
+};

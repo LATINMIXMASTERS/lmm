@@ -30,6 +30,12 @@ export function getS3Config(): S3StorageConfig | null {
     
     const config = JSON.parse(configStr) as S3StorageConfig;
     
+    // Validate required fields
+    if (!config.bucketName || !config.accessKeyId || !config.secretAccessKey) {
+      console.warn('S3 config missing required fields');
+      return null;
+    }
+    
     // Ensure endpoint uses the default if not set
     if (!config.endpoint && config.region) {
       config.endpoint = `https://s3.${config.region}.backblazeb2.com`;
@@ -37,6 +43,11 @@ export function getS3Config(): S3StorageConfig | null {
       // Default to US East if no region or endpoint
       config.region = DEFAULT_REGION;
       config.endpoint = DEFAULT_ENDPOINT;
+    }
+    
+    // Ensure endpoint has https:// prefix
+    if (!config.endpoint.startsWith('http')) {
+      config.endpoint = `https://${config.endpoint}`;
     }
     
     // Cache the config
@@ -70,6 +81,11 @@ export function saveS3Config(config: S3StorageConfig): void {
     // Set default endpoint if not provided
     if (!config.endpoint) {
       config.endpoint = `https://s3.${config.region}.backblazeb2.com`;
+    }
+    
+    // Ensure endpoint has https:// prefix
+    if (!config.endpoint.startsWith('http')) {
+      config.endpoint = `https://${config.endpoint}`;
     }
     
     // Cache the config
