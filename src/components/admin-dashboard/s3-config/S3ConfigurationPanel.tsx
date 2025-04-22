@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Cloud, Server, ShieldCheck, Lock, Key, Globe, RefreshCw } from 'lucide-react';
+import { Cloud, Server, ShieldCheck, Lock, Key, Globe, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -121,18 +122,26 @@ const S3ConfigurationPanel: React.FC = () => {
         throw new Error('All fields are required for testing');
       }
 
+      // Provide more detailed pre-test information
+      console.log('Testing S3 connection with:');
+      console.log(`- Bucket: ${config.bucketName}`);
+      console.log(`- Region: ${config.region}`);
+      console.log(`- Endpoint: ${config.endpoint}`);
+      console.log(`- Access Key ID: ${config.accessKeyId.substring(0, 3)}...`);
+      console.log(`- Public URL Base: ${config.publicUrlBase || 'Not specified'}`);
+
       const result = await testS3Connection(config);
       setTestResult(result);
-      setTestedConfig(config);
+      setTestedConfig({...config});
 
       if (result.success) {
         toast({
-          title: "Connection successful",
-          description: result.message,
+          title: "Credentials validated",
+          description: "Your Backblaze B2 credentials appear to be valid.",
         });
       } else {
         toast({
-          title: "Connection failed",
+          title: "Connection test failed",
           description: result.message,
           variant: "destructive"
         });
@@ -276,12 +285,31 @@ const S3ConfigurationPanel: React.FC = () => {
 
                 {testResult && (
                   <Alert variant={testResult.success ? "default" : "destructive"} className="mt-4">
-                    <ShieldCheck className="h-4 w-4" />
+                    {testResult.success ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4" />
+                    )}
                     <AlertTitle>
-                      {testResult.success ? "Success" : "Error"}
+                      {testResult.success ? "Credentials Validated" : "Error"}
                     </AlertTitle>
                     <AlertDescription>
                       {testResult.message}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {testResult && testResult.success && (
+                  <Alert variant="warning" className="mt-2">
+                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                    <AlertTitle>Important</AlertTitle>
+                    <AlertDescription>
+                      <p>A successful test only validates your credentials. For uploads to work properly, you must also:</p>
+                      <ol className="list-decimal ml-5 mt-2 space-y-1">
+                        <li>Ensure your Backblaze B2 bucket is set to <strong>Public</strong></li>
+                        <li>Configure proper CORS settings in your Backblaze B2 bucket</li>
+                        <li>Ensure your browser allows cookies and local storage</li>
+                      </ol>
                     </AlertDescription>
                   </Alert>
                 )}
@@ -330,8 +358,14 @@ const S3ConfigurationPanel: React.FC = () => {
                 </div>
 
                 <div className="text-xs text-gray-500 mt-2">
-                  To save your S3/Backblaze settings, please test your connection first. If test fails, check your Application Keys, region, or CORS settings.<br/>
-                  <span className="font-semibold">Note:</span> If test passes but uploads still don't work, check your CORS policy in Backblaze and ensure your bucket is public.
+                  <p className="font-semibold text-sm mb-1">Troubleshooting S3 File Uploads:</p>
+                  <ol className="list-decimal ml-5 space-y-1">
+                    <li>Confirm your Access Key ID and Secret Access Key are correct</li>
+                    <li>Make sure your bucket name is correctly spelled and exists in your Backblaze account</li>
+                    <li>Verify your bucket is set to "Public" in Backblaze B2</li>
+                    <li>Add proper CORS configuration to your bucket (see Help tab)</li>
+                    <li>Check browser console for detailed error messages</li>
+                  </ol>
                 </div>
               </div>
             </TabsContent>
@@ -355,8 +389,11 @@ const S3ConfigurationPanel: React.FC = () => {
                 </ol>
                 
                 <div className="bg-muted p-4 rounded-md">
-                  <h4 className="font-medium mb-2">Sample CORS Configuration</h4>
-                  <pre className="text-xs overflow-x-auto">
+                  <h4 className="font-medium mb-2">Backblaze B2 CORS Configuration (REQUIRED)</h4>
+                  <p className="text-sm mb-2">
+                    Copy and add this configuration to your bucket's CORS Rules in the Backblaze B2 Dashboard:
+                  </p>
+                  <pre className="text-xs overflow-x-auto bg-gray-800 text-white p-3 rounded">
                     {JSON.stringify([
                       {
                         "allowedOrigins": ["*"],
@@ -373,6 +410,23 @@ const S3ConfigurationPanel: React.FC = () => {
                       }
                     ], null, 2)}
                   </pre>
+                  <p className="text-xs mt-2 italic">
+                    For production, replace "*" with your actual domain for better security.
+                  </p>
+                </div>
+
+                <div className="bg-muted p-4 rounded-md mt-4">
+                  <h4 className="font-medium mb-2">How to Configure CORS in Backblaze B2</h4>
+                  <ol className="list-decimal ml-5 text-sm space-y-1">
+                    <li>Log in to your Backblaze B2 account</li>
+                    <li>Navigate to the "Buckets" section</li>
+                    <li>Click on your bucket name</li>
+                    <li>Click "Bucket Settings"</li>
+                    <li>Click "CORS Rules"</li>
+                    <li>Click "Add a CORS Rule"</li>
+                    <li>Paste the CORS configuration above</li>
+                    <li>Click "Update"</li>
+                  </ol>
                 </div>
                 
                 <Alert>

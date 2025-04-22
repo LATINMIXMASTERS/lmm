@@ -44,6 +44,7 @@ export const uploadFileToS3 = async (
     console.log(`S3 Upload - Bucket: ${config.bucketName}`);
     console.log(`S3 Upload - File path: ${filePath}`);
     console.log(`S3 Upload - File size: ${file.size} bytes`);
+    console.log(`S3 Upload - File type: ${file.type}`);
     
     const host = new URL(endpoint).host;
     
@@ -76,6 +77,7 @@ export const uploadFileToS3 = async (
     );
     
     console.log('S3 Upload - Signed headers created');
+    console.log('S3 Upload - Headers:', Object.keys(signedHeaders).join(', '));
     
     // Construct the full upload URL for Backblaze
     const uploadUrl = `${endpoint}/${config.bucketName}/${filePath}`;
@@ -130,22 +132,63 @@ export const uploadFileToS3 = async (
             url: publicUrl
           });
         } else {
-          console.error(`S3 Upload - Failed: ${xhr.status} ${xhr.statusText}`);
-          console.error(`S3 Upload - Response: ${xhr.responseText}`);
+          const errorDetails = {
+            status: xhr.status,
+            statusText: xhr.statusText,
+            responseText: xhr.responseText,
+            headers: xhr.getAllResponseHeaders()
+          };
+          
+          console.error(`S3 Upload - Failed:`, errorDetails);
+          
+          // Provide detailed error message based on status code
+          let errorMessage = `Upload failed with status ${xhr.status}`;
+          
+          if (xhr.status === 403) {
+            errorMessage = "Permission denied. Check your bucket permissions and application key permissions.";
+          } else if (xhr.status === 404) {
+            errorMessage = "Bucket not found. Verify your bucket name and region.";
+          } else if (xhr.status === 0) {
+            errorMessage = "Network error or CORS issue. Make sure CORS is properly configured on your bucket.";
+          } else if (xhr.responseText) {
+            errorMessage += `: ${xhr.responseText}`;
+          }
           
           if (onProgress) onProgress(0);
-          reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText || xhr.statusText}`));
+          reject(new Error(errorMessage));
         }
       };
       
-      xhr.onerror = () => {
-        console.error('S3 Upload - Network error during upload');
+      xhr.onerror = (event) => {
+        console.error('S3 Upload - Network error during upload:', event);
+        console.error('S3 Upload - Check CORS configuration and network connectivity');
+        
         if (onProgress) onProgress(0);
-        reject(new Error('Network error during upload'));
+        reject(new Error('Network error during upload. This is likely a CORS configuration issue. Please check your Backblaze B2 CORS settings.'));
       };
       
-      xhr.send(file);
-      console.log('S3 Upload - Request sent');
+      xhr.ontimeout = () => {
+        console.error('S3 Upload - Request timed out');
+        if (onProgress) onProgress(0);
+        reject(new Error('Upload to Backblaze B2 timed out. Try with a smaller file or check your network connection.'));
+      };
+      
+      // Set timeout to prevent hanging uploads (increased for larger files)
+      xhr.timeout = 300000; // 5 minutes timeout for Backblaze B2
+      
+      // Send the file
+      try {
+        xhr.send(file);
+        console.log('S3 Upload - Request sent:', {
+          fileSize: file.size,
+          fileType: file.type,
+          fileName: fileName
+        });
+      } catch (e) {
+        console.error('S3 Upload - Error sending file:', e);
+        if (onProgress) onProgress(0);
+        reject(new Error(`Error sending file to Backblaze B2: ${e instanceof Error ? e.message : 'Unknown error'}`));
+      }
     });
     
     return await uploadPromise;
@@ -153,10 +196,20 @@ export const uploadFileToS3 = async (
     console.error('S3 Upload - Error:', error);
     if (onProgress) onProgress(0);
     
+    // Provide more detailed error messages
+    let errorMessage = error instanceof Error ? error.message : 'Unknown error during upload';
+    
+    // Add troubleshooting hints
+    errorMessage += '\n\nTroubleshooting tips:\n';
+    errorMessage += '1. Verify your B2 bucket CORS configuration\n';
+    errorMessage += '2. Check that your bucket is set to Public\n';
+    errorMessage += '3. Ensure your application key has proper permissions\n';
+    errorMessage += '4. Verify your network connection';
+    
     return {
       success: false,
       url: '',
-      error: error instanceof Error ? error.message : 'Unknown error during upload'
+      error: errorMessage
     };
   }
 }
