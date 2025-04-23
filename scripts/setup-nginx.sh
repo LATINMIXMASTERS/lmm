@@ -55,9 +55,11 @@ systemctl restart nginx
 
 echo "Nginx setup complete"
 
+# Get the current script's directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
 # Run SSL installation if not already set up
 if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
     echo "Setting up SSL certificate..."
-    ./install-ssl.sh ${DOMAIN}
+    "$SCRIPT_DIR/install-ssl.sh" ${DOMAIN}
 fi
-
