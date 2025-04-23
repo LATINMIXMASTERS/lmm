@@ -32,4 +32,3 @@ echo "Certificate will auto-renew via Certbot's systemd timer."
 
 # Restart Nginx to apply changes
 systemctl restart nginx
-
