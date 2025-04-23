@@ -5,6 +5,7 @@ set -e
 echo "=== Setting up Nginx for Latin Mix Masters ==="
 
 APP_DIR="/var/www/latinmixmasters"
+DOMAIN="lmmapp.latinmixmasters.com"
 
 # Check if nginx is installed
 if ! command -v nginx &> /dev/null; then
@@ -16,7 +17,8 @@ fi
 cat > /etc/nginx/sites-available/latinmixmasters << EOF
 server {
     listen 80;
-    server_name _;
+    listen [::]:80;
+    server_name ${DOMAIN};
 
     root $APP_DIR/dist;
     index index.html;
@@ -52,3 +54,10 @@ nginx -t || {
 systemctl restart nginx
 
 echo "Nginx setup complete"
+
+# Run SSL installation if not already set up
+if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
+    echo "Setting up SSL certificate..."
+    ./install-ssl.sh ${DOMAIN}
+fi
+

@@ -29,3 +29,7 @@ certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email webmaster@$DOMA
 
 echo "SSL certificate installed successfully for $DOMAIN!"
 echo "Certificate will auto-renew via Certbot's systemd timer."
+
+# Restart Nginx to apply changes
+systemctl restart nginx
+
