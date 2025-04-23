@@ -10,11 +10,85 @@ DOMAIN="lmmapp.latinmixmasters.com"
 # Check if nginx is installed
 if ! command -v nginx &> /dev/null; then
   echo "Installing Nginx..."
+  apt-get update
   apt-get install -y nginx
 fi
 
-# Create nginx config
+# Ensure directory exists
+if [ ! -d "$APP_DIR" ]; then
+  echo "Creating app directory at $APP_DIR..."
+  mkdir -p "$APP_DIR"
+fi
+
+# Create nginx config with HTTP only first
 cat > /etc/nginx/sites-available/latinmixmasters << EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${DOMAIN};
+    
+    # For HTTP only setup initially
+    root $APP_DIR/dist;
+    index index.html;
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+}
+EOF
+
+# Enable site and remove default site
+ln -sf /etc/nginx/sites-available/latinmixmasters /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
+
+# Test Nginx configuration before SSL
+echo "Testing Nginx configuration (HTTP only)..."
+nginx -t || {
+  echo "ERROR: Nginx HTTP configuration failed. Please check the configuration."
+  exit 1
+}
+
+# Start Nginx to make sure it works with HTTP first
+systemctl restart nginx || {
+  echo "ERROR: Failed to restart Nginx with HTTP configuration"
+  echo "Checking Nginx status:"
+  systemctl status nginx
+  exit 1
+}
+
+# Get the current script's directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+# Check if SSL is already set up
+if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
+  echo "Setting up SSL certificate..."
+  # Use the absolute path to the install-ssl.sh script
+  if [ -f "$SCRIPT_DIR/install-ssl.sh" ]; then
+    chmod +x "$SCRIPT_DIR/install-ssl.sh"
+    "$SCRIPT_DIR/install-ssl.sh" "${DOMAIN}" || {
+      echo "WARNING: SSL setup failed. Keeping HTTP-only configuration."
+      exit 0
+    }
+  else
+    echo "ERROR: install-ssl.sh script not found at $SCRIPT_DIR/install-ssl.sh"
+    echo "Continuing with HTTP-only configuration."
+    exit 0
+  fi
+else
+  echo "SSL certificate already exists for ${DOMAIN}"
+fi
+
+# Only proceed with SSL configuration if certificates exist
+if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
+  echo "Updating Nginx configuration to use SSL..."
+  
+  # Create full configuration with SSL
+  cat > /etc/nginx/sites-available/latinmixmasters << EOF
 server {
     listen 80;
     listen [::]:80;
@@ -31,7 +105,7 @@ server {
     listen [::]:443 ssl http2;
     server_name ${DOMAIN};
 
-    # SSL configuration will be added by certbot
+    # SSL configuration
     ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
     ssl_trusted_certificate /etc/letsencrypt/live/${DOMAIN}/chain.pem;
@@ -67,30 +141,48 @@ server {
 }
 EOF
 
-# Enable site and remove default site
-ln -sf /etc/nginx/sites-available/latinmixmasters /etc/nginx/sites-enabled/
-rm -f /etc/nginx/sites-enabled/default
+  # Test Nginx configuration with SSL
+  echo "Testing Nginx configuration with SSL..."
+  nginx -t || {
+    echo "ERROR: Nginx SSL configuration failed."
+    echo "Reverting to HTTP-only configuration..."
+    
+    # Revert to HTTP only configuration
+    cat > /etc/nginx/sites-available/latinmixmasters << EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${DOMAIN};
+    
+    root $APP_DIR/dist;
+    index index.html;
 
-# Get the current script's directory
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
 
-# Check if SSL is already set up
-if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
-    echo "Setting up SSL certificate..."
-    # Use the absolute path to the install-ssl.sh script
-    "$SCRIPT_DIR/install-ssl.sh" "${DOMAIN}"
-else
-    echo "SSL certificate already exists for ${DOMAIN}"
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+}
+EOF
+    exit 1
+  }
 fi
 
-# Test Nginx configuration after SSL is set up
-echo "Testing Nginx configuration..."
-nginx -t || {
-  echo "ERROR: Nginx configuration failed. Please check the configuration."
+# Restart Nginx
+echo "Restarting Nginx with new configuration..."
+systemctl restart nginx || {
+  echo "ERROR: Failed to restart Nginx with new configuration"
+  echo "Checking Nginx status:"
+  systemctl status nginx
   exit 1
 }
 
-# Restart Nginx
-systemctl restart nginx
+if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
+  echo "Nginx setup complete with SSL"
+else
+  echo "Nginx setup complete with HTTP only (SSL setup failed)"
+fi
 
-echo "Nginx setup complete with SSL"
