@@ -14,6 +14,13 @@ if ! command -v nginx &> /dev/null; then
   apt-get install -y nginx
 fi
 
+# Install net-tools for network diagnostics
+if ! command -v netstat &> /dev/null; then
+  echo "Installing net-tools for diagnostics..."
+  apt-get update
+  apt-get install -y net-tools
+fi
+
 # Ensure directory exists
 if [ ! -d "$APP_DIR" ]; then
   echo "Creating app directory at $APP_DIR..."
@@ -53,13 +60,46 @@ nginx -t || {
   exit 1
 }
 
+# Ensure config directories exist
+echo "Creating configuration directories..."
+mkdir -p /etc/letsencrypt/live/$DOMAIN
+mkdir -p /etc/letsencrypt/archive/$DOMAIN
+
 # Start Nginx to make sure it works with HTTP first
+echo "Starting Nginx with HTTP config..."
 systemctl restart nginx || {
   echo "ERROR: Failed to restart Nginx with HTTP configuration"
   echo "Checking Nginx status:"
   systemctl status nginx
   exit 1
 }
+
+# Check if port 80 is accessible
+echo "Checking if port 80 is accessible..."
+if command -v curl &> /dev/null; then
+  HTTP_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost)
+  if [ "$HTTP_RESPONSE" = "200" ] || [ "$HTTP_RESPONSE" = "404" ]; then
+    echo "✓ Port 80 is accessible (HTTP status: $HTTP_RESPONSE)"
+  else
+    echo "⚠️ HTTP check failed (status: $HTTP_RESPONSE)"
+  fi
+else
+  apt-get update && apt-get install -y curl
+  echo "Curl installed for HTTP checks"
+fi
+
+# Ensure firewall allows HTTP and HTTPS
+if command -v ufw &> /dev/null; then
+  echo "Checking firewall..."
+  if ufw status | grep -q "Status: active"; then
+    echo "UFW is active, ensuring ports 80 and 443 are allowed..."
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    echo "✓ Firewall configured to allow HTTP and HTTPS"
+  else
+    echo "UFW is not active"
+  fi
+fi
 
 # Get the current script's directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -83,12 +123,15 @@ else
   echo "SSL certificate already exists for ${DOMAIN}"
 fi
 
-# Only proceed with SSL configuration if certificates exist
-if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
-  echo "Updating Nginx configuration to use SSL..."
-  
-  # Create full configuration with SSL
-  cat > /etc/nginx/sites-available/latinmixmasters << EOF
+# Only proceed with SSL configuration if certificates exist and are valid
+if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ] && [ -f "/etc/letsencrypt/live/${DOMAIN}/privkey.pem" ]; then
+  # Verify certificate files
+  if openssl x509 -checkend 0 -noout -in "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"; then
+    echo "✓ SSL certificate is valid"
+    echo "Updating Nginx configuration to use SSL..."
+    
+    # Create full configuration with SSL
+    cat > /etc/nginx/sites-available/latinmixmasters << EOF
 server {
     listen 80;
     listen [::]:80;
@@ -141,14 +184,17 @@ server {
 }
 EOF
 
-  # Test Nginx configuration with SSL
-  echo "Testing Nginx configuration with SSL..."
-  nginx -t || {
-    echo "ERROR: Nginx SSL configuration failed."
-    echo "Reverting to HTTP-only configuration..."
-    
-    # Revert to HTTP only configuration
-    cat > /etc/nginx/sites-available/latinmixmasters << EOF
+    # Test Nginx configuration with SSL
+    echo "Testing Nginx configuration with SSL..."
+    nginx -t && {
+      echo "✓ SSL configuration is valid"
+      systemctl restart nginx && echo "✓ Nginx restarted with SSL configuration" || echo "✗ Failed to restart Nginx"
+    } || {
+      echo "✗ SSL configuration is invalid"
+      echo "Reverting to HTTP-only configuration..."
+      
+      # Revert to HTTP only configuration
+      cat > /etc/nginx/sites-available/latinmixmasters << EOF
 server {
     listen 80;
     listen [::]:80;
@@ -167,21 +213,22 @@ server {
     }
 }
 EOF
-    exit 1
-  }
-fi
-
-# Restart Nginx
-echo "Restarting Nginx with new configuration..."
-systemctl restart nginx || {
-  echo "ERROR: Failed to restart Nginx with new configuration"
-  echo "Checking Nginx status:"
-  systemctl status nginx
-  exit 1
-}
-
-if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
-  echo "Nginx setup complete with SSL"
+      systemctl restart nginx && echo "✓ Nginx restarted with HTTP configuration" || echo "✗ Failed to restart Nginx"
+    }
+  else
+    echo "✗ SSL certificate validation failed"
+    echo "Certificate might be expired or corrupted. Running diagnose-nginx.sh for troubleshooting..."
+    if [ -f "$SCRIPT_DIR/diagnose-nginx.sh" ]; then
+      chmod +x "$SCRIPT_DIR/diagnose-nginx.sh"
+      "$SCRIPT_DIR/diagnose-nginx.sh"
+    else
+      echo "diagnose-nginx.sh not found at $SCRIPT_DIR/diagnose-nginx.sh"
+    fi
+  fi
 else
-  echo "Nginx setup complete with HTTP only (SSL setup failed)"
+  echo "Required SSL certificate files not found"
+  echo "Using HTTP-only configuration for now"
 fi
+
+# Create a verification file to check if setup is complete
+echo "Nginx setup completed on $(date)" > "$APP_DIR/nginx-setup-completed.txt"
