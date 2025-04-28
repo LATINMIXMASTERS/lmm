@@ -4,6 +4,10 @@ set -e
 
 echo "=== Latin Mix Masters Nginx Diagnostic Tool ==="
 
+# Set the domain
+DOMAIN="lmmapp.latinmixmasters.com"
+echo "Running diagnostics for domain: $DOMAIN"
+
 # Function to check if a file exists and show its content
 check_file() {
   if [ -f "$1" ]; then
@@ -50,9 +54,6 @@ else
     check_file "$SITE_CONFIG" "Site configuration"
     
     # Check if SSL certificates exist
-    DOMAIN=$(grep "server_name" "$SITE_CONFIG" | head -1 | awk '{print $2}' | sed 's/;//')
-    echo "Domain found in config: $DOMAIN"
-    
     SSL_DIR="/etc/letsencrypt/live/$DOMAIN"
     if [ ! -d "$SSL_DIR" ]; then
       echo "✗ SSL directory does not exist for domain $DOMAIN"
@@ -100,9 +101,6 @@ fi
 
 # Check SSL certificates
 echo -e "\n3. Checking SSL certificates..."
-DOMAIN=$(grep "server_name" /etc/nginx/sites-available/latinmixmasters 2>/dev/null | head -1 | awk '{print $2}' | sed 's/;//' || echo "lmmapp.latinmixmasters.com")
-echo "Domain: $DOMAIN"
-
 SSL_DIR="/etc/letsencrypt/live/$DOMAIN"
 if [ -d "$SSL_DIR" ]; then
   echo "✓ SSL directory exists for $DOMAIN"
@@ -207,4 +205,3 @@ echo "1. Check error logs: tail -f /var/log/nginx/error.log"
 echo "2. Restore HTTP-only config if needed: cp /etc/nginx/sites-available/latinmixmasters.bak /etc/nginx/sites-available/latinmixmasters"
 echo "3. For persistent errors, consider updating your domain's DNS A record to point to this server's IP"
 echo "4. Ensure firewall allows ports 80 and 443: sudo ufw allow 80/tcp && sudo ufw allow 443/tcp"
-

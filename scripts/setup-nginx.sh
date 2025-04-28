@@ -70,7 +70,7 @@ if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
   # Use the absolute path to the install-ssl.sh script
   if [ -f "$SCRIPT_DIR/install-ssl.sh" ]; then
     chmod +x "$SCRIPT_DIR/install-ssl.sh"
-    "$SCRIPT_DIR/install-ssl.sh" "${DOMAIN}" || {
+    "$SCRIPT_DIR/install-ssl.sh" || {
       echo "WARNING: SSL setup failed. Keeping HTTP-only configuration."
       exit 0
     }
@@ -185,4 +185,3 @@ if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
 else
   echo "Nginx setup complete with HTTP only (SSL setup failed)"
 fi
-

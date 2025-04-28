@@ -4,14 +4,8 @@ set -e
 
 echo "=== Setting up SSL with Let's Encrypt ==="
 
-# Check if domain name was provided
-if [ -z "$1" ]; then
-  echo "Please provide a domain name."
-  echo "Usage: $0 yourdomain.com"
-  exit 1
-fi
-
-DOMAIN=$1
+# Define the domain name
+DOMAIN="lmmapp.latinmixmasters.com"
 
 # Install certbot if not already installed
 if ! command -v certbot &> /dev/null; then
