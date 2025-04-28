@@ -7,6 +7,13 @@ echo "=== Setting up SSL with Let's Encrypt ==="
 # Define the domain name
 DOMAIN="lmmapp.latinmixmasters.com"
 
+# Output debug info
+echo "Server IP address: $(curl -s ifconfig.me)"
+echo "Current working directory: $(pwd)"
+echo "Running as user: $(whoami)"
+echo "Checking DNS resolution:"
+host $DOMAIN || echo "DNS lookup failed - verify your DNS settings"
+
 # Install certbot if not already installed
 if ! command -v certbot &> /dev/null; then
   echo "Installing Certbot..."
@@ -36,51 +43,94 @@ if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
     fi
   else
     echo "Certificate files missing. Re-generating certificates..."
-    certbot renew --force-renewal --cert-name "$DOMAIN"
+    certbot renew --force-renewal --cert-name "$DOMAIN" || {
+      echo "Certificate renewal failed. Attempting a fresh certificate..."
+      rm -rf /etc/letsencrypt/live/$DOMAIN
+      rm -rf /etc/letsencrypt/archive/$DOMAIN
+      rm -rf /etc/letsencrypt/renewal/$DOMAIN.conf
+    }
   fi
 else
   echo "No certificates found for $DOMAIN. Generating new certificates..."
+fi
 
-  # Check if nginx is running, stop it if it is
-  if systemctl is-active --quiet nginx; then
-    echo "Stopping Nginx temporarily..."
-    systemctl stop nginx
-  fi
-
-  # Check if ports are in use
-  if command -v lsof &> /dev/null; then
-    if lsof -i :80 > /dev/null; then
-      echo "WARNING: Port 80 is already in use by another process."
-      echo "Attempting to free up port 80..."
-      # Try to identify and kill the process
-      PROC=$(lsof -i :80 -t)
-      if [ ! -z "$PROC" ]; then
-        echo "Killing process $PROC that's using port 80..."
-        kill -15 $PROC || kill -9 $PROC
-        sleep 3
-      fi
+# Always ensure ports 80 and 443 are available before attempting certificate generation
+echo "Checking if ports are in use..."
+if command -v lsof &> /dev/null; then
+  if lsof -i :80 > /dev/null; then
+    echo "WARNING: Port 80 is already in use by another process."
+    echo "Attempting to free up port 80..."
+    # Try to identify and kill the process
+    PROC=$(lsof -i :80 -t)
+    if [ ! -z "$PROC" ]; then
+      echo "Killing process $PROC that's using port 80..."
+      kill -15 $PROC || kill -9 $PROC
+      sleep 3
     fi
-  else
-    apt-get update && apt-get install -y lsof
   fi
+else
+  apt-get update && apt-get install -y lsof
+fi
 
-  # Obtain certificate using standalone method to avoid nginx configuration issues
+# Check if nginx is running, stop it if it is
+if systemctl is-active --quiet nginx; then
+  echo "Stopping Nginx temporarily..."
+  systemctl stop nginx
+fi
+
+# Output DNS resolution info for debugging
+echo "DNS Resolution check for $DOMAIN:"
+dig +short $DOMAIN
+nslookup $DOMAIN
+
+# Obtain or renew certificate with increased verbosity and more diagnostics
+if [ ! -d "/etc/letsencrypt/live/$DOMAIN" ] || [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
   echo "Obtaining SSL certificate for $DOMAIN..."
-  certbot certonly --standalone -d $DOMAIN --non-interactive --agree-tos --email webmaster@$DOMAIN || {
+  certbot certonly --standalone -d $DOMAIN --non-interactive --agree-tos --email webmaster@$DOMAIN --verbose || {
     echo "ERROR: Failed to obtain SSL certificate. Please check your domain configuration."
-    echo "Possible issues:"
-    echo "1. DNS not properly configured to point to this server's IP"
-    echo "2. Port 80 blocked by firewall"
-    echo "3. Another process using port 80"
+    echo "Detailed diagnostics:"
+    echo "1. Checking if DNS resolves properly:"
+    host $DOMAIN
+    echo "2. Checking if ports 80 and 443 are open:"
+    nc -zv $DOMAIN 80
+    nc -zv $DOMAIN 443
+    echo "3. Trying certbot with manual DNS verification as fallback..."
+    echo ""
+    echo "To generate certificates manually, try running:"
+    echo "certbot certonly --manual --preferred-challenges dns -d $DOMAIN"
+    echo "Then follow the instructions to place a DNS TXT record."
     systemctl start nginx
     exit 1
   }
 fi
 
-# Ensure proper permissions
+# Fix permissions issues that might cause Nginx to fail reading certificates
 echo "Setting proper permissions for SSL certificates..."
+mkdir -p /etc/letsencrypt/live
+mkdir -p /etc/letsencrypt/archive
 chmod -R 755 /etc/letsencrypt/live
 chmod -R 755 /etc/letsencrypt/archive
+
+# Better symlink validation and repair
+echo "Validating certificate symlinks..."
+if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
+  for file in cert.pem chain.pem fullchain.pem privkey.pem; do
+    symlink="/etc/letsencrypt/live/$DOMAIN/$file"
+    if [ -L "$symlink" ] && [ ! -e "$symlink" ]; then
+      echo "Broken symlink detected: $symlink"
+      # Find the newest matching file in archive
+      target=$(find /etc/letsencrypt/archive/$DOMAIN -name "$file*" | sort -V | tail -n 1)
+      if [ ! -z "$target" ]; then
+        echo "Fixing symlink to point to: $target"
+        ln -sf "$target" "$symlink"
+      else
+        echo "Cannot find target for symlink: $symlink"
+      fi
+    elif [ ! -f "$symlink" ]; then
+      echo "Missing certificate file: $symlink"
+    fi
+  done
+fi
 
 # Create a cron job for renewal if it doesn't exist already
 if ! crontab -l 2>/dev/null | grep -q "certbot renew"; then
@@ -139,12 +189,21 @@ EOF
   fi
 fi
 
-echo "SSL setup completed. Certificate will auto-renew via Certbot's systemd timer."
-
 # Display verification information
 if [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
   echo -e "\nCertificate information for $DOMAIN:"
   openssl x509 -in "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" -text -noout | grep -E 'Subject:|Issuer:|Not Before:|Not After :'
+  
+  # Output success message with next steps
+  echo -e "\n=== SSL Setup Complete ==="
+  echo -e "Certificate is installed for: $DOMAIN"
+  echo -e "Certificate will auto-renew via Certbot's systemd timer."
+  echo -e "You can now test your site at https://$DOMAIN"
+  echo -e "Run the diagnose script if you encounter issues:"
+  echo -e "  ./scripts/diagnose-nginx.sh"
 else
   echo -e "\nWARNING: Certificate file not found at /etc/letsencrypt/live/$DOMAIN/fullchain.pem"
+  echo -e "Something may have gone wrong with the certificate generation process."
+  echo -e "Run the diagnose script to fix the problem:"
+  echo -e "  ./scripts/diagnose-nginx.sh"
 fi

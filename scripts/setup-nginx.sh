@@ -27,6 +27,18 @@ if [ ! -d "$APP_DIR" ]; then
   mkdir -p "$APP_DIR"
 fi
 
+# Install required utilities for diagnostics
+echo "Installing additional utilities for SSL and networking diagnostics..."
+apt-get update
+apt-get install -y curl dnsutils net-tools lsof netcat
+
+# Output server information for debugging
+echo "SERVER INFORMATION:"
+echo "IP Address: $(curl -s ifconfig.me || echo 'Cannot determine')"
+echo "Hostname: $(hostname -f || echo 'Cannot determine')"
+echo "DNS Resolution for $DOMAIN:"
+host $DOMAIN || echo "Warning: DNS resolution failed"
+
 # Create nginx config with HTTP only first
 cat > /etc/nginx/sites-available/latinmixmasters << EOF
 server {
@@ -38,6 +50,13 @@ server {
     root $APP_DIR/dist;
     index index.html;
 
+    # Better CORS and security headers
+    add_header X-Content-Type-Options "nosniff";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://s3.*.backblazeb2.com wss://*.latinmixmasters.com;";
+
     location / {
         try_files \$uri \$uri/ /index.html;
     }
@@ -45,6 +64,17 @@ server {
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 30d;
         add_header Cache-Control "public, no-transform";
+    }
+    
+    # CORS preflight requests
+    location = /cors-preflight {
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE';
+        add_header 'Access-Control-Allow-Headers' '*';
+        add_header 'Access-Control-Max-Age' '1728000';
+        add_header 'Content-Type' 'text/plain charset=UTF-8';
+        add_header 'Content-Length' '0';
+        return 204;
     }
 }
 EOF
@@ -88,39 +118,41 @@ else
   echo "Curl installed for HTTP checks"
 fi
 
-# Ensure firewall allows HTTP and HTTPS
+# Open firewall ports (if UFW is installed)
+echo "Checking firewall status..."
 if command -v ufw &> /dev/null; then
-  echo "Checking firewall..."
-  if ufw status | grep -q "Status: active"; then
-    echo "UFW is active, ensuring ports 80 and 443 are allowed..."
-    ufw allow 80/tcp
-    ufw allow 443/tcp
-    echo "✓ Firewall configured to allow HTTP and HTTPS"
+  echo "UFW is installed. Ensuring ports 80 and 443 are allowed..."
+  ufw allow 80/tcp
+  ufw allow 443/tcp
+  
+  if ! ufw status | grep -q "Status: active"; then
+    echo "UFW is installed but not active. You may need to enable it with 'ufw enable'"
   else
-    echo "UFW is not active"
+    echo "✓ UFW is active and ports 80/443 are allowed"
   fi
+else
+  echo "UFW is not installed. Installing..."
+  apt-get update && apt-get install -y ufw
+  ufw allow 80/tcp
+  ufw allow 443/tcp
+  echo "UFW installed and ports 80/443 are allowed"
 fi
 
 # Get the current script's directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-# Check if SSL is already set up
-if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
-  echo "Setting up SSL certificate..."
-  # Use the absolute path to the install-ssl.sh script
-  if [ -f "$SCRIPT_DIR/install-ssl.sh" ]; then
-    chmod +x "$SCRIPT_DIR/install-ssl.sh"
-    "$SCRIPT_DIR/install-ssl.sh" || {
-      echo "WARNING: SSL setup failed. Keeping HTTP-only configuration."
-      exit 0
-    }
-  else
-    echo "ERROR: install-ssl.sh script not found at $SCRIPT_DIR/install-ssl.sh"
-    echo "Continuing with HTTP-only configuration."
-    exit 0
-  fi
+# Run SSL setup script
+echo "Setting up SSL certificates with Let's Encrypt..."
+if [ -f "$SCRIPT_DIR/install-ssl.sh" ]; then
+  chmod +x "$SCRIPT_DIR/install-ssl.sh"
+  "$SCRIPT_DIR/install-ssl.sh" || {
+    echo "WARNING: SSL setup failed. Keeping HTTP-only configuration."
+    echo "Run the diagnostics script to troubleshoot:"
+    echo "$SCRIPT_DIR/diagnose-nginx.sh"
+  }
 else
-  echo "SSL certificate already exists for ${DOMAIN}"
+  echo "ERROR: install-ssl.sh script not found at $SCRIPT_DIR/install-ssl.sh"
+  echo "Continuing with HTTP-only configuration."
 fi
 
 # Only proceed with SSL configuration if certificates exist and are valid
@@ -140,6 +172,17 @@ server {
     # Redirect HTTP to HTTPS
     location / {
         return 301 https://\$host\$request_uri;
+    }
+    
+    # CORS preflight requests (respond on HTTP too)
+    location = /cors-preflight {
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE';
+        add_header 'Access-Control-Allow-Headers' '*';
+        add_header 'Access-Control-Max-Age' '1728000';
+        add_header 'Content-Type' 'text/plain charset=UTF-8';
+        add_header 'Content-Length' '0';
+        return 204;
     }
 }
 
@@ -163,6 +206,13 @@ server {
     
     # HSTS
     add_header Strict-Transport-Security "max-age=63072000" always;
+    
+    # Additional security headers
+    add_header X-Content-Type-Options "nosniff";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://*.backblazeb2.com wss://*.latinmixmasters.com;";
 
     root $APP_DIR/dist;
     index index.html;
@@ -181,6 +231,17 @@ server {
     add_header Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, DELETE";
     add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
     add_header Access-Control-Allow-Credentials "true";
+    
+    # CORS preflight requests
+    location = /cors-preflight {
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE';
+        add_header 'Access-Control-Allow-Headers' '*';
+        add_header 'Access-Control-Max-Age' '1728000';
+        add_header 'Content-Type' 'text/plain charset=UTF-8';
+        add_header 'Content-Length' '0';
+        return 204;
+    }
 }
 EOF
 
@@ -211,6 +272,17 @@ server {
         expires 30d;
         add_header Cache-Control "public, no-transform";
     }
+    
+    # CORS preflight requests
+    location = /cors-preflight {
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE';
+        add_header 'Access-Control-Allow-Headers' '*';
+        add_header 'Access-Control-Max-Age' '1728000';
+        add_header 'Content-Type' 'text/plain charset=UTF-8';
+        add_header 'Content-Length' '0';
+        return 204;
+    }
 }
 EOF
       systemctl restart nginx && echo "✓ Nginx restarted with HTTP configuration" || echo "✗ Failed to restart Nginx"
@@ -228,7 +300,17 @@ EOF
 else
   echo "Required SSL certificate files not found"
   echo "Using HTTP-only configuration for now"
+  echo "You can try to set up SSL certificates later by running:"
+  echo "$SCRIPT_DIR/install-ssl.sh"
 fi
 
 # Create a verification file to check if setup is complete
 echo "Nginx setup completed on $(date)" > "$APP_DIR/nginx-setup-completed.txt"
+
+echo "======================================================"
+echo "Nginx setup completed. Configuration:"
+echo "Domain: $DOMAIN"
+echo "App Directory: $APP_DIR"
+echo "SSL Status: $([ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ] && echo "Installed" || echo "Not installed")"
+echo "To troubleshoot issues, run: $SCRIPT_DIR/diagnose-nginx.sh"
+echo "======================================================"

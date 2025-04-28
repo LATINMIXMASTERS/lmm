@@ -3,6 +3,7 @@ import { S3StorageConfig } from '../types';
 
 /**
  * Create AWS Signature V4 for Backblaze B2 S3-compatible API
+ * Fixing the crypto functions to work correctly in the browser
  */
 export async function createSignatureV4(
   config: S3StorageConfig,
@@ -14,6 +15,10 @@ export async function createSignatureV4(
   headers: Record<string, string>
 ): Promise<Record<string, string>> {
   try {
+    if (!config.secretAccessKey || !config.accessKeyId) {
+      throw new Error('Missing Backblaze B2 credentials');
+    }
+
     // Get current date in ISO format
     const date = new Date();
     const amzDate = date.toISOString().replace(/[:\-]|\.\d{3}/g, '');
@@ -27,7 +32,7 @@ export async function createSignatureV4(
     };
     
     // Get the canonical request parts
-    const canonicalURI = encodeRFC3986(path).replace(/%2F/g, '/');
+    const canonicalURI = path.startsWith('/') ? path : `/${path}`;
     const canonicalQueryString = '';
     
     // Generate canonical headers string
@@ -56,19 +61,23 @@ export async function createSignatureV4(
     // Create string to sign
     const algorithm = 'AWS4-HMAC-SHA256';
     const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+
+    // Hash the canonical request - ensuring we're using the browser Web Crypto API correctly
+    const canonicalRequestHash = await hashString('SHA-256', canonicalRequest);
+    
     const stringToSign = [
       algorithm,
       amzDate,
       credentialScope,
-      await hashString('SHA-256', canonicalRequest)
+      canonicalRequestHash
     ].join('\n');
     
-    // Calculate signature
-    const kDate = await hmacSha256('AWS4' + config.secretAccessKey, dateStamp);
-    const kRegion = await hmacSha256(kDate, region);
-    const kService = await hmacSha256(kRegion, service);
-    const kSigning = await hmacSha256(kService, 'aws4_request');
-    const signature = await hmacSha256ToHex(kSigning, stringToSign);
+    // Calculate signature - with browser-compatible implementations
+    const kDate = await hmacSha256(`AWS4${config.secretAccessKey}`, dateStamp);
+    const kRegion = await hmacSha256(await kDate, region);
+    const kService = await hmacSha256(await kRegion, service);
+    const kSigning = await hmacSha256(await kService, 'aws4_request');
+    const signature = await hmacSha256ToHex(await kSigning, stringToSign);
     
     // Add Authorization header
     const authHeader = [
@@ -98,6 +107,7 @@ function encodeRFC3986(str: string): string {
 
 /**
  * Helper function to create HMAC-SHA256 signature
+ * Fixed to work properly in the browser
  */
 async function hmacSha256(key: string | ArrayBuffer, message: string): Promise<ArrayBuffer> {
   const encoder = new TextEncoder();
@@ -105,11 +115,12 @@ async function hmacSha256(key: string | ArrayBuffer, message: string): Promise<A
   
   let keyBuffer: ArrayBuffer;
   if (typeof key === 'string') {
-    keyBuffer = encoder.encode(key);
+    keyBuffer = encoder.encode(key).buffer;
   } else {
     keyBuffer = key;
   }
   
+  // Fix: Proper import of key material
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
     keyBuffer,

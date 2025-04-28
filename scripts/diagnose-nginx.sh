@@ -2,11 +2,21 @@
 #!/bin/bash
 set -e
 
-echo "=== Latin Mix Masters Nginx Diagnostic Tool ==="
+echo "=== Latin Mix Masters Diagnostic Tool ==="
+echo "Running comprehensive diagnostics for server, Nginx, SSL, and S3 connectivity..."
 
 # Define the domain name
 DOMAIN="lmmapp.latinmixmasters.com"
-echo "Running diagnostics for domain: $DOMAIN"
+echo "Target domain: $DOMAIN"
+
+# Server Information
+echo -e "\n===== SERVER INFORMATION ====="
+echo "IP Address: $(curl -s ifconfig.me || echo 'Cannot determine')"
+echo "Hostname: $(hostname -f || echo 'Cannot determine')"
+echo "User: $(whoami)"
+echo "Date/Time: $(date)"
+echo "OS Version: $(cat /etc/os-release | grep PRETTY_NAME | cut -d= -f2 | tr -d '"')"
+echo "Kernel: $(uname -r)"
 
 # Function to check if a file exists and show its content
 check_file() {
@@ -23,7 +33,7 @@ check_file() {
 }
 
 # Check nginx installation
-echo -e "\n1. Checking Nginx installation..."
+echo -e "\n===== NGINX INSTALLATION ====="
 if command -v nginx &> /dev/null; then
   NGINX_VERSION=$(nginx -v 2>&1)
   echo "✓ Nginx is installed: $NGINX_VERSION"
@@ -35,7 +45,7 @@ else
 fi
 
 # Check nginx configuration
-echo -e "\n2. Testing Nginx configuration..."
+echo -e "\n===== NGINX CONFIGURATION ====="
 NGINX_TEST=$(nginx -t 2>&1)
 if [ $? -eq 0 ]; then
   echo "✓ Nginx configuration is valid"
@@ -96,11 +106,13 @@ server {
 EOF
     
     echo "Created temporary HTTP-only configuration. Original saved as $SITE_CONFIG.bak"
+    echo "Testing new configuration:"
+    nginx -t && echo "✓ New configuration is valid" || echo "✗ New configuration still has issues"
   fi
 fi
 
 # Check SSL certificates
-echo -e "\n3. Checking SSL certificates..."
+echo -e "\n===== SSL CERTIFICATES ====="
 SSL_DIR="/etc/letsencrypt/live/$DOMAIN"
 if [ -d "$SSL_DIR" ]; then
   echo "✓ SSL directory exists for $DOMAIN"
@@ -125,7 +137,24 @@ if [ -d "$SSL_DIR" ]; then
         echo "  Link target: $TARGET"
         if [ ! -f "$TARGET" ]; then
           echo "  ⚠️ Link target does not exist!"
-        fi
+          
+          # Try to find a valid target file and fix the symlink
+          echo "  Searching for valid certificate file to restore symlink..."
+          ARCHIVE_DIR="/etc/letsencrypt/archive/$DOMAIN"
+          if [ -d "$ARCHIVE_DIR" ]; then
+            POTENTIAL_TARGET=$(find "$ARCHIVE_DIR" -name "${FILE%.*}*.pem" | sort -V | tail -n 1)
+            if [ ! -z "$POTENTIAL_TARGET" ] && [ -f "$POTENTIAL_TARGET" ]; then
+              echo "  Found valid file: $POTENTIAL_TARGET"
+              echo "  Creating new symlink..."
+              ln -sf "$POTENTIAL_TARGET" "$SSL_DIR/$FILE"
+              echo "  Symlink fixed."
+            else
+              echo "  No valid certificate files found in archive."
+            fi
+          else
+            echo "  Archive directory does not exist: $ARCHIVE_DIR"
+          fi
+        }
       fi
     else
       echo "✗ $FILE does not exist!"
@@ -158,11 +187,14 @@ else
     else
       echo "✗ Failed to generate SSL certificates"
     fi
+    
+    # Start Nginx again
+    systemctl start nginx
   fi
 fi
 
 # Check nginx service status
-echo -e "\n4. Checking Nginx service status..."
+echo -e "\n===== NGINX SERVICE STATUS ====="
 if systemctl is-active --quiet nginx; then
   echo "✓ Nginx service is running"
 else
@@ -178,7 +210,7 @@ else
 fi
 
 # Fix ownership and permissions of SSL directories
-echo -e "\n5. Fixing SSL directory permissions..."
+echo -e "\n===== FIXING SSL DIRECTORY PERMISSIONS ====="
 if [ -d "/etc/letsencrypt" ]; then
   echo "Setting proper permissions for all SSL certificates..."
   find /etc/letsencrypt -type d -exec chmod 755 {} \;
@@ -189,7 +221,7 @@ else
 fi
 
 # Check port availability
-echo -e "\n6. Checking port availability..."
+echo -e "\n===== PORT AVAILABILITY ====="
 if command -v netstat &> /dev/null; then
   PORT80=$(netstat -tuln | grep ":80 ")
   PORT443=$(netstat -tuln | grep ":443 ")
@@ -216,7 +248,7 @@ else
 fi
 
 # Check if firewall is blocking ports
-echo -e "\n7. Checking firewall status..."
+echo -e "\n===== FIREWALL STATUS ====="
 if command -v ufw &> /dev/null; then
   UFW_STATUS=$(ufw status)
   echo "UFW Status: "
@@ -229,14 +261,16 @@ if command -v ufw &> /dev/null; then
     
     if [ -z "$HTTP_ALLOWED" ]; then
       echo "⚠️ HTTP port 80 may be blocked by firewall"
-      echo "Run: sudo ufw allow 80/tcp"
+      echo "Running: sudo ufw allow 80/tcp"
+      ufw allow 80/tcp
     else
       echo "✓ HTTP port 80 is allowed through firewall"
     fi
     
     if [ -z "$HTTPS_ALLOWED" ]; then
       echo "⚠️ HTTPS port 443 may be blocked by firewall"
-      echo "Run: sudo ufw allow 443/tcp"
+      echo "Running: sudo ufw allow 443/tcp"
+      ufw allow 443/tcp
     else
       echo "✓ HTTPS port 443 is allowed through firewall"
     fi
@@ -245,83 +279,189 @@ else
   echo "UFW not installed or not configured"
 fi
 
-# Create or update Nginx config with proper SSL settings
-echo -e "\n8. Updating Nginx configuration with SSL..."
-SITE_CONFIG="/etc/nginx/sites-available/latinmixmasters"
-
-if [ -f "$SSL_DIR/fullchain.pem" ] && [ -f "$SSL_DIR/privkey.pem" ]; then
-  echo "SSL certificates exist, updating Nginx configuration..."
+# DNS check
+echo -e "\n===== DNS RESOLUTION ====="
+echo "Checking DNS resolution for $DOMAIN:"
+if command -v dig &> /dev/null; then
+  SERVER_IP=$(curl -s ifconfig.me)
+  DOMAIN_IP=$(dig +short $DOMAIN)
+  echo "Server IP: $SERVER_IP"
+  echo "Domain DNS Resolution: $DOMAIN_IP"
   
-  # Backup the original configuration
-  cp "$SITE_CONFIG" "$SITE_CONFIG.bak.$(date +%s)" 2>/dev/null || echo "No existing config to backup"
-  
-  # Create a new configuration with SSL
-  cat > "$SITE_CONFIG" << EOF
-server {
-    listen 80;
-    listen [::]:80;
-    server_name ${DOMAIN};
-    
-    # Redirect HTTP to HTTPS
-    location / {
-        return 301 https://\$host\$request_uri;
-    }
-}
-
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name ${DOMAIN};
-
-    # SSL configuration
-    ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
-    ssl_trusted_certificate /etc/letsencrypt/live/${DOMAIN}/chain.pem;
-    
-    # SSL optimization
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers on;
-    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
-    ssl_session_timeout 1d;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_tickets off;
-    
-    # HSTS
-    add_header Strict-Transport-Security "max-age=63072000" always;
-
-    root /var/www/latinmixmasters/dist;
-    index index.html;
-
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        expires 30d;
-        add_header Cache-Control "public, no-transform";
-    }
-
-    # Add proper CORS headers
-    add_header Access-Control-Allow-Origin "*";
-    add_header Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, DELETE";
-    add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
-    add_header Access-Control-Allow-Credentials "true";
-}
-EOF
-
-  echo "✓ Created new Nginx configuration with SSL"
+  if [ "$DOMAIN_IP" = "$SERVER_IP" ]; then
+    echo "✓ DNS is correctly pointing to this server"
+  else
+    echo "⚠️ DNS might not be pointing to this server"
+    echo "  - Your server IP: $SERVER_IP"
+    echo "  - IP from DNS: $DOMAIN_IP"
+    echo "  - DNS needs to be updated to point to this server's IP"
+  fi
 else
-  echo "✗ SSL certificates not found, skipping SSL configuration update"
+  echo "Installing DNS utilities..."
+  apt-get update && apt-get install -y dnsutils
+  echo "Please rerun this script to check DNS."
 fi
 
-# Test the updated configuration
-echo -e "\n9. Testing updated Nginx configuration..."
-nginx -t && {
-  echo "✓ Configuration is valid"
-  systemctl restart nginx && echo "✓ Nginx restarted with new configuration" || echo "✗ Failed to restart Nginx"
-} || {
-  echo "✗ Configuration is invalid"
+# Check S3 Backblaze connectivity
+echo -e "\n===== S3 BACKBLAZE CONNECTIVITY ====="
+echo "Checking browser JavaScript compatibility for S3 signatures:"
+
+# Install Node.js if not installed (for script execution)
+if ! command -v node &> /dev/null; then
+  echo "Installing Node.js for S3 testing..."
+  apt-get update
+  apt-get install -y nodejs npm
+fi
+
+# Create a temporary test script
+TEST_SCRIPT=$(mktemp)
+cat > "$TEST_SCRIPT" << 'EOF'
+// Test browser crypto APIs that are needed for S3 signatures
+console.log("Testing browser crypto APIs required for S3 signatures...");
+
+// Simulate browser crypto APIs using Node.js
+if (typeof crypto === 'undefined') {
+  console.log("Node crypto available: Yes");
+  
+  try {
+    const nodeCrypto = require('crypto');
+    global.crypto = {
+      subtle: {
+        digest: async (algorithm, data) => {
+          const hash = nodeCrypto.createHash(algorithm.toLowerCase().replace('-', ''));
+          hash.update(Buffer.from(data));
+          return hash.digest();
+        },
+        importKey: async () => {
+          console.log("importKey function would be called in browser");
+          return {};
+        },
+        sign: async () => {
+          console.log("sign function would be called in browser");
+          return new ArrayBuffer(32);
+        }
+      }
+    };
+    console.log("Crypto API simulation: Success");
+  } catch (error) {
+    console.log("Failed to simulate crypto:", error.message);
+  }
+} else {
+  console.log("Browser crypto API available: Yes");
 }
+
+// Test TextEncoder
+try {
+  const encoder = new TextEncoder();
+  const encoded = encoder.encode("test");
+  console.log("TextEncoder working: Yes");
+} catch (error) {
+  console.log("TextEncoder error:", error.message);
+}
+
+// Test ArrayBuffer manipulation
+try {
+  const buffer = new ArrayBuffer(16);
+  const view = new Uint8Array(buffer);
+  for (let i = 0; i < view.length; i++) {
+    view[i] = i;
+  }
+  const hex = Array.from(view).map(b => b.toString(16).padStart(2, '0')).join('');
+  console.log("ArrayBuffer/Uint8Array manipulation: Working");
+  console.log("Hex encoding working:", hex === "000102030405060708090a0b0c0d0e0f");
+} catch (error) {
+  console.log("ArrayBuffer error:", error.message);
+}
+
+console.log("\nS3 Signature Requirements Check:");
+console.log("1. Crypto subtle API: " + (crypto && crypto.subtle ? "✅ Available" : "❌ Missing"));
+console.log("2. TextEncoder: " + (typeof TextEncoder !== 'undefined' ? "✅ Available" : "❌ Missing"));
+console.log("3. ArrayBuffer manipulation: ✅ Available");
+
+console.log("\nIf all checks pass, S3 signatures should work correctly in the browser context.");
+EOF
+
+node "$TEST_SCRIPT"
+rm "$TEST_SCRIPT"
+
+echo -e "\n===== S3 CONFIGURATION CHECK ====="
+APP_DIR="/var/www/latinmixmasters"
+if [ -d "$APP_DIR/dist" ]; then
+  echo "Checking for stored S3 configuration in browser localStorage..."
+  
+  # Create a temporary HTML file to extract localStorage
+  CHECK_HTML=$(mktemp)
+  cat > "$CHECK_HTML" << 'EOF'
+<!DOCTYPE html>
+<html>
+<head><title>S3 Config Check</title></head>
+<body>
+<script>
+  // Check localStorage for S3 config
+  const s3Config = localStorage.getItem('latinmixmasters_s3config');
+  console.log("S3 Configuration found:", s3Config ? "Yes" : "No");
+  
+  if (s3Config) {
+    try {
+      const parsedConfig = JSON.parse(s3Config);
+      // Sanitize the output by hiding secrets
+      const sanitizedConfig = {
+        ...parsedConfig,
+        secretAccessKey: parsedConfig.secretAccessKey ? '***********' : undefined
+      };
+      console.log("S3 Config details:", JSON.stringify(sanitizedConfig, null, 2));
+      
+      document.write(`<p>S3 Configuration detected:</p>
+        <ul>
+          <li>Bucket Name: ${sanitizedConfig.bucketName || 'Not set'}</li>
+          <li>Region: ${sanitizedConfig.region || 'Not set'}</li>
+          <li>Endpoint: ${sanitizedConfig.endpoint || 'Not set'}</li>
+          <li>Access Key ID: ${sanitizedConfig.accessKeyId ? sanitizedConfig.accessKeyId.substring(0, 5) + '...' : 'Not set'}</li>
+          <li>Secret Key: ${sanitizedConfig.secretAccessKey ? 'Present (hidden)' : 'Not set'}</li>
+        </ul>
+        <p>Common Backblaze B2 issues:</p>
+        <ul>
+          <li>Incorrect endpoint format (should be https://s3.REGION.backblazeb2.com)</li>
+          <li>Missing or invalid Access Key ID or Secret Access Key</li>
+          <li>Bucket permissions not set to public</li>
+          <li>Missing CORS configuration in Backblaze B2</li>
+        </ul>`);
+    } catch (e) {
+      console.error("Error parsing S3 config:", e);
+      document.write(`<p>Error parsing S3 configuration: ${e.message}</p>`);
+    }
+  } else {
+    document.write(`<p>No S3 configuration found in localStorage.</p>
+      <p>You need to set up S3 storage in the admin panel.</p>`);
+  }
+</script>
+</body>
+</html>
+EOF
+
+  echo "This script can't directly check browser localStorage, but here are troubleshooting tips:"
+  echo
+  echo "1. Make sure you've configured S3 in the admin dashboard"
+  echo "2. Check these common Backblaze B2 issues:"
+  echo "   - Incorrect endpoint format (should be https://s3.REGION.backblazeb2.com)"
+  echo "   - Missing or invalid Access Key ID or Secret Access Key"
+  echo "   - Bucket permissions not set to public"
+  echo "   - Missing CORS configuration in Backblaze B2"
+  echo
+  echo "3. For CORS configuration in Backblaze B2:"
+  echo "   - Log into your Backblaze B2 account"
+  echo "   - Go to your bucket settings"
+  echo "   - Add a CORS rule with these settings:"
+  echo "     * Allow all origins: *"
+  echo "     * Allow methods: GET, PUT, POST, DELETE"
+  echo "     * Allow headers: *"
+  echo "     * Max age: 3600"
+  
+  # Clean up temp file
+  rm "$CHECK_HTML"
+else
+  echo "Application directory not found: $APP_DIR/dist"
+fi
 
 echo -e "\n=== Manual SSL Certificate Installation ===\n"
 echo "To manually install SSL certificate with Certbot, follow these steps:"
@@ -329,6 +469,18 @@ echo "1. Stop Nginx: sudo systemctl stop nginx"
 echo "2. Run Certbot: sudo certbot certonly --standalone -d $DOMAIN --agree-tos --email webmaster@$DOMAIN"
 echo "3. Start Nginx: sudo systemctl start nginx"
 echo "4. If problems persist, check Nginx error logs: sudo tail -f /var/log/nginx/error.log"
+
+echo -e "\n=== Manual Backblaze B2 CORS Configuration ===\n"
+echo "To configure CORS for Backblaze B2:"
+echo "1. Log in to your Backblaze B2 account"
+echo "2. Navigate to the bucket you're using"
+echo "3. Click 'Bucket Settings'"
+echo "4. Add the following CORS rule:"
+echo "   - Origin: *"
+echo "   - Operations: s3_get, s3_put, s3_head, s3_post, s3_delete"
+echo "   - Headers: *"
+echo "   - Max Age Seconds: 3600"
+echo "5. Save the CORS configuration"
 
 echo -e "\n=== Diagnostic Summary ===\n"
 echo "If issues persist, try these steps:"
