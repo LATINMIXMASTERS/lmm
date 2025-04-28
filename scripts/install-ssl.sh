@@ -21,6 +21,14 @@ if ! command -v certbot &> /dev/null; then
   apt-get install -y certbot
 fi
 
+# Install required utilities if not present
+for pkg in curl net-tools lsof netcat; do
+  if ! command -v $pkg &> /dev/null; then
+    echo "Installing $pkg..."
+    apt-get install -y $pkg
+  fi
+done
+
 # Check if certificates already exist
 if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
   echo "SSL certificates for $DOMAIN already exist."
@@ -72,6 +80,19 @@ else
   apt-get update && apt-get install -y lsof
 fi
 
+# Check firewall settings
+echo "Checking firewall settings..."
+if command -v ufw &> /dev/null; then
+  if ufw status | grep -q "Status: active"; then
+    echo "UFW firewall is active. Ensuring ports 80 and 443 are allowed..."
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    echo "Firewall rules updated for HTTP/HTTPS"
+  else
+    echo "UFW is installed but not active"
+  fi
+fi
+
 # Check if nginx is running, stop it if it is
 if systemctl is-active --quiet nginx; then
   echo "Stopping Nginx temporarily..."
@@ -80,8 +101,18 @@ fi
 
 # Output DNS resolution info for debugging
 echo "DNS Resolution check for $DOMAIN:"
-dig +short $DOMAIN
-nslookup $DOMAIN
+dig +short $DOMAIN || echo "DNS lookup failed"
+nslookup $DOMAIN || echo "nslookup failed"
+
+# Attempt a quick HTTP connection to verify DNS resolves correctly
+echo "Testing HTTP connectivity to your domain..."
+curl -s --connect-timeout 5 http://$DOMAIN/ > /dev/null
+CURL_EXIT=$?
+if [ $CURL_EXIT -ne 0 ]; then
+  echo "WARNING: Cannot connect to http://$DOMAIN/ (exit code $CURL_EXIT)"
+  echo "This may indicate DNS is not properly configured."
+  echo "Your domain should resolve to this server: $(curl -s ifconfig.me)"
+fi
 
 # Obtain or renew certificate with increased verbosity and more diagnostics
 if [ ! -d "/etc/letsencrypt/live/$DOMAIN" ] || [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
@@ -134,7 +165,7 @@ fi
 
 # Create a cron job for renewal if it doesn't exist already
 if ! crontab -l 2>/dev/null | grep -q "certbot renew"; then
-  (crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet") | crontab -
+  (crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet && systemctl reload nginx") | crontab -
   echo "Added automatic certificate renewal cron job"
 fi
 

@@ -28,7 +28,7 @@ export async function createSignatureV4(
     const signedHeaders: Record<string, string> = {
       ...headers,
       'x-amz-date': amzDate,
-      'x-amz-content-sha256': typeof payload === 'string' ? payload : 'UNSIGNED-PAYLOAD'
+      'x-amz-content-sha256': typeof payload === 'string' ? await hashString('SHA-256', payload) : 'UNSIGNED-PAYLOAD'
     };
     
     // Get the canonical request parts
@@ -55,7 +55,7 @@ export async function createSignatureV4(
       canonicalQueryString,
       canonicalHeaders,
       signedHeadersString,
-      typeof payload === 'string' ? payload : 'UNSIGNED-PAYLOAD'
+      typeof payload === 'string' ? await hashString('SHA-256', payload) : 'UNSIGNED-PAYLOAD'
     ].join('\n');
     
     // Create string to sign
@@ -74,10 +74,10 @@ export async function createSignatureV4(
     
     // Calculate signature - with browser-compatible implementations
     const kDate = await hmacSha256(`AWS4${config.secretAccessKey}`, dateStamp);
-    const kRegion = await hmacSha256(await kDate, region);
-    const kService = await hmacSha256(await kRegion, service);
-    const kSigning = await hmacSha256(await kService, 'aws4_request');
-    const signature = await hmacSha256ToHex(await kSigning, stringToSign);
+    const kRegion = await hmacSha256(kDate, region);
+    const kService = await hmacSha256(kRegion, service);
+    const kSigning = await hmacSha256(kService, 'aws4_request');
+    const signature = await hmacSha256ToHex(kSigning, stringToSign);
     
     // Add Authorization header
     const authHeader = [
