@@ -38,6 +38,15 @@ const ChatRoom: React.FC<ChatRoomProps> = memo(({
     handleSendMessage
   } = useChatRoom({ messages, onSendMessage });
 
+  // Safe message send handler - prevent form default behavior
+  const safeSendMessage = (message: string) => {
+    try {
+      handleSendMessage(message);
+    } catch (error) {
+      console.error('Error in chat message sending:', error);
+    }
+  };
+
   return (
     <Card className={`mt-6 ${isMobile ? 'h-[400px]' : 'h-[500px]'} flex flex-col`}>
       <CardHeader className="pb-2">
@@ -69,7 +78,7 @@ const ChatRoom: React.FC<ChatRoomProps> = memo(({
           <AuthRequiredNotice />
         ) : (
           <ChatInput 
-            onSendMessage={handleSendMessage}
+            onSendMessage={safeSendMessage}
             isDisabled={isAnonymous}
             isOnline={isOnline}
           />

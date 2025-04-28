@@ -3,7 +3,7 @@ import { S3StorageConfig } from '../types';
 
 /**
  * Create AWS Signature V4 for Backblaze B2 S3-compatible API
- * Fixing the crypto functions to work correctly in the browser
+ * Using browser-compatible Web Crypto API
  */
 export async function createSignatureV4(
   config: S3StorageConfig,
@@ -28,8 +28,14 @@ export async function createSignatureV4(
     const signedHeaders: Record<string, string> = {
       ...headers,
       'x-amz-date': amzDate,
-      'x-amz-content-sha256': typeof payload === 'string' ? await hashString('SHA-256', payload) : 'UNSIGNED-PAYLOAD'
     };
+    
+    // Add content hash header if payload is a string
+    if (typeof payload === 'string') {
+      signedHeaders['x-amz-content-sha256'] = await hashString('SHA-256', payload);
+    } else {
+      signedHeaders['x-amz-content-sha256'] = 'UNSIGNED-PAYLOAD';
+    }
     
     // Get the canonical request parts
     const canonicalURI = path.startsWith('/') ? path : `/${path}`;
@@ -49,20 +55,25 @@ export async function createSignatureV4(
       .join(';');
     
     // Create canonical request
+    let payloadHash = 'UNSIGNED-PAYLOAD';
+    if (typeof payload === 'string') {
+      payloadHash = await hashString('SHA-256', payload);
+    }
+    
     const canonicalRequest = [
       method,
       canonicalURI,
       canonicalQueryString,
       canonicalHeaders,
       signedHeadersString,
-      typeof payload === 'string' ? await hashString('SHA-256', payload) : 'UNSIGNED-PAYLOAD'
+      payloadHash
     ].join('\n');
     
     // Create string to sign
     const algorithm = 'AWS4-HMAC-SHA256';
     const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
 
-    // Hash the canonical request - ensuring we're using the browser Web Crypto API correctly
+    // Hash the canonical request - using the browser Web Crypto API
     const canonicalRequestHash = await hashString('SHA-256', canonicalRequest);
     
     const stringToSign = [
@@ -72,7 +83,7 @@ export async function createSignatureV4(
       canonicalRequestHash
     ].join('\n');
     
-    // Calculate signature - with browser-compatible implementations
+    // Calculate signature - with explicit browser-compatible implementations
     const kDate = await hmacSha256(`AWS4${config.secretAccessKey}`, dateStamp);
     const kRegion = await hmacSha256(kDate, region);
     const kService = await hmacSha256(kRegion, service);
@@ -97,17 +108,8 @@ export async function createSignatureV4(
 }
 
 /**
- * Helper function to URL-encode strings per RFC3986
- */
-function encodeRFC3986(str: string): string {
-  return encodeURIComponent(str).replace(/[!'()*]/g, c => 
-    '%' + c.charCodeAt(0).toString(16).toUpperCase()
-  );
-}
-
-/**
  * Helper function to create HMAC-SHA256 signature
- * Fixed to work properly in the browser
+ * Properly implemented for browser environment
  */
 async function hmacSha256(key: string | ArrayBuffer, message: string): Promise<ArrayBuffer> {
   const encoder = new TextEncoder();
@@ -120,7 +122,7 @@ async function hmacSha256(key: string | ArrayBuffer, message: string): Promise<A
     keyBuffer = key;
   }
   
-  // Fix: Proper import of key material
+  // Create a crypto key using the Web Crypto API
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
     keyBuffer,

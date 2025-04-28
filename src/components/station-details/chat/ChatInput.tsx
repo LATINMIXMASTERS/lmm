@@ -28,6 +28,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
       try {
         onSendMessage(message);
         setMessage('');
+      } catch (error) {
+        console.error("Error sending message:", error);
       } finally {
         // Reset sending state after a short delay
         setTimeout(() => setIsSending(false), 300);
@@ -38,14 +40,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
   // Handle Enter key press
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
+      e.preventDefault(); // Critical to prevent form submission
       handleSendMessage();
     }
   }, [handleSendMessage]);
   
-  // Form submission handler - critical for preventing page refreshes
+  // Form submission handler - prevent default to avoid page refreshes
   const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // Critical to prevent navigation
     handleSendMessage();
   }, [handleSendMessage]);
   
@@ -65,7 +67,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         autoComplete="off"
       />
       <Button 
-        type="button"
+        type="button" // Changed from submit to button
         onClick={handleSendMessage}
         disabled={!message.trim() || isDisabled || !isOnline || isSending} 
         className="h-10 w-10 p-0"
