@@ -48,8 +48,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   // Form submission handler - prevent default to avoid page refreshes
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault(); // Critical to prevent navigation
-    handleSendMessage();
-  }, [handleSendMessage]);
+  }, []);
   
   return (
     <form 
@@ -61,13 +60,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
-        className={`min-h-[${isMobile ? '50' : '60'}px] resize-none`}
+        className="min-h-[60px] resize-none"
         maxLength={500}
         disabled={isDisabled || !isOnline || isSending}
         autoComplete="off"
       />
       <Button 
-        type="button" // Changed from submit to button
+        type="button"
         onClick={handleSendMessage}
         disabled={!message.trim() || isDisabled || !isOnline || isSending} 
         className="h-10 w-10 p-0"

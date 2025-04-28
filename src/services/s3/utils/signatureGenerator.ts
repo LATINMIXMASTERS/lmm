@@ -28,14 +28,8 @@ export async function createSignatureV4(
     const signedHeaders: Record<string, string> = {
       ...headers,
       'x-amz-date': amzDate,
+      'x-amz-content-sha256': 'UNSIGNED-PAYLOAD'
     };
-    
-    // Add content hash header if payload is a string
-    if (typeof payload === 'string') {
-      signedHeaders['x-amz-content-sha256'] = await hashString('SHA-256', payload);
-    } else {
-      signedHeaders['x-amz-content-sha256'] = 'UNSIGNED-PAYLOAD';
-    }
     
     // Get the canonical request parts
     const canonicalURI = path.startsWith('/') ? path : `/${path}`;
@@ -54,27 +48,22 @@ export async function createSignatureV4(
       .map(key => key.toLowerCase())
       .join(';');
     
-    // Create canonical request
-    let payloadHash = 'UNSIGNED-PAYLOAD';
-    if (typeof payload === 'string') {
-      payloadHash = await hashString('SHA-256', payload);
-    }
-    
+    // Create canonical request with fixed payload hash
     const canonicalRequest = [
       method,
       canonicalURI,
       canonicalQueryString,
       canonicalHeaders,
       signedHeadersString,
-      payloadHash
+      'UNSIGNED-PAYLOAD'
     ].join('\n');
     
     // Create string to sign
     const algorithm = 'AWS4-HMAC-SHA256';
     const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
 
-    // Hash the canonical request - using the browser Web Crypto API
-    const canonicalRequestHash = await hashString('SHA-256', canonicalRequest);
+    // Hash the canonical request using the Web Crypto API
+    const canonicalRequestHash = await hashString(canonicalRequest);
     
     const stringToSign = [
       algorithm,
@@ -83,12 +72,12 @@ export async function createSignatureV4(
       canonicalRequestHash
     ].join('\n');
     
-    // Calculate signature - with explicit browser-compatible implementations
+    // Calculate signature using explicit browser-compatible implementations
     const kDate = await hmacSha256(`AWS4${config.secretAccessKey}`, dateStamp);
-    const kRegion = await hmacSha256(kDate, region);
-    const kService = await hmacSha256(kRegion, service);
-    const kSigning = await hmacSha256(kService, 'aws4_request');
-    const signature = await hmacSha256ToHex(kSigning, stringToSign);
+    const kRegion = await hmacSha256ArrayBuffer(kDate, region);
+    const kService = await hmacSha256ArrayBuffer(kRegion, service); 
+    const kSigning = await hmacSha256ArrayBuffer(kService, 'aws4_request');
+    const signature = await hmacSha256ArrayBufferToHex(kSigning, stringToSign);
     
     // Add Authorization header
     const authHeader = [
@@ -108,22 +97,15 @@ export async function createSignatureV4(
 }
 
 /**
- * Helper function to create HMAC-SHA256 signature
- * Properly implemented for browser environment
+ * Helper function to create HMAC-SHA256 signature from string key
  */
-async function hmacSha256(key: string | ArrayBuffer, message: string): Promise<ArrayBuffer> {
+async function hmacSha256(key: string, message: string): Promise<ArrayBuffer> {
   const encoder = new TextEncoder();
   const messageBuffer = encoder.encode(message);
-  
-  let keyBuffer: ArrayBuffer;
-  if (typeof key === 'string') {
-    keyBuffer = encoder.encode(key).buffer;
-  } else {
-    keyBuffer = key;
-  }
+  const keyBuffer = encoder.encode(key).buffer;
   
   // Create a crypto key using the Web Crypto API
-  const cryptoKey = await crypto.subtle.importKey(
+  const cryptoKey = await window.crypto.subtle.importKey(
     'raw',
     keyBuffer,
     { name: 'HMAC', hash: { name: 'SHA-256' } },
@@ -131,24 +113,43 @@ async function hmacSha256(key: string | ArrayBuffer, message: string): Promise<A
     ['sign']
   );
   
-  return await crypto.subtle.sign('HMAC', cryptoKey, messageBuffer);
+  return await window.crypto.subtle.sign('HMAC', cryptoKey, messageBuffer);
 }
 
 /**
- * Helper function to create HMAC-SHA256 signature and convert to hex
+ * Helper function to create HMAC-SHA256 signature from ArrayBuffer key
  */
-async function hmacSha256ToHex(key: ArrayBuffer, message: string): Promise<string> {
-  const signature = await hmacSha256(key, message);
+async function hmacSha256ArrayBuffer(key: ArrayBuffer, message: string): Promise<ArrayBuffer> {
+  const encoder = new TextEncoder();
+  const messageBuffer = encoder.encode(message);
+  
+  // Create a crypto key using the Web Crypto API
+  const cryptoKey = await window.crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'HMAC', hash: { name: 'SHA-256' } },
+    false,
+    ['sign']
+  );
+  
+  return await window.crypto.subtle.sign('HMAC', cryptoKey, messageBuffer);
+}
+
+/**
+ * Helper function to create HMAC-SHA256 signature from ArrayBuffer and convert to hex
+ */
+async function hmacSha256ArrayBufferToHex(key: ArrayBuffer, message: string): Promise<string> {
+  const signature = await hmacSha256ArrayBuffer(key, message);
   return arrayBufferToHex(signature);
 }
 
 /**
- * Helper function to hash a string using the specified algorithm
+ * Helper function to hash a string using SHA-256
  */
-async function hashString(algorithm: string, message: string): Promise<string> {
+async function hashString(message: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(message);
-  const hash = await crypto.subtle.digest(algorithm, data);
+  const hash = await window.crypto.subtle.digest('SHA-256', data);
   return arrayBufferToHex(hash);
 }
 

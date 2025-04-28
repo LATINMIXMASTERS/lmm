@@ -63,7 +63,7 @@ export const testS3Connection = async (
         config,
         'GET',
         testPath,
-        config.region,
+        config.region || 's3',
         's3',
         'UNSIGNED-PAYLOAD',
         headers
@@ -93,7 +93,7 @@ export const testS3Connection = async (
   }
 };
 
-// Add a new function to help validate the credentials and CORS settings
+// Keep existing validateS3Configuration function
 export const validateS3Configuration = (config: S3StorageConfig): string[] => {
   const warnings: string[] = [];
 

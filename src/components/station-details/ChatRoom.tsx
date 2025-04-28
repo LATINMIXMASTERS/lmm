@@ -64,7 +64,7 @@ const ChatRoom: React.FC<ChatRoomProps> = memo(({
             <div className="space-y-2">
               {messages.map((msg) => (
                 <ChatMessageItem 
-                  key={msg.id} 
+                  key={msg.id || `msg-${msg.timestamp}`} 
                   message={msg} 
                   isCurrentUser={msg.userId === user?.id}
                 />
